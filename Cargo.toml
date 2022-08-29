@@ -1,7 +1,5 @@
 [workspace]
 
 members = [
-  "point_vertex",
-  "obstacle",
-  "player",
+  "model"
 ]

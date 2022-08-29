@@ -1,9 +1,0 @@
-[package]
-name = "obstacle"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-point_vertex = { path = "../point_vertex" }
