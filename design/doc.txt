@@ -68,9 +68,9 @@ Dangerous Deliveries:
       increases speed by down_speed_factor
       i.e.
         Moving up a level:
-          Speed_i_t -= Speed_i_t * up_speed_factor
+          Speed_i_t *= up_speed_factor
         Moving down a level:
-          Speed_i_t += Speed_i_t * down_speed_factor
+          Speed_i_t *= down_speed_factor
       Attempting to move into an obstacle that has height 
 
       Platform:

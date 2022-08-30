@@ -37,3 +37,7 @@ pub fn neighbors((x, y): (usize, usize),
 
     v
 }
+
+pub fn magnitude((x, y): (f32, f32)) -> f32 {
+    return ((x * x) + (y * y)).sqrt();
+}
