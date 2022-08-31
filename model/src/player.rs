@@ -3,7 +3,7 @@ pub struct Player {
     pub position: (i32, i32, i32),
     pub speed: (f32, f32),
     pub balance: (f32, f32),
-    pub distance_travled: f32,
+    pub time: f32, 
 }
 
 impl Player {
@@ -12,7 +12,7 @@ impl Player {
             position: (x, y, height),
             speed: (0.0, 0.0),
             balance: (0.0, 0.0),
-            distance_travled: 0.0,
+            time: 0.0,
         } 
     }
 

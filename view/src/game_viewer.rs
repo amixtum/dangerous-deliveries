@@ -5,7 +5,6 @@ use console_engine::{
 };
 
 use std::collections::HashMap;
-use std::cmp::max;
 
 use model::util;
 
@@ -72,31 +71,33 @@ impl GameViewer {
 
 impl GameViewer {
     pub fn draw_layout(&self, table: &CellTable, player: &Player, fallover_threshold: f32, width: u32, height: u32) -> Screen {
-        let r_panel_width = max(5, self.max_message_length + 2) as i32;
+        let balance_size = 5;
+        let balance_x = width as i32 - balance_size - 1;
+        let r_panel_width = self.max_message_length as i32 + 2;
         let r_panel_x = width as i32 - r_panel_width - 1;
-        let msg_log_tl_y = r_panel_width + 1;
-        let msg_log_height = height as i32 - msg_log_tl_y;
+        let msg_log_tl_y = balance_size;
+        let msg_log_height = height as i32 - msg_log_tl_y - 1;
         let table_view_width = width as i32 - r_panel_width;
         let table_view_height = height as i32;
 
         let table_view = self.draw_table(table, player, table_view_width as u32, table_view_height as u32);
-        let balance_view = self.draw_balance(player, fallover_threshold, r_panel_width as u32);
+        let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
         let msg_log_view = self.draw_msg_log(msg_log_height as u32);
 
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
         screen.print_screen(0, 0, &table_view);
-        screen.print_screen(r_panel_x as i32, 0, &balance_view);
-        screen.print_screen(r_panel_x as i32, msg_log_height as i32, &msg_log_view);
+        screen.print_screen(balance_x as i32, 0, &balance_view);
+        screen.print_screen(r_panel_x as i32, msg_log_tl_y as i32, &msg_log_view);
 
-        let mut s = String::from("Distance Traveled: ");
-        s.push_str(&player.distance_travled.to_string());
+        //let mut s = String::from("Distance Traveled: ");
+        //s.push_str(&player.distance_travled.to_string());
         
         // print distance traveled at top of the screen
         // TODO scoring
-        screen.print((width as i32 / 2) - (s.chars().count() as i32 / 2), 
-                     0, 
-                     &s);
+        //screen.print(0, 
+        //             height as i32 - 1,
+        //             &s);
 
         screen
     }
@@ -165,8 +166,8 @@ impl GameViewer {
         screen.rect(0, 0, (size as i32) - 1, (size as i32) - 1, pixel::pxl('#'));
 
         // compute position of balance vector inside the rect
-        let p_x = ((player.balance.0 / fallover_threshold) * (size as f32 / 2.0) ) as i32 + (size as i32 / 2);
-        let p_y = ((player.balance.1 / fallover_threshold) * (size as f32 / 2.0) ) as i32 + (size as i32 / 2);
+        let p_x = ((player.balance.0 / fallover_threshold) * (size as f32) ) as i32 + (size as i32 / 2);
+        let p_y = ((player.balance.1 / fallover_threshold) * (size as f32) ) as i32 + (size as i32 / 2);
 
         // indicate balance with this symbol
         screen.set_pxl(p_x, p_y, pixel::pxl('*'));
@@ -181,57 +182,69 @@ impl GameViewer {
         screen.rect(0, 0, self.max_message_length as i32 + 1, (height as i32) - 1, pixel::pxl('#'));
 
         let mut l_index = (self.message_log.len() as i32 - 1) as i32;
-        let mut scr_x = 1;
-        for y in (1..(screen.get_height() as i32 - 1)).rev() {
-            if l_index < 0 {
-                break;
-            }
-
-            for c in self.message_log[l_index as usize].chars() {
-                if scr_x < self.max_message_length {
-                    screen.set_pxl(scr_x as i32, y as i32, pixel::pxl(c));
-                    scr_x += 1;
-                }
-                else {
-                    break;
-                }
-            }
-
-            l_index -= 1;
-            scr_x = 0;
+        let mut scr_y = height as i32 - 2;
+        
+        while scr_y > 0 && l_index >= 0 {
+            screen.print(1, scr_y, &self.message_log[l_index as usize]);
+            scr_y -= 1;
+            l_index -= 1; 
         }
 
         screen
     }
 
     pub fn add_message(&mut self, table: &CellTable, player: &Player, event: &PlayerEvent) {
+        /*
+        let mut message = String::new();
+        message.push_str("B: ");
+        message.push_str(&player.balance.0.to_string());
+        message.push_str(", ");
+        message.push_str(&player.balance.1.to_string());
+
+        self.message_log.push(message);
+
+        if self.message_log.len() >= self.log_length {
+            self.message_log.remove(0);
+        }
+
+        let mut message = String::new();
+        message.push_str("S: ");
+        message.push_str(&player.speed_x().to_string());
+        message.push_str(", ");
+        message.push_str(&player.speed_y().to_string());
+
+        self.message_log.push(message); */
+
+        if self.message_log.len() >= self.log_length {
+            self.message_log.remove(0);
+        }
         let mut message = String::new();
         match event {
             PlayerEvent::Move => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Moved onto platform."),
-                    Obstacle::Pit => message.push_str("Game Over."),
+                    Obstacle::Platform(_) => message.push_str("On Platform"),
+                    Obstacle::Pit => message.push_str("Game Over"),
                     Obstacle::Rail(_, _) => message.push_str("Grinding")
                 }
             },
             PlayerEvent::Wait => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Waiting on platform."),
+                    Obstacle::Platform(_) => message.push_str("On platform."),
                     Obstacle::Pit => message.push_str("Game Over."),
-                    Obstacle::Rail(_, _) => message.push_str("Grinding the rail.")
+                    Obstacle::Rail(_, _) => message.push_str("Grinding")
                 }
             },
             PlayerEvent::FallOver => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Fell over onto platform."),
-                    Obstacle::Pit => message.push_str("Fell into a pit. Game Over."),
-                    Obstacle::Rail(_, _) => message.push_str("Fell over onto the rail (?)"),
+                    Obstacle::Platform(_) => message.push_str("Fell over"),
+                    Obstacle::Pit => message.push_str("Game Over"),
+                    Obstacle::Rail(_, _) => message.push_str("Fellover(rail?)"),
                 }
             },
             PlayerEvent::OffRail => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Got off the rail."),
-                    Obstacle::Pit => message.push_str("Fell into a pit. Game Over."),
+                    Obstacle::Platform(_) => message.push_str("Offrail"),
+                    Obstacle::Pit => message.push_str("Game Over."),
                     Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
                 }
             },
@@ -239,7 +252,7 @@ impl GameViewer {
                 match table.get_obstacle(player.x(), player.y()) {
                     Obstacle::Platform(_) => message.push_str("Grinding the platform (?)."),
                     Obstacle::Pit => message.push_str("Grinded(?) into a pit. Game Over."),
-                    Obstacle::Rail(_, _) => message.push_str("You grind the rail."),
+                    Obstacle::Rail(_, _) => message.push_str("Grinding"),
                 }
             }
 
@@ -247,7 +260,7 @@ impl GameViewer {
                 message.push_str("Game Over");
             }
         }     
-
+        
         self.message_log.push(message);
 
         if self.message_log.len() >= self.log_length {

@@ -64,7 +64,6 @@ impl Game {
                 self.viewer.add_message(&self.table, &self.player, &result.1);
                 self.player = result.0;
                 self.redraw = true;
-                break;
             }
         }
     }
