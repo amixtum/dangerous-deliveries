@@ -107,9 +107,9 @@ Dangerous Deliveries:
           * moving backwards in the parallel direction of a rail reduces speed
           * if a player's speed reaches (0, 0) they fall off the rail
           * moving in any other direction jumps off the rail, and sets:
-            Speed_t *= offrail_speed_factor 
+            Balance_i_t *= inst_i * offrail_balance_factor 
             with:
-              offrail_speed_factor in (0, 1)
+              offrail_balance_factor in (0, 1)
         Pit:
           * x y position
           * falling into a pit is game over

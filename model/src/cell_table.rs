@@ -1,4 +1,5 @@
 use super::obstacle::Obstacle;
+use super::traversability::Traversability;
 use super::player::Player;
 use super::cell::Cell;
 use super::player_event::PlayerEvent;
@@ -6,9 +7,9 @@ use super::util;
 
 
 pub struct CellTable {
-    pub width: usize,
-    pub height: usize,
-    pub table: Vec<Vec<Cell>>,
+    width: usize,
+    height: usize,
+    table: Vec<Vec<Cell>>,
 }
 
 impl CellTable {
@@ -34,6 +35,14 @@ impl CellTable {
 
 
 impl CellTable {
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
     pub fn get_obstacle(&self, x: i32, y: i32) -> Obstacle {
         Obstacle::clone(&self.table[x as usize][y as usize].obstacle)
     }
@@ -63,11 +72,34 @@ impl CellTable {
         x_diff.abs() <= 1 && y_diff.abs() <= 1 && h_diff.abs() <= 1 
     }
 
+    pub fn traversability(&self, 
+                          (from_x, from_y): (i32, i32),
+                          (to_x, to_y): (i32, i32)) -> Traversability {
+        let x_diff = to_x as i32 - from_x as i32; 
+        let y_diff = to_y as i32 - from_y as i32;
+        let h_diff = self.get_height(to_x, to_y) - self.get_height(from_x, from_y);
+
+        if x_diff.abs() <= 1 && y_diff.abs() <= 1 && h_diff.abs() <= 1 {
+            if h_diff > 0 {
+                return Traversability::Up;
+            }
+            else if h_diff < 0 {
+                return Traversability::Down;
+            }
+            else {
+                return Traversability::Flat;
+            }
+        }
+
+        return Traversability::No;
+    }
+
     pub fn reset_player(&self, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         clone.position = (0, 0, self.get_height(0, 0));
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
+        clone.distance_travled = 0.0;
         clone
     }
 
@@ -86,7 +118,7 @@ impl CellTable {
                         max_speed: f32,
                         fallover_threshold: f32,) -> (Player, PlayerEvent) {
 
-        let mut p_event = PlayerEvent::Move;
+        let mut p_event: PlayerEvent;
 
         // compute initial speed and balance values
         let mut player = self.compute_initial_speed_balance(player, (inst_x, inst_y), max_speed, speed_damp, balance_damp, turn_fact);
@@ -94,7 +126,8 @@ impl CellTable {
         // compute position and updated player fields
         let result = self.compute_next_position(&player, (inst_x, inst_y), onrail_balance_fact, offrail_balance_fact);
         player = result.0;
-        let next_pos = result.1;
+        p_event = result.1;
+        let next_pos = result.2;
 
         // fallover if the player is off balance
         if util::magnitude(player.balance) >= fallover_threshold {
@@ -119,7 +152,11 @@ impl CellTable {
         // updating speed values depending on the change
         // in height after the move
         // and return the updated Player
-        self.try_traverse(&player, next_pos, up_speed_fact, down_speed_fact)
+        let traverse = self.try_traverse(&player, next_pos, up_speed_fact, down_speed_fact);
+        match traverse.1 {
+            PlayerEvent::FallOver => (traverse.0, traverse.1),
+            _ => (traverse.0, p_event),
+        }
     }
 
     fn fallover(&self, player: &Player) -> Player {
@@ -284,26 +321,41 @@ impl CellTable {
     // Note: Must call compute_intitial_speed_balance first in order to update speed and balance
     // values, otherwise, this will compute the next position without taking into account user
     // input
-    fn compute_next_position(&self, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32, offrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
+    fn compute_next_position(&self, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32, offrail_balance_fact: f32) -> (Player, PlayerEvent, (i32, i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = self.get_obstacle(player.x(), player.y());
         let (unit_x, unit_y) = util::discrete_jmp((inst_x, inst_y));
-        let obs_at_next = self.get_obstacle(player.x() + unit_x, player.y() + unit_y);
+
 
         let mut clone = Player::clone(player);
+        let mut p_event = PlayerEvent::Move;
+
+        // bump into border
+        if player.x() + unit_x >= self.width as i32 ||
+           player.x() + unit_x < 0 ||
+           player.y() + unit_y >= self.height as i32 ||
+           player.y() + unit_y < 0 {
+            clone = self.fallover(player);
+            return (clone, PlayerEvent::FallOver, clone.position)
+        }
 
         // compute position
+        let obs_at_next = self.get_obstacle(player.x() + unit_x, player.y() + unit_y);
         match obs_at_next {
             Obstacle::Rail(height, (x_dir, y_dir)) => {
                 match last_obstacle {
                     Obstacle::Rail(last_height, (last_x_dir, last_y_dir))=> {
                         if height > last_height {
                             clone = self.fallover(player);
-                        } else if last_x_dir != x_dir || last_y_dir != y_dir {
+                            p_event = PlayerEvent::FallOver;
+                        }
+                        else if last_x_dir != x_dir || last_y_dir != y_dir {
                             let result = self.compute_onrail(player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
                             clone = result.0;
                             next_pos = result.1;
-                        } else {
+                            p_event = PlayerEvent::OnRail;
+                        } 
+                        else {
                             next_pos = self.compute_continue(player);
                         }
                     },
@@ -311,6 +363,7 @@ impl CellTable {
                         let result = self.compute_onrail(player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
                         clone = result.0;
                         next_pos = result.1;
+                        p_event = PlayerEvent::OnRail;
                     },
                 }
             },
@@ -322,6 +375,7 @@ impl CellTable {
                                     height);
                         clone.balance.0 += inst_x * offrail_balance_fact;
                         clone.balance.1 += inst_y * offrail_balance_fact;
+                        p_event = PlayerEvent::OffRail;
                     },
                     _ => {
                         next_pos = self.compute_continue(player);
@@ -330,13 +384,25 @@ impl CellTable {
             }
         }
 
-        (clone, next_pos)
+        if next_pos.0 == player.x() && next_pos.1 == player.y() {
+            return (clone, PlayerEvent::Wait, next_pos);
+        }
+
+        if next_pos.0 >= self.width as i32 ||
+           next_pos.0 < 0 ||
+           next_pos.1 >= self.height as i32 ||
+           next_pos.1 < 0 {
+            clone = self.fallover(player);
+            return (clone, PlayerEvent::FallOver, clone.position)
+        }
+
+        (clone, p_event, next_pos)
     }
 
     fn try_traverse(&self, player: &Player, next_pos: (i32, i32, i32), up_speed_fact: f32, down_speed_fact: f32) -> (Player, PlayerEvent) {
         // check if next_pos is adjacent to current position
         let mut clone = Player::clone(player);
-        let mut p_event = PlayerEvent::Move;
+        let mut p_event = PlayerEvent::Wait;
 
         if self.can_traverse(player.xy(), 
                             (next_pos.0, next_pos.1)) {
@@ -351,15 +417,26 @@ impl CellTable {
                 clone.speed.1 *= up_speed_fact;
             }
 
-            // move player to next position
-            clone.position = next_pos;
+            if clone.x() != next_pos.0 || clone.y() != next_pos.1 {
+                p_event = PlayerEvent::Move;
 
+                // move player to next position
+                clone.position = next_pos;
+                clone.distance_travled += util::magnitude((next_pos.0 as f32 - clone.x() as f32, 
+                                                           next_pos.1 as f32 - clone.y() as f32));
+            } else {
+                if let Obstacle::Rail(_, _) = self.get_obstacle(clone.x(), clone.y()) {
+                    clone = self.fallover(player);
+                    p_event = PlayerEvent::FallOver;
+                }
+            }
         // fallover if we cannot traverse to next_pos
         // and do not update the player's position
         } else {
             clone = self.fallover(player);
             p_event = PlayerEvent::FallOver;
         }
+
 
         (clone, p_event)
     }
