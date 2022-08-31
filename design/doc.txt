@@ -69,8 +69,12 @@ Dangerous Deliveries:
       i.e.
         Moving up a level:
           Speed_i_t *= up_speed_factor
+          with:
+            up_speed_factor in (0, 1)
         Moving down a level:
           Speed_i_t *= down_speed_factor
+          with:
+            down_speed_factor in (1, 2)
       Attempting to move into an obstacle that has height 
 
       Platform:
@@ -80,10 +84,7 @@ Dangerous Deliveries:
         * x y position
         * height
         * +/- x y direction (normal vectors)
-        * moving perpendicularly onto the rail jumps over it
-          * reduces Speed by a factor of jump_speed_factor
-            with jump_speed_factor in (0, 1)
-        * otherwise moving onto the rail "grinds" the rail,
+        * moving onto the rail "grinds" the rail,
           * sets: 
               Balance_i_t += (Speed_i_t - grind_direction_i) * onrail_balance_factor
             with:

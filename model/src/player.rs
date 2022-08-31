@@ -16,7 +16,33 @@ impl Player {
 
 }
 
-impl Player {
+impl Player { 
+    pub fn x(&self) -> i32 {
+        self.position.0     
+    }
+    pub fn y(&self) -> i32 {
+        self.position.1
+    }
+    pub fn height(&self) -> i32 {
+        self.position.2
+    }
 
+    pub fn xy(&self) -> (i32, i32) {
+        (self.x(), self.y())
+    }
+
+    pub fn speed_x(&self) -> f32 {
+        self.speed.0
+    }
+    pub fn speed_y(&self) -> f32 {
+        self.speed.1
+    }
+
+    pub fn balance_x(&self) -> f32 {
+        self.balance.0
+    }
+    pub fn balance_y(&self) -> f32 {
+        self.balance.1
+    }
 }
 
