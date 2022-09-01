@@ -1,33 +1,50 @@
 use super::obstacle::Obstacle;
 use super::traversability::Traversability;
 use super::player::Player;
-use super::cell::Cell;
 use super::player_event::PlayerEvent;
-use super::util;
 
+use util::vec_ops;
+use util::lsystem::{Turtle, Alphabet, LSystem};
+
+use std::f32::consts::PI;
 
 pub struct CellTable {
     width: usize,
     height: usize,
-    table: Vec<Vec<Cell>>,
+    table: Vec<Vec<Obstacle>>,
+
+    lsystem: LSystem,
+    turtles: [Turtle; 4],
 }
 
 impl CellTable {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(width: usize, height: usize, lsystem_file: &str) -> Self {
         let mut ct = CellTable {
             width,
             height,
             table: Vec::new(),
+
+            lsystem: LSystem::from_file(lsystem_file),
+            turtles: [
+                Turtle::new((width as i32 / 2, 0, 0), (0, 1, 0)),
+                Turtle::new((width as i32 / 2, height as i32 - 1, 0), (0, -1, 0)),
+                Turtle::new((0, height as i32 / 2, 0), (1, 0, 0)),
+                Turtle::new((width as i32 - 1, height as i32 / 2, 0), (-1, 0, 0)),
+            ],
         };
 
         for x in 0..width {
             ct.table.push(Vec::new());
-            for y in 0..height {
-                ct.table[x].push(Cell::new(x as i32, y as i32, Obstacle::Platform(0)));
+            for _ in 0..height {
+                ct.table[x].push(Obstacle::Platform(0));
             }
         }
 
         // TODO: mapgen
+        ct.table[5][5] = Obstacle::Pit;
+        ct.table[1][1] = Obstacle::Rail(0, (-1.0, -1.0));
+
+        ct.lsystem.update_n(5);
 
         ct
     }
@@ -35,6 +52,62 @@ impl CellTable {
 
 
 impl CellTable {
+    pub fn compute_turtles(&mut self, letter: Alphabet) {
+        let mut turtle_index = 0;
+        while turtle_index < self.turtles.len() {
+            match letter {
+                Alphabet::Fwd => {
+                    self.turtles[turtle_index].position.0 += self.turtles[turtle_index].direction.0;
+                    self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
+                    self.turtles[turtle_index].position.2 += self.turtles[turtle_index].direction.2;
+
+                    self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32);
+                    self.turtles[turtle_index].position.1 = self.turtles[turtle_index].position.1.clamp(0, self.width as i32);
+                    self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(0, self.width as i32);
+                }
+                Alphabet::Left => {
+                    let angle = PI / 4.0;
+                    let x = self.turtles[turtle_index].direction.0 as f32;
+                    let y = self.turtles[turtle_index].direction.1 as f32;
+                    let new_x = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
+                    let new_y = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
+                    self.turtles[turtle_index].direction.0 = new_x;
+                    self.turtles[turtle_index].direction.1 = new_y;
+                }
+                Alphabet::Right => {
+                    let angle = PI / 4.0;
+                    let x = self.turtles[turtle_index].direction.0 as f32;
+                    let y = self.turtles[turtle_index].direction.1 as f32;
+                    let new_y = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
+                    let new_x = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
+                    self.turtles[turtle_index].direction.0 = new_x;
+                    self.turtles[turtle_index].direction.1 = new_y;
+                }
+                Alphabet::Up => {
+                    self.turtles[turtle_index].direction.2 = 1;
+                }
+                Alphabet::Down => {
+                    self.turtles[turtle_index].direction.2 = -1;
+                }
+                Alphabet::Place => {
+                    // TODO placing Obstacles
+                }
+                Alphabet::Save => {
+                    // TODO stack for saving and returning 
+                }
+                Alphabet::Return => {
+
+                }
+                Alphabet::None => {
+
+                }
+            }
+
+            turtle_index += 1;
+        }
+
+    }
+
     pub fn width(&self) -> usize {
         self.width
     }
@@ -44,11 +117,11 @@ impl CellTable {
     }
 
     pub fn get_obstacle(&self, x: i32, y: i32) -> Obstacle {
-        Obstacle::clone(&self.table[x as usize][y as usize].obstacle)
+        Obstacle::clone(&self.table[x as usize][y as usize])
     }
 
     pub fn get_height(&self, x: i32, y: i32) -> i32 {
-        match self.table[x as usize][y as usize].obstacle {
+        match self.table[x as usize][y as usize] {
             Obstacle::Platform(height) => height,
             Obstacle::Pit => -999, 
             Obstacle::Rail(height, ..) => height,
@@ -56,7 +129,7 @@ impl CellTable {
     }
 
     pub fn get_direction(&self, x: i32, y: i32) -> Option<(f32, f32)> {
-        match self.table[x as usize][y as usize].obstacle {
+        match self.table[x as usize][y as usize] {
             Obstacle::Platform(_) => None,
             Obstacle::Pit => None, 
             Obstacle::Rail(_, pair) => Some(pair),
@@ -129,7 +202,7 @@ impl CellTable {
         let next_pos = result.2;
 
         // fallover if the player is off balance
-        if util::magnitude(player.balance) >= fallover_threshold {
+        if vec_ops::magnitude(player.balance) >= fallover_threshold {
             p_event = PlayerEvent::FallOver;
             player = self.fallover(&player);
         }
@@ -165,7 +238,7 @@ impl CellTable {
 
         match self.get_obstacle(player.x(), player.y()) {
             Obstacle::Rail(height, _) => {
-                let neighbors = util::neighbors(player.xy(), 
+                let neighbors = vec_ops::neighbors(player.xy(), 
                                                 (0, 0), 
                                                 (self.width as i32 - 1, self.height as i32 - 1));
                 let mut found = false;
@@ -237,38 +310,38 @@ impl CellTable {
             },
             Obstacle::Rail(_, (x_dir, y_dir)) => {
                 // compute speed
-                clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;
-                clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;
+                clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
+                clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
 
                 // slow down some more if the passed instantaneous velocity
                 // is in the opposite direction of the rail direction
                 if inst_x > 0.0 && x_dir < 0.0 && inst_y > 0.0 && y_dir < 0.0 {
-                     clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;                    
-                     clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;
+                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
+                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
                 } 
                 else if inst_x < 0.0 && x_dir > 0.0 && inst_y < 0.0 && y_dir > 0.0 {
-                     clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;
-                     clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;
+                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
+                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
                 }
                 else if  inst_x < 0.0 && x_dir > 0.0 && inst_y > 0.0 && y_dir < 0.0 {
-                     clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;
-                     clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;                    
+                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
+                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
                 }
                 else if  inst_x > 0.0 && x_dir < 0.0 && inst_y > 0.0 && y_dir < 0.0 {
-                     clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;
-                     clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;                    
+                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
+                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
                 }
                 else if inst_x > 0.0 && x_dir < 0.0 && y_dir.abs() < 0.01 {
-                    clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;                    
+                    clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
                 }
                 else if inst_y > 0.0 && y_dir < 0.0 && x_dir.abs() < 0.01 {
-                    clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;                    
+                    clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
                 }
                 else if inst_x < 0.0 && x_dir > 0.0 && y_dir.abs() < 0.01 {
-                    clone.speed.0 = x_dir * util::magnitude(clone.speed) * speed_damp;                    
+                    clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
                 }
                 else if inst_y < 0.0 && y_dir > 0.0 && x_dir.abs() < 0.01 {
-                    clone.speed.1 = y_dir * util::magnitude(clone.speed) * speed_damp;                    
+                    clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
                 }
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
@@ -286,7 +359,7 @@ impl CellTable {
 
     // updated a player's balance so it must return a new player as well
     fn compute_onrail(&self, player: &Player, (inst_x, inst_y): (f32, f32), (x_dir, y_dir): (f32, f32), onrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
-        let (unit_x, unit_y) = util::discrete_jmp((inst_x, inst_y));
+        let (unit_x, unit_y) = vec_ops::discrete_jmp((inst_x, inst_y));
         let mut next_pos = player.position;
         next_pos.0 = player.position.0 + unit_x;
         next_pos.1 = player.position.1 + unit_y;
@@ -295,10 +368,10 @@ impl CellTable {
         let mut clone = Player::clone(player);
 
         if clone.balance.0 >= clone.balance.1 {
-            clone.balance.0 += (clone.speed.0 - (x_dir * util::magnitude(clone.speed))) * onrail_balance_fact;
+            clone.balance.0 += (clone.speed.0 - (x_dir * vec_ops::magnitude(clone.speed))) * onrail_balance_fact;
         } 
         else {
-            clone.balance.1 += (clone.speed.1 - (y_dir * util::magnitude(clone.speed))) * onrail_balance_fact;
+            clone.balance.1 += (clone.speed.1 - (y_dir * vec_ops::magnitude(clone.speed))) * onrail_balance_fact;
         }
 
         (clone, next_pos)
@@ -308,9 +381,11 @@ impl CellTable {
         let mut next_pos = player.position;
         let temp = player.speed.0;
         next_pos.0 = (next_pos.0 + temp as i32).clamp(next_pos.0 - 1, next_pos.0 + 1);
+        next_pos.0 = next_pos.0.clamp(0, self.width as i32);
 
         let temp = player.speed.1;
         next_pos.1 = (next_pos.1 + temp as i32).clamp(next_pos.1 - 1, next_pos.1 + 1);
+        next_pos.1 = next_pos.1.clamp(0, self.height as i32);
 
         next_pos.2 = self.get_height(next_pos.0, next_pos.1);
 
@@ -323,7 +398,7 @@ impl CellTable {
     fn compute_next_position(&self, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32, offrail_balance_fact: f32) -> (Player, PlayerEvent, (i32, i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = self.get_obstacle(player.x(), player.y());
-        let units = util::discrete_jmp((inst_x, inst_y));
+        let units = vec_ops::discrete_jmp((inst_x, inst_y));
         let unit_x = units.0;
         let unit_y = units.1;
 
@@ -396,7 +471,7 @@ impl CellTable {
             return (clone, PlayerEvent::FallOver, clone.position)
         }
 
-        clone.time += 1.0 / util::magnitude(clone.speed);
+        clone.time += 1.0 / vec_ops::magnitude(clone.speed);
 
         (clone, p_event, next_pos)
     }

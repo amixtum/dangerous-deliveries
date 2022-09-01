@@ -16,6 +16,7 @@ pub struct Game {
     window_height: u32,
 
     redraw: bool,
+    has_drawn: bool,
 }
 
 impl Game {
@@ -24,10 +25,11 @@ impl Game {
                target_fps: u32,
                table_width: u32, 
                table_height: u32, 
-               conf_file: &str) -> Result<Self, String> {
+               conf_file: &str,
+               lsystem_file: &str) -> Result<Self, String> {
         if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
             return Ok(Game {
-                table: CellTable::new(table_width as usize, table_height as usize),
+                table: CellTable::new(table_width as usize, table_height as usize, lsystem_file),
                 viewer: GameViewer::new(32), // setting log length here, will specialize if needed
                 control: PlayerController::new(conf_file),
                 player: Player::new(0, 0, 0),
@@ -35,6 +37,7 @@ impl Game {
                 window_width,
                 window_height,
                 redraw: true,
+                has_drawn: false,
             });
         }
         Err(format!("Could not create window of width {}, height {}, at target_fps {}", window_width, window_height, target_fps))
@@ -44,10 +47,18 @@ impl Game {
 impl Game {
     pub fn run(&mut self) -> bool {
         self.engine.wait_frame();
-        self.engine.clear_screen();
         self.handle_input(); 
-        self.draw();
-        self.engine.draw();
+
+        if !self.has_drawn {
+            self.draw();
+            self.engine.draw();
+            self.has_drawn = true;
+        }
+
+        if self.redraw {
+            self.draw();
+            self.engine.draw();
+        }
 
         if self.engine.is_key_pressed(KeyCode::Char('q')) {
             return false;

@@ -6,7 +6,7 @@ use console_engine::{
 
 use std::collections::HashMap;
 
-use model::util;
+use util::vec_ops;
 
 use model::cell_table::CellTable;
 use model::obstacle::Obstacle;
@@ -125,7 +125,7 @@ impl GameViewer {
                     Obstacle::Platform(_) => ObstacleType::Platform,
                     Obstacle::Pit => ObstacleType::Pit,
                     Obstacle::Rail(_, dir) => {
-                        let i_dir = util::discrete_jmp(dir);
+                        let i_dir = vec_ops::discrete_jmp(dir);
                         ObstacleType::Rail(i_dir.0, i_dir.1)
                     },
                 };
@@ -229,8 +229,8 @@ impl GameViewer {
             },
             PlayerEvent::Wait => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("On platform."),
-                    Obstacle::Pit => message.push_str("Game Over."),
+                    Obstacle::Platform(_) => message.push_str("Waiting"),
+                    Obstacle::Pit => message.push_str("Game Over"),
                     Obstacle::Rail(_, _) => message.push_str("Grinding")
                 }
             },
