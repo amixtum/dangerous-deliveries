@@ -63,7 +63,7 @@ impl Alphabet {
 }
 
 pub struct LSystem {
-    current: Vec<Alphabet>,
+    pub current: Vec<Alphabet>,
     rules: HashMap<(Alphabet, Alphabet, Alphabet), Vec<Alphabet>>,
 }
 

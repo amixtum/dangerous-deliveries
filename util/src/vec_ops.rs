@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 pub fn neighbors((x, y): (i32, i32), 
                  (tl_x, tl_y): (i32, i32), 
                  (br_x, br_y): (i32, i32)) -> Vec<(i32, i32)> {
@@ -71,4 +73,22 @@ pub fn discrete_jmp((x, y): (f32, f32)) -> (i32, i32) {
     }
 
     (unit_x, unit_y)
+}
+
+pub fn rotate_left((x, y): (i32, i32)) -> (i32, i32) {
+    let angle = PI / 4.0;
+    let x = x as f32;
+    let y = y as f32;
+    let new_x = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
+    let new_y = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
+    (new_x, new_y) 
+}
+
+pub fn rotate_right((x, y): (i32, i32)) -> (i32, i32) {
+    let angle = 2.0 * PI - (PI / 4.0);
+    let x = x as f32;
+    let y = y as f32;
+    let new_x = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
+    let new_y = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
+    (new_x, new_y) 
 }

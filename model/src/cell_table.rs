@@ -6,15 +6,17 @@ use super::player_event::PlayerEvent;
 use util::vec_ops;
 use util::lsystem::{Turtle, Alphabet, LSystem};
 
-use std::f32::consts::PI;
+use rand::Rng;
 
 pub struct CellTable {
     width: usize,
     height: usize,
     table: Vec<Vec<Obstacle>>,
 
+    // TODO COnfig file for turtle
     lsystem: LSystem,
-    turtles: [Turtle; 4],
+    turtles: Vec<Turtle>,
+    saved_positions: Vec<(i32, i32, i32)>,
 }
 
 impl CellTable {
@@ -25,12 +27,8 @@ impl CellTable {
             table: Vec::new(),
 
             lsystem: LSystem::from_file(lsystem_file),
-            turtles: [
-                Turtle::new((width as i32 / 2, 0, 0), (0, 1, 0)),
-                Turtle::new((width as i32 / 2, height as i32 - 1, 0), (0, -1, 0)),
-                Turtle::new((0, height as i32 / 2, 0), (1, 0, 0)),
-                Turtle::new((width as i32 - 1, height as i32 / 2, 0), (-1, 0, 0)),
-            ],
+            turtles: Vec::new(),
+            saved_positions: Vec::new(),
         };
 
         for x in 0..width {
@@ -40,11 +38,20 @@ impl CellTable {
             }
         }
 
-        // TODO: mapgen
-        ct.table[5][5] = Obstacle::Pit;
-        ct.table[1][1] = Obstacle::Rail(0, (-1.0, -1.0));
+        ct.lsystem.update_n(8);
 
-        ct.lsystem.update_n(5);
+        for _ in 0..32 {
+            let p_x = rand::thread_rng().gen_range(0..width);
+            let p_y = rand::thread_rng().gen_range(0..height);
+            let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
+            ct.turtles.push(Turtle::new((p_x as i32, p_y as i32, p_z), (1, 1, 0)));
+        }
+
+        let mut c_idx = 0; 
+        while c_idx < ct.lsystem.current.len() {
+            ct.compute_turtles(ct.lsystem.current[c_idx]);
+            c_idx += 1;
+        }
 
         ct
     }
@@ -61,27 +68,77 @@ impl CellTable {
                     self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
                     self.turtles[turtle_index].position.2 += self.turtles[turtle_index].direction.2;
 
-                    self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32);
-                    self.turtles[turtle_index].position.1 = self.turtles[turtle_index].position.1.clamp(0, self.width as i32);
-                    self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(0, self.width as i32);
+                    self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32 - 1);
+                    self.turtles[turtle_index].position.1 = self.turtles[turtle_index].position.1.clamp(0, self.height as i32 - 1);
+                    self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(-1, 1);
                 }
                 Alphabet::Left => {
-                    let angle = PI / 4.0;
-                    let x = self.turtles[turtle_index].direction.0 as f32;
-                    let y = self.turtles[turtle_index].direction.1 as f32;
-                    let new_x = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
-                    let new_y = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
-                    self.turtles[turtle_index].direction.0 = new_x;
-                    self.turtles[turtle_index].direction.1 = new_y;
+                    if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == 0 {
+                        self.turtles[turtle_index].direction.0 = 1;
+                        self.turtles[turtle_index].direction.1 = -1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == 1 {
+                        self.turtles[turtle_index].direction.0 = 1;
+                        self.turtles[turtle_index].direction.1 = 0;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == -1 {
+                        self.turtles[turtle_index].direction.0 = 0;
+                        self.turtles[turtle_index].direction.1 = -1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == -1 && self.turtles[turtle_index].direction.1 == 0 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == -1 && self.turtles[turtle_index].direction.1 == 1 {
+                        self.turtles[turtle_index].direction.0 = 0;
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == -1 && self.turtles[turtle_index].direction.1 == -1 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = 0;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 0 && self.turtles[turtle_index].direction.1 == 1 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 0 && self.turtles[turtle_index].direction.1 == -1 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = -1;
+                    }
                 }
                 Alphabet::Right => {
-                    let angle = PI / 4.0;
-                    let x = self.turtles[turtle_index].direction.0 as f32;
-                    let y = self.turtles[turtle_index].direction.1 as f32;
-                    let new_y = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
-                    let new_x = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
-                    self.turtles[turtle_index].direction.0 = new_x;
-                    self.turtles[turtle_index].direction.1 = new_y;
+                     if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == 0 {
+                        self.turtles[turtle_index].direction.0 = 1;
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == 1 {
+                        self.turtles[turtle_index].direction.0 = 0;
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == -1 {
+                        self.turtles[turtle_index].direction.0 = 1;
+                        self.turtles[turtle_index].direction.1 = 0;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == -1 && self.turtles[turtle_index].direction.1 == 0 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = -1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == -1 && self.turtles[turtle_index].direction.1 == 1 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = 0;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == -1 && self.turtles[turtle_index].direction.1 == -1 {
+                        self.turtles[turtle_index].direction.0 = 0;
+                        self.turtles[turtle_index].direction.1 = -1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 0 && self.turtles[turtle_index].direction.1 == 1 {
+                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].direction.0 == 0 && self.turtles[turtle_index].direction.1 == -1 {
+                        self.turtles[turtle_index].direction.0 = 1;
+                        self.turtles[turtle_index].direction.1 = -1;
+                    }                   
                 }
                 Alphabet::Up => {
                     self.turtles[turtle_index].direction.2 = 1;
@@ -90,16 +147,32 @@ impl CellTable {
                     self.turtles[turtle_index].direction.2 = -1;
                 }
                 Alphabet::Place => {
-                    // TODO placing Obstacles
+                    if rand::thread_rng().gen_ratio(1, 9) {
+                        self.table[self.turtles[turtle_index].position.0 as usize]
+                                  [self.turtles[turtle_index].position.1 as usize] = Obstacle::Pit;
+                    }
+                    else if rand::thread_rng().gen_ratio(2, 3) {
+                        self.table[self.turtles[turtle_index].position.0 as usize]
+                                  [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail(self.turtles[turtle_index].position.2, 
+                                                                                                    (self.turtles[turtle_index].direction.0 as f32,
+                                                                                                     self.turtles[turtle_index].direction.1 as f32));
+                    }
+                    else {
+                        self.table[self.turtles[turtle_index].position.0 as usize]
+                                  [self.turtles[turtle_index].position.1 as usize] = Obstacle::Platform(self.turtles[turtle_index].position.2);
+                    }
+                    
+                    
                 }
                 Alphabet::Save => {
-                    // TODO stack for saving and returning 
+                    self.saved_positions.push(self.turtles[turtle_index].position);
                 }
                 Alphabet::Return => {
-
+                    if let Some(return_to) = self.saved_positions.pop() {
+                        self.turtles[turtle_index].position = return_to;
+                    }
                 }
                 Alphabet::None => {
-
                 }
             }
 

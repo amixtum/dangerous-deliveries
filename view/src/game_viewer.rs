@@ -36,34 +36,37 @@ impl GameViewer {
         gv.color_map.insert(Traversability::Flat, (Color::White, Color::Black));
         gv.color_map.insert(Traversability::Up, (Color::Cyan, Color::Black));
         gv.color_map.insert(Traversability::Down, (Color::Magenta, Color::Black));
-        gv.color_map.insert(Traversability::No, (Color::DarkGrey, Color::Black));
+        gv.color_map.insert(Traversability::No, (Color::DarkRed, Color::Black));
 
-        gv.symbol_map.insert(ObstacleType::Pit, '\u{25A1}');
-        gv.symbol_map.insert(ObstacleType::Platform,  '\u{25A6}');
+        gv.symbol_map.insert(ObstacleType::Pit, ' ');
+        gv.symbol_map.insert(ObstacleType::Platform,  '_');
+
+        // bug
+        gv.symbol_map.insert(ObstacleType::Rail(0, 0), '.');
 
         // right
-        gv.symbol_map.insert(ObstacleType::Rail(1, 0), '\u{21D2}');
+        gv.symbol_map.insert(ObstacleType::Rail(1, 0), '\u{2500}');
 
         // left
-        gv.symbol_map.insert(ObstacleType::Rail(-1, 0), '\u{21D0}');
+        gv.symbol_map.insert(ObstacleType::Rail(-1, 0), '\u{2500}');
 
         // up
-        gv.symbol_map.insert(ObstacleType::Rail(0, 1), '\u{21D1}');
+        gv.symbol_map.insert(ObstacleType::Rail(0, 1), '\u{2502}');
 
         // down
-        gv.symbol_map.insert(ObstacleType::Rail(0, -1), '\u{21D3}');
+        gv.symbol_map.insert(ObstacleType::Rail(0, -1), '\u{2502}');
 
         // diagonal right up
-        gv.symbol_map.insert(ObstacleType::Rail(1, 1), '\u{21D7}');
+        gv.symbol_map.insert(ObstacleType::Rail(1, 1), '/');
 
         // diagonal left down
-        gv.symbol_map.insert(ObstacleType::Rail(-1, -1), '\u{21D9}');
+        gv.symbol_map.insert(ObstacleType::Rail(-1, -1), '/');
 
         // diagonal right down
-        gv.symbol_map.insert(ObstacleType::Rail(1, -1), '\u{21D8}');
+        gv.symbol_map.insert(ObstacleType::Rail(1, -1), '\\');
 
         // diagonal left up
-        gv.symbol_map.insert(ObstacleType::Rail(-1, 1), '\u{21D6}');
+        gv.symbol_map.insert(ObstacleType::Rail(-1, 1), '\\');
 
         gv
     }
@@ -238,7 +241,7 @@ impl GameViewer {
                 match table.get_obstacle(player.x(), player.y()) {
                     Obstacle::Platform(_) => message.push_str("Fell over"),
                     Obstacle::Pit => message.push_str("Game Over"),
-                    Obstacle::Rail(_, _) => message.push_str("Fellover(rail?)"),
+                    Obstacle::Rail(_, _) => message.push_str("Fell over"),
                 }
             },
             PlayerEvent::OffRail => {
@@ -250,8 +253,8 @@ impl GameViewer {
             },
             PlayerEvent::OnRail => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Grinding the platform (?)."),
-                    Obstacle::Pit => message.push_str("Grinded(?) into a pit. Game Over."),
+                    Obstacle::Platform(_) => message.push_str("Grinding"),
+                    Obstacle::Pit => message.push_str("Game Over"),
                     Obstacle::Rail(_, _) => message.push_str("Grinding"),
                 }
             }

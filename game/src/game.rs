@@ -50,12 +50,14 @@ impl Game {
         self.handle_input(); 
 
         if !self.has_drawn {
+            self.engine.clear_screen();
             self.draw();
             self.engine.draw();
             self.has_drawn = true;
         }
 
         if self.redraw {
+            self.engine.clear_screen();
             self.draw();
             self.engine.draw();
         }
