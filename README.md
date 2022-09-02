@@ -6,7 +6,7 @@ If you have Rust installed already just type:
 
 Otherwise install Rust first
 
-How to play:
+<h3>How to play:</h3>
 
 * Display/Hide Help = 0 (zero)
 
@@ -34,4 +34,18 @@ How to play:
 
 * Exit = Esc
 
-Don't fall over (or into a bottomless pit of spikes)!
+* Don't fall over (or into a bottomless pit of spikes)!
+
+<h3>Configuring</h3>
+
+The config directory contains all data files necessary to compute the game
+
+If you would like to add an lsystem, create a new file (adhering to the format in the existing lsystem files) in the config directory and set:
+
+    lsystem <filename>
+
+in config/game.txt
+
+additionally config/table.txt contains values that affect how the lsystem is used for map generation 
+
+All other values are commented to explain how they affect the model (explained more in design/doc.txt)

@@ -24,6 +24,7 @@ fn load_game() -> Result<Game, String> {
     let mut window_height = 20;
     let mut game_width = 80;
     let mut game_height = 20;
+    let mut lsystem_path = "";
 
     if let Ok(pr) = project_root::get_project_root() {
         let mut path = String::from("");
@@ -36,6 +37,14 @@ fn load_game() -> Result<Game, String> {
         }
         if let Ok(contents) = fs::read_to_string(format!("{}/config/{}", path, "game.txt")) {
             for line in contents.lines() {
+                if let Some(c) = line.chars().nth(0) {
+                    if c == '#' {
+                        continue;
+                    }
+                }
+                else {
+                    continue;
+                }
                 let words: Vec<&str> = line.split_ascii_whitespace().collect();
                 if words.len() == 2 {
                     if words[0] == "window_width" {
@@ -58,19 +67,36 @@ fn load_game() -> Result<Game, String> {
                             game_height = num; 
                         }
                     }
+                    else if words[0] == "lsystem" {
+                        lsystem_path = &words[1]; 
+                    }
                 }
             }
-        }
-        if let Ok(g) = Game::new(window_width,
-                                 window_height,
-                                 30,
-                                 game_width,
-                                 game_height,
-                                 &format!("{}/config/{}", path, "model.txt"),
-                                 &format!("{}/config/{}", path, "lsystem1.txt"),
-                                 &format!("{}/config/{}", path, "table.txt")) {
-            return Ok(g);
-        }
+            if lsystem_path.chars().count() <= 0 {
+                if let Ok(g) = Game::new(window_width,
+                                         window_height,
+                                         30,
+                                         game_width,
+                                         game_height,
+                                         &format!("{}/config/{}", path, "model.txt"),
+                                         &format!("{}/config/{}", path, "lsystem1.txt"),
+                                         &format!("{}/config/{}", path, "table.txt")) {
+                    return Ok(g);
+                }
+            }
+            else {
+                if let Ok(g) = Game::new(window_width,
+                                         window_height,
+                                         30,
+                                         game_width,
+                                         game_height,
+                                         &format!("{}/config/{}", path, "model.txt"),
+                                         &format!("{}/config/{}", path, lsystem_path),
+                                         &format!("{}/config/{}", path, "table.txt")) {
+                    return Ok(g);
+                }
+            }
+        } 
     }
 
     Err(String::from("Could not create game"))

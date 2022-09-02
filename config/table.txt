@@ -7,7 +7,7 @@ max_falls 16
 # number of times we iterate the lsystem
 lsystem_update 5
 
-# number of turtles to make
+# number of lsystem turtles to make
 n_turtles 8
 
 # probability the turtle generates a pit when executing Place

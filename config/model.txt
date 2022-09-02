@@ -5,18 +5,18 @@ speed_damp 0.6
 balance_damp 0.6
 
 # amount of the orthogonal components of 
-# the player's last speed to the player's current
+# the player's last speed with respect to the player's current
 # speed to add to the player's balance vector
 turn_factor 0.6
 
 # amount of orthogonal components of 
-# the player's last speed to the direction
+# the player's last speed with respect to the direction
 # of the rail to add to the player's balance
 # vector
 onrail_balance_factor 0.1
 
 # amount of orthogonal compoents
-# of the player's current speed to the
+# of the player's current speed with respect to the
 # direction of the rail they jumped off
 # of to add to the player's balance vector
 offrail_balance_factor 0.2
