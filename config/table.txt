@@ -6,7 +6,7 @@ max_falls 16
 
 # number of times we iterate the lsystem
 # WARNING: Numbers >= 7 will take some time
-lsystem_update 3
+lsystem_update 4
 
 # number of lsystem turtles to make
 n_turtles 1
