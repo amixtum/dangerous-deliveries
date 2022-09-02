@@ -9,7 +9,7 @@ max_falls 16
 lsystem_update 4
 
 # number of lsystem turtles to make
-n_turtles 1
+n_turtles 2
 
 # probability the turtle generates a pit when executing Place
 pit_gen_p 0.1

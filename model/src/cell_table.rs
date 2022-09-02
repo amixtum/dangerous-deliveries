@@ -514,7 +514,12 @@ impl CellTable {
         let mut p_event: PlayerEvent;
 
         // compute initial speed and balance values
-        let mut player = self.compute_initial_speed_balance(player, (inst_x, inst_y), max_speed, speed_damp, balance_damp, turn_fact);
+        let mut player = self.compute_initial_speed_balance(player, 
+                                                            (inst_x, inst_y), 
+                                                            max_speed, 
+                                                            speed_damp, 
+                                                            balance_damp, 
+                                                            turn_fact,);
 
         // compute position and updated player fields
         let result = self.compute_next_position(&player, (inst_x, inst_y), onrail_balance_fact, offrail_balance_fact);
@@ -601,7 +606,7 @@ impl CellTable {
                                      max_speed: f32, 
                                      speed_damp: f32, 
                                      balance_damp: f32, 
-                                     turn_fact: f32) -> Player {
+                                     turn_fact: f32,) -> Player {
         let last_speed = player.speed;
         let last_obstacle = self.get_obstacle(player.position.0, 
                                               player.position.1);
@@ -613,19 +618,8 @@ impl CellTable {
                 // compute speed
                 clone.speed.0 = clone.speed.0 * speed_damp + inst_x;
                 clone.speed.1 = clone.speed.1 * speed_damp + inst_y;
-
-                if clone.speed.0.abs() > max_speed {
-                    if clone.speed.0 < 0.0 {
-                         clone.speed.0 = -max_speed;
-                    }
-                    clone.speed.0 = max_speed;
-                }
-                if clone.speed.1.abs() > max_speed {
-                    if clone.speed.1 < 0.0 {
-                         clone.speed.1 = -max_speed;
-                    }
-                    clone.speed.1 = max_speed;
-                }
+                clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
+                clone.speed.1 = clone.speed.0.clamp(-max_speed, max_speed);
 
                 // compute balance
                 clone.balance.0 = clone.balance.0 * balance_damp + 
@@ -638,37 +632,6 @@ impl CellTable {
                 // compute speed
                 clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
                 clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-
-                // slow down some more if the passed instantaneous velocity
-                // is in the opposite direction of the rail direction
-                if inst_x > 0.0 && x_dir < 0.0 && inst_y > 0.0 && y_dir < 0.0 {
-                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-                } 
-                else if inst_x < 0.0 && x_dir > 0.0 && inst_y < 0.0 && y_dir > 0.0 {
-                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-                }
-                else if  inst_x < 0.0 && x_dir > 0.0 && inst_y > 0.0 && y_dir < 0.0 {
-                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                }
-                else if  inst_x > 0.0 && x_dir < 0.0 && inst_y > 0.0 && y_dir < 0.0 {
-                     clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-                     clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                }
-                else if inst_x > 0.0 && x_dir < 0.0 && y_dir.abs() < 0.01 {
-                    clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                }
-                else if inst_y > 0.0 && y_dir < 0.0 && x_dir.abs() < 0.01 {
-                    clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                }
-                else if inst_x < 0.0 && x_dir > 0.0 && y_dir.abs() < 0.01 {
-                    clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                }
-                else if inst_y < 0.0 && y_dir > 0.0 && x_dir.abs() < 0.01 {
-                    clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;                    
-                }
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
@@ -756,6 +719,8 @@ impl CellTable {
                             let result = self.compute_onrail(player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
                             clone = result.0;
                             next_pos = result.1;
+                            clone.balance.0 += inst_x * offrail_balance_fact;
+                            clone.balance.1 += inst_y * offrail_balance_fact;
                             p_event = PlayerEvent::OffRail;
                         } 
                         else {
