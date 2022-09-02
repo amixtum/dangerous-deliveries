@@ -5,5 +5,5 @@ pub enum PlayerEvent {
     OnRail,
     OffRail,
     FallOver,
-    GameOver,
+    GameOver(i32),
 }

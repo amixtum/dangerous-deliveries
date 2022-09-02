@@ -8,25 +8,27 @@ Otherwise install Rust first
 
 How to play:
 
-* Look = ';' (Press a direction key to look in that direction)
+* Display/Hide Help = 0 (zero)
 
-* Move Left = 'h' or 'a'
+* Look = Semicolon (Press a direction key afterwards to look in that direction)
 
-* Move Right = 'l' or 'd'
+* Move Left = A or H
 
-* Move Up = 'k' or 'w'
+* Move Right = D or L 
 
-* Move Down = 'j' or 's'
+* Move Up = W or K
 
-* Move Northwest = 'y' or 'q'
+* Move Down = S or J 
 
-* Move Northeast = 'u' or 'e'
+* Move Northwest = Q or Y
 
-* Move Southwest = 'b' or 'z'
+* Move Northeast = E or U
 
-* Move Southeast = 'n' or 'c'
+* Move Southwest = Z or B
 
-* Wait = '.' or Tab
+* Move Southeast = C or N 
+
+* Wait = Period or Tab
 
 * Restart = Enter
 

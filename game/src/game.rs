@@ -21,6 +21,7 @@ pub struct Game {
     redraw: bool,
     has_drawn: bool,
     lookmode_on: bool,
+    helpscreen_on: bool,
     gameover: bool,
     gameover_done: bool,
 }
@@ -47,6 +48,7 @@ impl Game {
                 redraw: true,
                 has_drawn: false,
                 lookmode_on: false,
+                helpscreen_on: false,
                 gameover: false,
                 gameover_done: false,
             });
@@ -107,6 +109,10 @@ impl Game {
                 self.viewer.clear_log();
                 self.redraw = true;
             }
+            else if self.engine.is_key_pressed(KeyCode::Char('0')) {
+                self.helpscreen_on = !self.helpscreen_on;
+                self.redraw = true;
+            }
             if self.lookmode_on {
                 for keycode in self.lookmode.get_keys()  {
                      if self.engine.is_key_pressed(*keycode) {
@@ -131,7 +137,7 @@ impl Game {
                             self.viewer.add_string(String::from("Delivered"));
                         }
 
-                        if let PlayerEvent::GameOver = self.player.recent_event {
+                        if let PlayerEvent::GameOver(_) = self.player.recent_event {
                             self.gameover = true;
                         } else if let PlayerEvent::FallOver = self.player.recent_event {
                             self.table.inc_fallover();
@@ -157,9 +163,13 @@ impl Game {
 
     pub fn draw(&mut self) {
         let screen: Screen;
-        if self.gameover {
-            screen = self.viewer.game_over_screen(&self.table, self.window_width, self.window_height);
 
+        if self.gameover {
+            screen = self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
+
+        }
+        else if self.helpscreen_on {
+            screen = self.viewer.help_screen(self.window_width, self.window_height);
         }
         else {
             screen = self.viewer.draw_layout(&self.table, 

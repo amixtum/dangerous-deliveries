@@ -18,10 +18,9 @@ pub struct CellTable {
     height: usize,
     table: Vec<Vec<Obstacle>>,
 
-    pub n_falls: u32,
+    n_falls: u32,
     max_falls: u32,
 
-    // TODO Config file for turtle
     lsystem: LSystem,
     turtles: Vec<Turtle>,
     saved_positions: Vec<Vec<(i32, i32, i32)>>,
@@ -491,8 +490,8 @@ impl CellTable {
         clone.position = (self.width as i32 / 2, self.height as i32 / 2, self.get_height(self.width as i32 / 2, self.height as i32 / 2));
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
+        clone.recent_event = PlayerEvent::GameOver(clone.time as i32);
         clone.time = 0.0;
-        clone.recent_event = PlayerEvent::GameOver;
         clone
     }
 
@@ -533,7 +532,7 @@ impl CellTable {
         // fall into a pit. Game Over
         if let Obstacle::Pit = self.get_obstacle(next_pos.0, next_pos.1) {
             // reset the player
-            return (self.reset_player(&player), PlayerEvent::GameOver);
+            return (self.reset_player(&player), PlayerEvent::GameOver(player.time as i32));
         }
 
         match p_event {

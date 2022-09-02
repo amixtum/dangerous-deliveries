@@ -68,7 +68,7 @@ fn load_game() -> Result<Game, String> {
                                  game_height,
                                  &format!("{}/config/{}", path, "model.txt"),
                                  &format!("{}/config/{}", path, "lsystem1.txt"),
-                                 &format!("{}/config/{}", path, "turtle.txt")) {
+                                 &format!("{}/config/{}", path, "table.txt")) {
             return Ok(g);
         }
     }
