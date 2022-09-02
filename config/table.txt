@@ -5,7 +5,8 @@ n_goals 16
 max_falls 16
 
 # number of times we iterate the lsystem
-lsystem_update 4
+# WARNING: Numbers >= 7 will take some time
+lsystem_update 5
 
 # number of lsystem turtles to make
 n_turtles 8

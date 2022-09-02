@@ -1,12 +1,12 @@
 # Key
 # end_key = :, fwd = f, left = l, right = r, up = u, down = d, save = [, return = ], place = p, 0 = none
 # Axiom
-f
+f r [ p f ] f r [ p f ] f l [ p f ] f l [ p f ]
 # Rules
 0 f 0 : f p
-f p 0 : f r [ p f ] f r [ p f ] f l [ p f ] f l [ p f ]
-0 r 0 : [ r u f ]
-0 l 0 : [ l d f ] 
+f p 0 : r r f f p l l f f p
+0 r 0 : f [ f f r u ]
+0 l 0 : f [ f f l d ] 
 0 u 0 : u
 0 d 0 : d
 0 [ 0 : [ f

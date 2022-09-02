@@ -96,11 +96,11 @@ impl GameViewer {
         screen.print_screen(balance_x as i32, 0, &balance_view);
         screen.print_screen(r_panel_x as i32, msg_log_tl_y as i32, &msg_log_view);
 
-        let mut s = String::from("Time Traveled: ");
+        let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
         s.push_str(&format!(", Deliveries Left: {}, ", table.goals_left()));
-        s.push_str(&format!("Falls Before Game Over: {}", table.max_falls() - table.get_falls()));
-        s.push_str(", Help: press 0");
+        s.push_str(&format!("HP: {}, ", table.max_falls() - table.get_falls()));
+        s.push_str("Help: press 0");
         
         screen.print(0, height as i32 - 1, &s);
 
