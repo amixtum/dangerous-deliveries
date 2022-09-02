@@ -657,12 +657,8 @@ impl CellTable {
 
         let mut clone = Player::clone(player);
 
-        if clone.balance.0 >= clone.balance.1 {
-            clone.balance.0 += (clone.speed.0 - (x_dir * vec_ops::magnitude(clone.speed))) * onrail_balance_fact;
-        } 
-        else {
-            clone.balance.1 += (clone.speed.1 - (y_dir * vec_ops::magnitude(clone.speed))) * onrail_balance_fact;
-        }
+        clone.balance.0 += (clone.speed.0 - x_dir) * onrail_balance_fact;
+        clone.balance.1 += (clone.speed.1 - y_dir) * onrail_balance_fact;
 
         (clone, next_pos)
     }

@@ -12,7 +12,7 @@ lsystem_update 3
 n_turtles 3
 
 # probability the turtle generates a pit when executing Place
-pit_gen_p 0.1
+pit_gen_p 0.2
 
 # probability the turtle generates a rail
-rail_gen_p 0.9
+rail_gen_p 1.0
