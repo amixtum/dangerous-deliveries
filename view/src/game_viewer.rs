@@ -432,6 +432,10 @@ impl GameViewer {
 
         sc_y += 1;
 
+        screen.print_fbg(0, sc_y, "Same level", Color::Blue, Color::Black);
+
+        sc_y += 1;
+
         screen.print_fbg(0, sc_y, "Down one level", Color::Cyan, Color::Black);
 
         sc_y += 1;
