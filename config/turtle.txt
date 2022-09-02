@@ -14,4 +14,4 @@ rail_gen_p 0.5
 n_goals 16
 
 # number of falls before game over
-max_falls 5
+max_falls 16

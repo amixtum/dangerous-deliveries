@@ -101,9 +101,7 @@ impl GameViewer {
         s.push_str(&format!(", Deliveries Left: {}, ", table.goals_left()));
         s.push_str(&format!("Falls Before Game Over: {}", table.max_falls() - table.get_falls()));
         
-        screen.print(0, 
-                     height as i32 - 1,
-                     &s);
+        screen.print(0, height as i32 - 1, &s);
 
         screen
     }
@@ -179,33 +177,23 @@ impl GameViewer {
     // returns a Screen which visualizes the direction of the Player's
     // Balance vector, and their closeness to falling over (the nearness of the indicator to the border)
     pub fn draw_balance(&self, player: &Player, fallover_threshold: f32, size: u32) -> Screen {
-        // create empty square
-        let mut screen = Screen::new_fill(size * 2, size, pixel::pxl(' '));
-
-        // draw border
-        screen.rect(0, 0, (size as i32 * 2) - 1, (size as i32) - 1, pixel::pxl_fg('#', Color::DarkBlue));
-
-        // compute position of balance vector inside the rect
-        let p_x = (((player.balance.0 / fallover_threshold) * (size as f32 * 2.0) ) as i32 + (size as i32)).clamp(0, size as i32 * 2 - 1);
-        let p_y = (((player.balance.1 / fallover_threshold) * (size as f32) ) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
-
-        // indicate balance with this symbol
-        screen.set_pxl(p_x, p_y, pixel::pxl('*'));
-
-        // return the screen so a ConsoleEngine can render it (wherever it wants)
-        screen
+        self.draw_vector(player.balance, fallover_threshold, size, Color::Blue)
     }
 
     pub fn draw_speed(&self, player: &Player, max_speed: f32, size: u32) -> Screen {
+        self.draw_vector(player.speed, max_speed, size, Color::Cyan)
+    }
+
+    pub fn draw_vector(&self, v: (f32, f32), max: f32, size: u32, color: Color) -> Screen {
         // create empty square
-        let mut screen = Screen::new_fill(size * 2, size, pixel::pxl(' '));
+        let mut screen = Screen::new_fill(size * 2 + 1, size, pixel::pxl(' '));
 
         // draw border
-        screen.rect(0, 0, (size as i32 * 2) - 1, (size as i32) - 1, pixel::pxl_fg('#', Color::Cyan));
+        screen.rect(0, 0, size as i32 * 2, (size as i32) - 1, pixel::pxl_fg('#', color));
 
-        // compute position of speed vector inside the rect
-        let p_x = (((player.speed.0 / max_speed) * (size as f32 * 2.0) ) as i32 + (size as i32)).clamp(0, size as i32 * 2 - 1);
-        let p_y = (((player.speed.1 / max_speed) * (size as f32) ) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
+        // compute position of vector inside the rect
+        let p_x = (((v.0 / max) * (size as f32 * 2.0)) as i32 + (size as i32)).clamp(0, size as i32 * 2 - 1);
+        let p_y = (((v.1 / max) * (size as f32)) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
         screen.set_pxl(p_x, p_y, pixel::pxl('*'));
@@ -357,5 +345,25 @@ impl GameViewer {
             self.message_log.remove(0);
         }
         */
+    }
+
+    pub fn game_over_screen(&self, table: &CellTable, player: &Player, width: u32, height: u32) -> Screen {
+        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
+        screen.print_fbg((width as i32 / 2) - "Game Over".chars().count() as i32 / 2, (height as i32 / 2) - 1, "Game Over", Color::Red, Color::Black);
+
+        let mut info = String::new();
+        info.push_str(&format!("Packages Delivered: {}", table.goals_reached()));
+        screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, height as i32 / 2, &info);
+
+        info.clear(); 
+
+        info.push_str("Press R to restart. Press Esc to exit.");
+        screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, (height as i32 / 2) + 1, &info);
+
+        screen
+    }
+
+    pub fn clear_log(&mut self) {
+        self.message_log.clear();
     }
 }

@@ -1,4 +1,4 @@
-use console_engine::{ConsoleEngine, KeyCode};
+use console_engine::{ConsoleEngine, screen::Screen, KeyCode};
 
 use model::cell_table::CellTable;
 use model::player::Player;
@@ -21,6 +21,8 @@ pub struct Game {
     redraw: bool,
     has_drawn: bool,
     lookmode_on: bool,
+    gameover: bool,
+    gameover_done: bool,
 }
 
 impl Game {
@@ -45,6 +47,8 @@ impl Game {
                 redraw: true,
                 has_drawn: false,
                 lookmode_on: false,
+                gameover: false,
+                gameover_done: false,
             });
         }
         Err(format!("Could not create window of width {}, height {}, at target_fps {}", window_width, window_height, target_fps))
@@ -78,65 +82,93 @@ impl Game {
 
     pub fn handle_input(&mut self) {
         self.redraw = false;
-        if self.engine.is_key_pressed(KeyCode::Char(';')) {
-            self.viewer.add_string(String::from("Look where?"));
-            self.redraw = true;
-            self.lookmode_on = true; 
-        }
-        else if self.engine.is_key_pressed(KeyCode::Enter) {
-            self.table.regen_table();
-            self.player = self.table.reset_player(&self.player);
-            self.redraw = true;
-        }
-        if self.lookmode_on {
-            for keycode in self.lookmode.get_keys()  {
-                 if self.engine.is_key_pressed(*keycode) {
-                    let result = self.lookmode.describe_direction(&self.table, &self.player, *keycode);
-                    self.viewer.add_string(result);
-                    self.redraw = true;
-                    self.lookmode_on = false;
-                    break;
-                 }
+        if self.gameover {
+            if !self.gameover_done {
+                self.table.regen_table();
+                self.player = self.table.reset_player(&self.player);
+                self.viewer.clear_log();
+                self.gameover_done = true;
             }
-        }
+
+            if self.engine.is_key_pressed(KeyCode::Char('r')) {
+                self.gameover = false;
+                self.redraw = true;
+            }
+        } 
         else {
-            for keycode in self.control.get_keys() {
-                if self.engine.is_key_pressed(*keycode) {
-                    let result = self.control.move_player(&self.table, &self.player, *keycode);
+            if self.engine.is_key_pressed(KeyCode::Char(';')) {
+                self.viewer.add_string(String::from("Look where?"));
+                self.redraw = true;
+                self.lookmode_on = true; 
+            }
+            else if self.engine.is_key_pressed(KeyCode::Enter) {
+                self.table.regen_table();
+                self.player = self.table.reset_player(&self.player);
+                self.viewer.clear_log();
+                self.redraw = true;
+            }
+            if self.lookmode_on {
+                for keycode in self.lookmode.get_keys()  {
+                     if self.engine.is_key_pressed(*keycode) {
+                        let result = self.lookmode.describe_direction(&self.table, &self.player, *keycode);
+                        self.viewer.add_string(result);
+                        self.redraw = true;
+                        self.lookmode_on = false;
+                        break;
+                     }
+                }
+            }
+            else {
+                for keycode in self.control.get_keys() {
+                    if self.engine.is_key_pressed(*keycode) {
+                        let result = self.control.move_player(&self.table, &self.player, *keycode);
 
-                    self.viewer.add_message(&self.table, &result.0, &result.1);
+                        self.viewer.add_message(&self.table, &result.0, &result.1);
 
-                    self.player = result.0;
+                        self.player = result.0;
 
-                    if self.table.remove_goal_if_reached(&self.player) {
-                        self.viewer.add_string(String::from("Delivered"));
-                    }
+                        if self.table.remove_goal_if_reached(&self.player) {
+                            self.viewer.add_string(String::from("Delivered"));
+                        }
 
-                    if let PlayerEvent::GameOver = self.player.recent_event {
-                        self.table.regen_table();
-                    } else if let PlayerEvent::FallOver = self.player.recent_event {
-                        self.table.inc_fallover();
-                        if self.table.check_falls() {
-                            self.viewer.add_string(String::from("Game Over"));
+                        if let PlayerEvent::GameOver = self.player.recent_event {
+                            self.gameover = true;
+                        } else if let PlayerEvent::FallOver = self.player.recent_event {
+                            self.table.inc_fallover();
+                            if self.table.check_falls() {
+                                self.gameover = true;
+                            }
+                        }
+
+                        if self.table.get_goals().len() <= 0 {
+                            self.viewer.clear_log();
+                            self.viewer.add_string(String::from("You Win!"));
                             self.player = self.table.reset_player(&self.player);
                             self.table.regen_table();
                         }
+
+                        self.redraw = true;
                     }
-
-                    if self.table.get_goals().len() <= 0 {
-                        self.viewer.add_string(String::from("You Win!"));
-                        self.table.regen_table();
-                    }
-
-
-                    self.redraw = true;
                 }
             }
         }
+
     }
 
     pub fn draw(&mut self) {
-        let screen = self.viewer.draw_layout(&self.table, &self.player, self.control.max_speed, self.control.fallover_threshold, self.window_width, self.window_height);
+        let screen: Screen;
+        if self.gameover {
+            screen = self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
+
+        }
+        else {
+            screen = self.viewer.draw_layout(&self.table, 
+                                             &self.player, 
+                                             self.control.max_speed, 
+                                             self.control.fallover_threshold, 
+                                             self.window_width, 
+                                             self.window_height);
+        }
         self.engine.print_screen(0, 0, &screen);
     }
 }
