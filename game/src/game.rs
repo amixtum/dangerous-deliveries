@@ -158,7 +158,7 @@ impl Game {
     pub fn draw(&mut self) {
         let screen: Screen;
         if self.gameover {
-            screen = self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
+            screen = self.viewer.game_over_screen(&self.table, self.window_width, self.window_height);
 
         }
         else {

@@ -347,7 +347,7 @@ impl GameViewer {
         */
     }
 
-    pub fn game_over_screen(&self, table: &CellTable, player: &Player, width: u32, height: u32) -> Screen {
+    pub fn game_over_screen(&self, table: &CellTable, width: u32, height: u32) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
         screen.print_fbg((width as i32 / 2) - "Game Over".chars().count() as i32 / 2, (height as i32 / 2) - 1, "Game Over", Color::Red, Color::Black);
 
