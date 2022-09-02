@@ -107,15 +107,19 @@ impl PlayerController {
 
         // left
         pc.key_map.insert(KeyCode::Char('h'), (-1.0, 0.0));
+        pc.key_map.insert(KeyCode::Left, (-1.0, 0.0));
 
         // right
         pc.key_map.insert(KeyCode::Char('l'), (1.0, 0.0));
+        pc.key_map.insert(KeyCode::Right, (1.0, 0.0));
 
         // up
         pc.key_map.insert(KeyCode::Char('k'), (0.0, -1.0));
+        pc.key_map.insert(KeyCode::Up, (0.0, -1.0));
 
         // down
         pc.key_map.insert(KeyCode::Char('j'), (0.0, 1.0));
+        pc.key_map.insert(KeyCode::Down, (0.0, 1.0));
 
         // up right
         pc.key_map.insert(KeyCode::Char('u'), (1.0, -1.0));

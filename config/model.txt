@@ -1,9 +1,9 @@
-speed_damp 0.8
-balance_damp 0.4
-turn_factor 0.70
+speed_damp 0.6
+balance_damp 0.6
+turn_factor 0.6
 onrail_balance_factor 0.1
-offrail_balance_factor 0.1
+offrail_balance_factor 0.15
 up_speed_factor 0.5
 down_speed_factor 1.5
-max_speed 3
-fallover_threshold 1.5
+max_speed 5
+fallover_threshold 1.1

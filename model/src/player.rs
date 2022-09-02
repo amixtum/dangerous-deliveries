@@ -1,9 +1,12 @@
+use super::player_event::PlayerEvent;
+
 #[derive(Clone, Copy)]
 pub struct Player {
     pub position: (i32, i32, i32),
     pub speed: (f32, f32),
     pub balance: (f32, f32),
     pub time: f32, 
+    pub recent_event: PlayerEvent,
 }
 
 impl Player {
@@ -13,6 +16,7 @@ impl Player {
             speed: (0.0, 0.0),
             balance: (0.0, 0.0),
             time: 0.0,
+            recent_event: PlayerEvent::Wait,
         } 
     }
 

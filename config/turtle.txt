@@ -1,0 +1,12 @@
+# number of times we iterate the lsystem
+lsystem_update 7
+# number of turtles to make
+n_turtles 16
+# probability the turtle generates a pit when executing Place
+pit_gen_p 0.1
+# probability the turtle generates a rail
+rail_gen_p 0.2
+# number of goals to be reached
+n_goals 8
+# number of falls before game over
+max_falls 5

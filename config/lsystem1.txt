@@ -1,0 +1,14 @@
+# recommended updates: 4
+# Key
+# end_key = :, fwd = f, left = l, right = r, up = u, down = d, save = [, return = ], place = p, 0 = none
+# Axiom
+f
+# Rules
+0 f 0 : f p [ [ r f p r f p ] l l l f p l f p ]
+0 p 0 : p 
+0 r 0 : r 
+0 l 0 : u
+0 u 0 : u f p
+0 d 0 : d f p
+0 [ 0 : [ 
+0 ] 0 : ]

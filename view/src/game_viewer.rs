@@ -33,49 +33,50 @@ impl GameViewer {
             max_message_length: 16,
         };
 
-        gv.color_map.insert(Traversability::Flat, (Color::White, Color::Black));
-        gv.color_map.insert(Traversability::Up, (Color::Cyan, Color::Black));
-        gv.color_map.insert(Traversability::Down, (Color::Magenta, Color::Black));
-        gv.color_map.insert(Traversability::No, (Color::DarkRed, Color::Black));
+        gv.color_map.insert(Traversability::Flat, (Color::Blue, Color::Black));
+        gv.color_map.insert(Traversability::Up, (Color::Magenta, Color::Black));
+        gv.color_map.insert(Traversability::Down, (Color::Cyan, Color::Black));
+        gv.color_map.insert(Traversability::No, (Color::Green, Color::Black));
 
-        gv.symbol_map.insert(ObstacleType::Pit, ' ');
-        gv.symbol_map.insert(ObstacleType::Platform,  '_');
+        gv.symbol_map.insert(ObstacleType::Pit, 'x');
+        gv.symbol_map.insert(ObstacleType::Platform,  '.');
 
-        // bug
+        // bug (havent' found it yet)
         gv.symbol_map.insert(ObstacleType::Rail(0, 0), '.');
 
         // right
-        gv.symbol_map.insert(ObstacleType::Rail(1, 0), '\u{2500}');
+        gv.symbol_map.insert(ObstacleType::Rail(1, 0), '>');
 
         // left
-        gv.symbol_map.insert(ObstacleType::Rail(-1, 0), '\u{2500}');
+        gv.symbol_map.insert(ObstacleType::Rail(-1, 0), '<');
 
         // up
-        gv.symbol_map.insert(ObstacleType::Rail(0, 1), '\u{2502}');
+        gv.symbol_map.insert(ObstacleType::Rail(0, -1), '^');
 
         // down
-        gv.symbol_map.insert(ObstacleType::Rail(0, -1), '\u{2502}');
+        gv.symbol_map.insert(ObstacleType::Rail(0, 1), 'v');
 
         // diagonal right up
-        gv.symbol_map.insert(ObstacleType::Rail(1, 1), '/');
+        gv.symbol_map.insert(ObstacleType::Rail(1, -1), '/');
 
         // diagonal left down
-        gv.symbol_map.insert(ObstacleType::Rail(-1, -1), '/');
+        gv.symbol_map.insert(ObstacleType::Rail(-1, 1), 'd');
 
         // diagonal right down
-        gv.symbol_map.insert(ObstacleType::Rail(1, -1), '\\');
+        gv.symbol_map.insert(ObstacleType::Rail(1, 1), '\\');
 
         // diagonal left up
-        gv.symbol_map.insert(ObstacleType::Rail(-1, 1), '\\');
+        gv.symbol_map.insert(ObstacleType::Rail(-1, -1), 'u');
 
         gv
     }
 }
 
 impl GameViewer {
-    pub fn draw_layout(&self, table: &CellTable, player: &Player, fallover_threshold: f32, width: u32, height: u32) -> Screen {
+    pub fn draw_layout(&self, table: &CellTable, player: &Player, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
         let balance_size = 5;
-        let balance_x = width as i32 - balance_size - 1;
+        let speed_x = width as i32 - (balance_size * 2) - 1;
+        let balance_x = speed_x - (balance_size * 2) - 1;
         let r_panel_width = self.max_message_length as i32 + 2;
         let r_panel_x = width as i32 - r_panel_width - 1;
         let msg_log_tl_y = balance_size;
@@ -85,22 +86,24 @@ impl GameViewer {
 
         let table_view = self.draw_table(table, player, table_view_width as u32, table_view_height as u32);
         let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
+        let speed_view = self.draw_speed(player, max_speed, balance_size as u32);
         let msg_log_view = self.draw_msg_log(msg_log_height as u32);
 
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
         screen.print_screen(0, 0, &table_view);
+        screen.print_screen(speed_x as i32, 0, &speed_view);
         screen.print_screen(balance_x as i32, 0, &balance_view);
         screen.print_screen(r_panel_x as i32, msg_log_tl_y as i32, &msg_log_view);
 
-        //let mut s = String::from("Distance Traveled: ");
-        //s.push_str(&player.distance_travled.to_string());
+        let mut s = String::from("Time Traveled: ");
+        s.push_str(&(player.time.round()).to_string());
+        s.push_str(&format!(" Packages Delivered: {} ", table.goals_reached()));
+        s.push_str(&format!("Falls Left: {}", table.max_falls() - table.get_falls()));
         
-        // print distance traveled at top of the screen
-        // TODO scoring
-        //screen.print(0, 
-        //             height as i32 - 1,
-        //             &s);
+        screen.print(0, 
+                     height as i32 - 1,
+                     &s);
 
         screen
     }
@@ -138,11 +141,25 @@ impl GameViewer {
 
                 screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
 
+                for goal in table.get_goals() {
+                    if x == goal.0 && y == goal.1 {
+                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Red));
+                        break;
+                    }
+                }
+
                 match obstacle_type {
                     ObstacleType::Pit => {},
                     _ => {
                             if x == player.x() && y == player.y() {
-                                screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
+                                match player.recent_event {
+                                    PlayerEvent::FallOver =>  {
+                                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::Red));
+                                    },
+                                    _ => {
+                                        screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
+                                    }
+                                }
                             }
                     }
                 }
@@ -163,16 +180,34 @@ impl GameViewer {
     // Balance vector, and their closeness to falling over (the nearness of the indicator to the border)
     pub fn draw_balance(&self, player: &Player, fallover_threshold: f32, size: u32) -> Screen {
         // create empty square
-        let mut screen = Screen::new_fill(size, size, pixel::pxl(' '));
+        let mut screen = Screen::new_fill(size * 2, size, pixel::pxl(' '));
 
         // draw border
-        screen.rect(0, 0, (size as i32) - 1, (size as i32) - 1, pixel::pxl('#'));
+        screen.rect(0, 0, (size as i32 * 2) - 1, (size as i32) - 1, pixel::pxl_fg('#', Color::DarkBlue));
 
         // compute position of balance vector inside the rect
-        let p_x = ((player.balance.0 / fallover_threshold) * (size as f32) ) as i32 + (size as i32 / 2);
-        let p_y = ((player.balance.1 / fallover_threshold) * (size as f32) ) as i32 + (size as i32 / 2);
+        let p_x = (((player.balance.0 / fallover_threshold) * (size as f32 * 2.0) ) as i32 + (size as i32)).clamp(0, size as i32 * 2 - 1);
+        let p_y = (((player.balance.1 / fallover_threshold) * (size as f32) ) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
 
         // indicate balance with this symbol
+        screen.set_pxl(p_x, p_y, pixel::pxl('*'));
+
+        // return the screen so a ConsoleEngine can render it (wherever it wants)
+        screen
+    }
+
+    pub fn draw_speed(&self, player: &Player, max_speed: f32, size: u32) -> Screen {
+        // create empty square
+        let mut screen = Screen::new_fill(size * 2, size, pixel::pxl(' '));
+
+        // draw border
+        screen.rect(0, 0, (size as i32 * 2) - 1, (size as i32) - 1, pixel::pxl_fg('#', Color::Cyan));
+
+        // compute position of speed vector inside the rect
+        let p_x = (((player.speed.0 / max_speed) * (size as f32 * 2.0) ) as i32 + (size as i32)).clamp(0, size as i32 * 2 - 1);
+        let p_y = (((player.speed.1 / max_speed) * (size as f32) ) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
+
+        // indicate speed with this symbol
         screen.set_pxl(p_x, p_y, pixel::pxl('*'));
 
         // return the screen so a ConsoleEngine can render it (wherever it wants)
@@ -189,11 +224,18 @@ impl GameViewer {
         
         while scr_y > 0 && l_index >= 0 {
             screen.print(1, scr_y, &self.message_log[l_index as usize]);
-            scr_y -= 1;
+            scr_y -= 2;
             l_index -= 1; 
         }
 
         screen
+    }
+
+    pub fn add_string(&mut self, s: String) {
+        self.message_log.push(s);
+        if self.message_log.len() > self.log_length {
+            self.message_log.remove(0);
+        }
     }
 
     pub fn add_message(&mut self, table: &CellTable, player: &Player, event: &PlayerEvent) {
@@ -253,7 +295,7 @@ impl GameViewer {
             },
             PlayerEvent::OnRail => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Grinding"),
+                    Obstacle::Platform(_) => message.push_str("Grinding Platform?"),
                     Obstacle::Pit => message.push_str("Game Over"),
                     Obstacle::Rail(_, _) => message.push_str("Grinding"),
                 }
@@ -262,12 +304,58 @@ impl GameViewer {
             PlayerEvent::GameOver => {
                 message.push_str("Game Over");
             }
-        }     
-        
+        }
+
         self.message_log.push(message);
 
         if self.message_log.len() >= self.log_length {
             self.message_log.remove(0);
         }
+        
+        /*
+        let mut message = String::new();
+        let str_x_len = player.speed_x().to_string().chars().count();
+        let str_y_len = player.speed_y().to_string().chars().count(); 
+        if str_x_len < 5 && str_y_len < 5 {
+            message.push_str(&format!("Speed: ({}, {})", player.speed_x().to_string(), player.speed_y().to_string()));
+        }
+        else if str_x_len < 5 && str_y_len >= 5 {
+            message.push_str(&format!("Speed: ({}, {})", player.speed_x().to_string(), &player.speed_y().to_string()[0..4]));
+        }
+        else if str_x_len >= 5 && str_y_len < 5 {
+            message.push_str(&format!("Speed: ({}, {})", &player.speed_x().to_string()[0..4], player.speed_y().to_string()));
+        }
+        else if str_x_len >= 5 && str_y_len >= 5 {
+            message.push_str(&format!("Speed: ({}, {})", &player.speed_x().to_string()[0..4], &player.speed_y().to_string()[0..4]));
+        }
+
+        self.message_log.push(message);
+
+        if self.message_log.len() >= self.log_length {
+            self.message_log.remove(0);
+        }
+
+        let mut message = String::new();
+        let str_x_len = player.balance_x().to_string().chars().count();
+        let str_y_len = player.balance_y().to_string().chars().count(); 
+        if str_x_len < 5 && str_y_len < 5 {
+            message.push_str(&format!("Balance: ({}, {})", player.balance_x().to_string(), player.balance_y().to_string()));
+        }
+        else if str_x_len < 5 && str_y_len >= 5 {
+            message.push_str(&format!("Balance: ({}, {})", player.balance_x().to_string(), &player.balance_y().to_string()[0..4]));
+        }
+        else if str_x_len >= 5 && str_y_len < 5 {
+            message.push_str(&format!("Balance: ({}, {})", &player.balance_x().to_string()[0..4], player.balance_y().to_string()));
+        }
+        else if str_x_len >= 5 && str_y_len >= 5 {
+            message.push_str(&format!("Balance: ({}, {})", &player.balance_x().to_string()[0..4], &player.balance_y().to_string()[0..4]));
+        }
+
+        self.message_log.push(message);
+
+        if self.message_log.len() >= self.log_length {
+            self.message_log.remove(0);
+        }
+        */
     }
 }

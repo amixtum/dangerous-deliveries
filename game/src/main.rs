@@ -4,20 +4,34 @@ use std::env;
 
 use game::Game;
 
-fn main() {
+fn main() -> Result<(), String> {
     env::set_var("RUST_BACKTRACE", "1");
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        panic!("Wrong number of args passed. Expected 3");
+    if args.len() != 8 {
+        return Err(format!("Usage: <binary> <window_width> <window_height> <game_width> <game_height> <phsyics_conf> <lsystem_def> <turtle_conf>"));
     }
-    if let Ok(mut g) = Game::new(80,
-                          20,
-                          30,
-                          80,
-                          80,
-                          &args[1],
-                          &args[2],) {
-        while g.run() {
+
+    if let Ok(window_width) = args[1].parse::<u32>() {
+        if let Ok(window_height) = args[2].parse::<u32>() {
+            if let Ok(game_width) = args[3].parse::<u32>() {
+                if let Ok(game_height) = args[4].parse::<u32>() {
+                    if let Ok(mut g) = Game::new(window_width,
+                                          window_height,
+                                          30,
+                                          game_width,
+                                          game_height,
+                                          &args[5],
+                                          &args[6],
+                                          &args[7],) {
+                        while g.run() {
+                        }
+
+                        return Ok(());
+                    }
+                }
+            }
         }
     }
+
+    Err(String::from("Could not parse args"))
 }
