@@ -25,6 +25,8 @@ fn load_game() -> Result<Game, String> {
     let mut game_width = 80;
     let mut game_height = 20;
     let mut lsystem_path = "";
+    let mut table_path = "";
+    let mut model_path = "";
 
     if let Ok(pr) = project_root::get_project_root() {
         let mut path = String::from("");
@@ -70,31 +72,23 @@ fn load_game() -> Result<Game, String> {
                     else if words[0] == "lsystem" {
                         lsystem_path = &words[1]; 
                     }
+                    else if words[0] == "model" {
+                        model_path = &words[1]; 
+                    }
+                    else if words[0] == "table" {
+                        table_path = &words[1]; 
+                    }
                 }
             }
-            if lsystem_path.chars().count() <= 0 {
-                if let Ok(g) = Game::new(window_width,
-                                         window_height,
-                                         30,
-                                         game_width,
-                                         game_height,
-                                         &format!("{}/config/{}", path, "model.txt"),
-                                         &format!("{}/config/{}", path, "lsystem1.txt"),
-                                         &format!("{}/config/{}", path, "table.txt")) {
-                    return Ok(g);
-                }
-            }
-            else {
-                if let Ok(g) = Game::new(window_width,
-                                         window_height,
-                                         30,
-                                         game_width,
-                                         game_height,
-                                         &format!("{}/config/{}", path, "model.txt"),
-                                         &format!("{}/config/{}", path, lsystem_path),
-                                         &format!("{}/config/{}", path, "table.txt")) {
-                    return Ok(g);
-                }
+            if let Ok(g) = Game::new(window_width,
+                                     window_height,
+                                     30,
+                                     game_width,
+                                     game_height,
+                                     &format!("{}/config/{}", path, model_path),
+                                     &format!("{}/config/{}", path, lsystem_path),
+                                     &format!("{}/config/{}", path, table_path)) {
+                return Ok(g);
             }
         } 
     }

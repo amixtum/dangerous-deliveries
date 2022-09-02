@@ -290,11 +290,12 @@ impl CellTable {
                     else if self.turtles[turtle_index].position.0 as usize >= self.width {
                         self.turtles[turtle_index].direction.0 = -1;
                     }
-                    else if self.turtles[turtle_index].position.1 < 0 {
+
+                    if self.turtles[turtle_index].position.1 < 0 {
                         self.turtles[turtle_index].direction.1 = 1;
                     }
                     else if self.turtles[turtle_index].position.1 as usize >= self.height {
-                        self.turtles[turtle_index].direction.0 = -1;
+                        self.turtles[turtle_index].direction.1 = -1;
                     }
 
                     self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32 - 1);
