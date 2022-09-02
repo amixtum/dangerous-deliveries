@@ -423,6 +423,20 @@ impl GameViewer {
             col += 1;
         }
 
+        screen.print_fbg(0, sc_y, "Color Coding", Color::Yellow, Color::Black);
+
+        sc_y += 1;
+
+        screen.print_fbg(0, sc_y, "Not Traversable", Color::Green, Color::Black);
+
+        sc_y += 1;
+
+        screen.print_fbg(0, sc_y, "Down one level", Color::Cyan, Color::Black);
+
+        sc_y += 1;
+        
+        screen.print_fbg(0, sc_y, "Up one level", Color::Magenta, Color::Black);
+
         screen
     }
 
