@@ -40,7 +40,7 @@ Otherwise install Rust first
 
 The config directory contains all data files necessary to compute the game
 
-If you would like to add an lsystem, create a new file (adhering to the format in the existing lsystem files) in the config directory and set:
+If you would like to add an [lsystem](https://en.wikipedia.org/wiki/L-system), create a new file (adhering to the format in the existing lsystem files) in the config directory and set:
 
     lsystem <filename>
 
