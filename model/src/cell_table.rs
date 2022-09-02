@@ -132,6 +132,10 @@ impl CellTable {
         self.max_falls
     }
 
+    pub fn goals_left(&self) -> u32 {
+        self.n_goals - self.goals_reached()
+    }
+
     pub fn regen_table(&mut self) {
          for x in 0..self.width {
             for y in 0..self.height {
@@ -143,12 +147,25 @@ impl CellTable {
         self.saved_positions.clear();
 
         for _ in 0..self.n_turtles {
-            let p_x = rand::thread_rng().gen_range(0..self.width);
-            let p_y = rand::thread_rng().gen_range(0..self.height);
+            let p_x = rand::thread_rng().gen_range(0..self.width) as i32;
+            let p_y = rand::thread_rng().gen_range(0..self.height) as i32;
             let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
-            let mut d_x: i32 = rand::thread_rng().gen_range(-1..=1);
-            let mut d_y: i32 = rand::thread_rng().gen_range(-1..=1);
-            while d_x == 0 && d_x == d_y {
+            let mut d_x: i32;
+            let mut d_y: i32;
+            if p_x - self.width as i32 / 2 > 0 {
+                d_x = -1;
+            } 
+            else {
+                d_x = 1;
+            }
+
+            if p_x - self.height as i32 / 2 > 0 {
+                d_y = -1;
+            }
+            else {
+                d_y = 1;
+            }
+            while d_x == 0 && d_y == 0 {
                 d_x = rand::thread_rng().gen_range(-1..=1);
                 d_y = rand::thread_rng().gen_range(-1..=1);
             }
@@ -268,11 +285,28 @@ impl CellTable {
                     self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
                     self.turtles[turtle_index].position.2 += self.turtles[turtle_index].direction.2;
 
+                    if self.turtles[turtle_index].position.0 < 0 {
+                        self.turtles[turtle_index].direction.0 = 1;
+                    }
+                    else if self.turtles[turtle_index].position.0 as usize >= self.width {
+                        self.turtles[turtle_index].direction.0 = -1;
+                    }
+                    else if self.turtles[turtle_index].position.1 < 0 {
+                        self.turtles[turtle_index].direction.1 = 1;
+                    }
+                    else if self.turtles[turtle_index].position.1 as usize >= self.height {
+                        self.turtles[turtle_index].direction.0 = -1;
+                    }
+
                     self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32 - 1);
                     self.turtles[turtle_index].position.1 = self.turtles[turtle_index].position.1.clamp(0, self.height as i32 - 1);
                     self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(-1, 1);
                 }
                 Alphabet::Left => {
+                    let direction = vec_ops::rotate_left((self.turtles[turtle_index].direction.0, self.turtles[turtle_index].direction.1));
+                    self.turtles[turtle_index].direction.0 = direction.0;
+                    self.turtles[turtle_index].direction.1 = direction.1;
+                    /*
                     if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == 0 {
                         self.turtles[turtle_index].direction.0 = 1;
                         self.turtles[turtle_index].direction.1 = -1;
@@ -305,8 +339,13 @@ impl CellTable {
                         self.turtles[turtle_index].direction.0 = -1;
                         self.turtles[turtle_index].direction.1 = -1;
                     }
+                    */
                 }
                 Alphabet::Right => {
+                    let direction = vec_ops::rotate_right((self.turtles[turtle_index].direction.0, self.turtles[turtle_index].direction.1));
+                    self.turtles[turtle_index].direction.0 = direction.0;
+                    self.turtles[turtle_index].direction.1 = direction.1;
+                    /*
                      if self.turtles[turtle_index].direction.0 == 1 && self.turtles[turtle_index].direction.1 == 0 {
                         self.turtles[turtle_index].direction.0 = 1;
                         self.turtles[turtle_index].direction.1 = 1;
@@ -339,6 +378,7 @@ impl CellTable {
                         self.turtles[turtle_index].direction.0 = 1;
                         self.turtles[turtle_index].direction.1 = -1;
                     }                   
+                    */
                 }
                 Alphabet::Up => {
                     self.turtles[turtle_index].direction.2 += 1;
@@ -716,7 +756,7 @@ impl CellTable {
                             let result = self.compute_onrail(player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
                             clone = result.0;
                             next_pos = result.1;
-                            p_event = PlayerEvent::OnRail;
+                            p_event = PlayerEvent::OffRail;
                         } 
                         else {
                             next_pos = self.compute_continue(player);

@@ -5,7 +5,6 @@ use std::collections::{hash_map, HashMap};
 use model::cell_table::CellTable;
 use model::player::Player;
 use model::obstacle::Obstacle;
-use model::traversability::Traversability;
 
 pub struct LookMode {
     key_map: HashMap<KeyCode, (i32, i32)>,
@@ -40,6 +39,9 @@ impl LookMode {
 
         // down right
         lm.key_map.insert(KeyCode::Char('n'), (1, 1));
+
+        // here
+        lm.key_map.insert(KeyCode::Char('.'), (0, 0));
 
         lm
     }

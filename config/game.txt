@@ -1,0 +1,4 @@
+window_width 80
+window_height 20
+game_width 80
+game_height 20

@@ -69,7 +69,7 @@ impl Game {
             self.engine.draw();
         }
 
-        if self.engine.is_key_pressed(KeyCode::Char('q')) {
+        if self.engine.is_key_pressed(KeyCode::Esc) {
             return false;
         }
 
@@ -83,7 +83,7 @@ impl Game {
             self.redraw = true;
             self.lookmode_on = true; 
         }
-        else if self.engine.is_key_pressed(KeyCode::Char('r')) {
+        else if self.engine.is_key_pressed(KeyCode::Enter) {
             self.table.regen_table();
             self.player = self.table.reset_player(&self.player);
             self.redraw = true;

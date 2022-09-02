@@ -98,8 +98,8 @@ impl GameViewer {
 
         let mut s = String::from("Time Traveled: ");
         s.push_str(&(player.time.round()).to_string());
-        s.push_str(&format!(" Packages Delivered: {} ", table.goals_reached()));
-        s.push_str(&format!("Falls Left: {}", table.max_falls() - table.get_falls()));
+        s.push_str(&format!(", Deliveries Left: {}, ", table.goals_left()));
+        s.push_str(&format!("Falls Before Game Over: {}", table.max_falls() - table.get_falls()));
         
         screen.print(0, 
                      height as i32 - 1,

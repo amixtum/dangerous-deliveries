@@ -79,16 +79,20 @@ pub fn rotate_left((x, y): (i32, i32)) -> (i32, i32) {
     let angle = PI / 4.0;
     let x = x as f32;
     let y = y as f32;
-    let new_x = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
-    let new_y = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
-    (new_x, new_y) 
+    let new_x = (x * angle.cos()) - (y * angle.sin());
+    let new_y = (x * angle.sin()) + (y * angle.cos());
+    let ix = (new_x.round()) as i32;
+    let iy = (new_y.round()) as i32;
+    (iy, ix) 
 }
 
 pub fn rotate_right((x, y): (i32, i32)) -> (i32, i32) {
     let angle = 2.0 * PI - (PI / 4.0);
     let x = x as f32;
     let y = y as f32;
-    let new_x = ((x * angle.cos()) - (y * angle.sin()).round()) as i32;
-    let new_y = ((x * angle.sin()) + (y * angle.cos()).round()) as i32;
-    (new_x, new_y) 
+    let new_x = (x * angle.cos()) - (y * angle.sin());
+    let new_y = (x * angle.sin()) + (y * angle.cos());
+    let ix = (new_x.round()) as i32;
+    let iy = (new_y.round()) as i32;
+    (iy, ix) 
 }
