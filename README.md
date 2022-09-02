@@ -28,4 +28,6 @@ How to play:
 
 * Restart = Enter
 
+* Exit = Esc
+
 Don't fall over (or into a bottomless pit of spikes)!
