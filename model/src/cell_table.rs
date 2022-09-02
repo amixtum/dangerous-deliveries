@@ -618,8 +618,9 @@ impl CellTable {
                 // compute speed
                 clone.speed.0 = clone.speed.0 * speed_damp + inst_x;
                 clone.speed.1 = clone.speed.1 * speed_damp + inst_y;
+
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
-                clone.speed.1 = clone.speed.0.clamp(-max_speed, max_speed);
+                clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
 
                 // compute balance
                 clone.balance.0 = clone.balance.0 * balance_damp + 
