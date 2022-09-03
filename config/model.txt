@@ -7,7 +7,7 @@ balance_damp 0.7
 # amount of the orthogonal components of 
 # the player's last speed with respect to the player's current
 # speed to add to the player's balance vector
-turn_factor 0.2
+turn_factor 0.4
 
 # amount of orthogonal components of 
 # the player's last speed with respect to the direction

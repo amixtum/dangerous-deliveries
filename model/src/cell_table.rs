@@ -505,7 +505,6 @@ impl CellTable {
                         balance_damp: f32, 
                         turn_fact: f32,
                         onrail_balance_fact: f32,
-                        offrail_balance_fact: f32,
                         up_speed_fact: f32,
                         down_speed_fact: f32,
                         max_speed: f32,
@@ -522,7 +521,7 @@ impl CellTable {
                                                             turn_fact,);
 
         // compute position and updated player fields
-        let result = self.compute_next_position(&player, (inst_x, inst_y), onrail_balance_fact, offrail_balance_fact);
+        let result = self.compute_next_position(&player, (inst_x, inst_y), onrail_balance_fact);
         player = result.0;
         p_event = result.1;
         let next_pos = result.2;
@@ -684,7 +683,7 @@ impl CellTable {
     // Note: Must call compute_intitial_speed_balance first in order to update speed and balance
     // values, otherwise, this will compute the next position without taking into account user
     // input
-    fn compute_next_position(&self, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32, offrail_balance_fact: f32) -> (Player, PlayerEvent, (i32, i32, i32)) {
+    fn compute_next_position(&self, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32) -> (Player, PlayerEvent, (i32, i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = self.get_obstacle(player.x(), player.y());
         let units = vec_ops::discrete_jmp((inst_x, inst_y));

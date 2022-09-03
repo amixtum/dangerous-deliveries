@@ -1,18 +1,18 @@
 # number of goals to be reached
-n_goals 16
+n_goals 4
 
 # number of falls before game over
-max_falls 16
+max_falls 4
 
 # number of times we iterate the lsystem
 # WARNING: Numbers >= 7 will take some time
-lsystem_update 4
+lsystem_update 3
 
 # number of lsystem turtles to make
-n_turtles 2
+n_turtles 1
 
 # probability the turtle generates a pit when executing Place
-pit_gen_p 0.0
+pit_gen_p 0.1
 
 # probability the turtle generates a rail
 rail_gen_p 1.0

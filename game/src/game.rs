@@ -23,6 +23,7 @@ pub struct Game {
     lookmode_on: bool,
     helpscreen_on: bool,
     gameover: bool,
+    youwin: bool,
     gameover_done: bool,
 }
 
@@ -50,6 +51,7 @@ impl Game {
                 lookmode_on: false,
                 helpscreen_on: false,
                 gameover: false,
+                youwin: false,
                 gameover_done: false,
             });
         }
@@ -147,10 +149,9 @@ impl Game {
                         }
 
                         if self.table.get_goals().len() <= 0 {
-                            self.viewer.clear_log();
-                            self.viewer.add_string(String::from("You Win!"));
-                            self.player = self.table.reset_player(&self.player);
-                            self.table.regen_table();
+                            self.gameover = true;
+                            self.youwin = true;
+                            self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
                         }
 
                         self.redraw = true;
@@ -165,8 +166,12 @@ impl Game {
         let screen: Screen;
 
         if self.gameover {
-            screen = self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
-
+            if self.youwin {
+                screen = self.viewer.win_screen(&self.player, self.window_width, self.window_height);
+            }
+            else {
+                screen = self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
+            }
         }
         else if self.helpscreen_on {
             screen = self.viewer.help_screen(self.window_width, self.window_height);
