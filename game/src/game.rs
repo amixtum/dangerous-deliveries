@@ -10,7 +10,7 @@ use controller::look_mode::LookMode;
 pub struct Game {
     table: CellTable,
     viewer: GameViewer,
-    control: PlayerController,
+    player_control: PlayerController,
     lookmode: LookMode,
     player: Player,
 
@@ -40,7 +40,7 @@ impl Game {
             return Ok(Game {
                 table: CellTable::new(table_width as usize, table_height as usize, lsystem_file, turtle_file),
                 viewer: GameViewer::new(64), // setting log length here, will specialize if needed
-                control: PlayerController::new(conf_file),
+                player_control: PlayerController::new(conf_file),
                 lookmode: LookMode::new(),
                 player: Player::new(table_width as i32 / 2, table_height as i32 / 2, 0),
                 engine,
@@ -89,13 +89,15 @@ impl Game {
         if self.gameover {
             if !self.gameover_done {
                 self.table.regen_table();
-                self.player = self.table.reset_player(&self.player);
+                self.player = PlayerController::reset_player(&self.table, &self.player);
                 self.viewer.clear_log();
                 self.gameover_done = true;
             }
 
             if self.engine.is_key_pressed(KeyCode::Char('r')) {
                 self.gameover = false;
+                self.gameover_done = false;
+                self.youwin = false;
                 self.redraw = true;
             }
         } 
@@ -107,7 +109,7 @@ impl Game {
             }
             else if self.engine.is_key_pressed(KeyCode::Enter) {
                 self.table.regen_table();
-                self.player = self.table.reset_player(&self.player);
+                self.player = PlayerController::reset_player(&self.table, &self.player);
                 self.viewer.clear_log();
                 self.redraw = true;
             }
@@ -115,6 +117,7 @@ impl Game {
                 self.helpscreen_on = !self.helpscreen_on;
                 self.redraw = true;
             }
+
             if self.lookmode_on {
                 for keycode in self.lookmode.get_keys()  {
                      if self.engine.is_key_pressed(*keycode) {
@@ -127,13 +130,13 @@ impl Game {
                 }
             }
             else {
-                for keycode in self.control.get_keys() {
+                for keycode in self.player_control.get_keys() {
                     if self.engine.is_key_pressed(*keycode) {
-                        let result = self.control.move_player(&self.table, &self.player, *keycode);
+                        let result = self.player_control.move_player(&self.table, &self.player, *keycode);
 
-                        self.viewer.add_message(&self.table, &result.0, &result.1);
+                        self.viewer.add_message(&self.table, &result, &result.recent_event);
 
-                        self.player = result.0;
+                        self.player = result;
 
                         if self.table.remove_goal_if_reached(&self.player) {
                             self.viewer.add_string(String::from("Delivered"));
@@ -145,6 +148,7 @@ impl Game {
                             self.table.inc_fallover();
                             if self.table.check_falls() {
                                 self.gameover = true;
+                                self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
                             }
                         }
 
@@ -155,11 +159,12 @@ impl Game {
                         }
 
                         self.redraw = true;
+
+                        break;
                     }
                 }
             }
         }
-
     }
 
     pub fn draw(&mut self) {
@@ -179,8 +184,8 @@ impl Game {
         else {
             screen = self.viewer.draw_layout(&self.table, 
                                              &self.player, 
-                                             self.control.max_speed, 
-                                             self.control.fallover_threshold, 
+                                             self.player_control.max_speed, 
+                                             self.player_control.fallover_threshold, 
                                              self.window_width, 
                                              self.window_height);
         }

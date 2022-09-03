@@ -1,3 +1,18 @@
 Menus
-Game Over Screen
-You Win Screen
+  Main Menu
+    map gen options
+      type
+        chooses an lsystem to use
+        options
+          a list of files matching lsystem*.txt in config directory
+      size
+        sets the size of the game world
+        options
+          small medium large very large
+        
+    difficulty levels
+      sets model parameters
+      options
+        easy
+        medium
+        hard

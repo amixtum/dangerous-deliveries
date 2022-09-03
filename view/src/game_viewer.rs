@@ -80,7 +80,7 @@ impl GameViewer {
         let r_panel_width = self.max_message_length as i32 + 2;
         let r_panel_x = width as i32 - r_panel_width - 1;
         let msg_log_tl_y = balance_size;
-        let msg_log_height = height as i32 - msg_log_tl_y - 1;
+        let msg_log_height = height as i32 - msg_log_tl_y - 2;
         let table_view_width = width as i32 - r_panel_width;
         let table_view_height = height as i32;
 
@@ -92,9 +92,11 @@ impl GameViewer {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
         screen.print_screen(0, 0, &table_view);
-        screen.print_screen(speed_x as i32, 0, &speed_view);
-        screen.print_screen(balance_x as i32, 0, &balance_view);
-        screen.print_screen(r_panel_x as i32, msg_log_tl_y as i32, &msg_log_view);
+        screen.print_fbg(speed_x as i32, 0, "Speed", Color::Cyan, Color::Black);
+        screen.print_screen(speed_x as i32, 1, &speed_view);
+        screen.print_fbg(balance_x as i32, 0, "Balance", Color::Blue, Color::Black);
+        screen.print_screen(balance_x as i32, 1, &balance_view);
+        screen.print_screen(r_panel_x as i32, msg_log_tl_y as i32 + 1, &msg_log_view);
 
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
@@ -124,8 +126,8 @@ impl GameViewer {
         let mut sc_x = 0;
         let mut sc_y = 0;
 
-        for x in tl_x..br_x {
-            for y in tl_y..br_y {
+        for x in tl_x..=br_x {
+            for y in tl_y..=br_y {
                 let obstacle_type = match table.get_obstacle(x, y) {
                     Obstacle::Platform(_) => ObstacleType::Platform,
                     Obstacle::Pit => ObstacleType::Pit,
@@ -193,7 +195,7 @@ impl GameViewer {
         screen.rect(0, 0, size as i32 * 2, (size as i32) - 1, pixel::pxl_fg('#', color));
 
         // compute position of vector inside the rect
-        let p_x = (((v.0 / max) * (size as f32 * 2.0)) as i32 + (size as i32)).clamp(0, size as i32 * 2 - 1);
+        let p_x = (((v.0 / max) * (size as f32 * 2.0)) as i32 + (size as i32)).clamp(0, size as i32 * 2);
         let p_y = (((v.1 / max) * (size as f32)) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
@@ -212,8 +214,13 @@ impl GameViewer {
         let mut scr_y = height as i32 - 2;
         
         while scr_y > 0 && l_index >= 0 {
-            screen.print(1, scr_y, &self.message_log[l_index as usize]);
-            scr_y -= 2;
+            if scr_y == height as i32 - 2 {
+                screen.print(1, scr_y, &self.message_log[l_index as usize]);
+            }
+            else {
+                screen.print_fbg(1, scr_y, &self.message_log[l_index as usize], Color::DarkGrey, Color::Black);
+            }
+            scr_y -= 1;
             l_index -= 1; 
         }
 
@@ -300,52 +307,6 @@ impl GameViewer {
         if self.message_log.len() >= self.log_length {
             self.message_log.remove(0);
         }
-        
-        /*
-        let mut message = String::new();
-        let str_x_len = player.speed_x().to_string().chars().count();
-        let str_y_len = player.speed_y().to_string().chars().count(); 
-        if str_x_len < 5 && str_y_len < 5 {
-            message.push_str(&format!("Speed: ({}, {})", player.speed_x().to_string(), player.speed_y().to_string()));
-        }
-        else if str_x_len < 5 && str_y_len >= 5 {
-            message.push_str(&format!("Speed: ({}, {})", player.speed_x().to_string(), &player.speed_y().to_string()[0..4]));
-        }
-        else if str_x_len >= 5 && str_y_len < 5 {
-            message.push_str(&format!("Speed: ({}, {})", &player.speed_x().to_string()[0..4], player.speed_y().to_string()));
-        }
-        else if str_x_len >= 5 && str_y_len >= 5 {
-            message.push_str(&format!("Speed: ({}, {})", &player.speed_x().to_string()[0..4], &player.speed_y().to_string()[0..4]));
-        }
-
-        self.message_log.push(message);
-
-        if self.message_log.len() >= self.log_length {
-            self.message_log.remove(0);
-        }
-
-        let mut message = String::new();
-        let str_x_len = player.balance_x().to_string().chars().count();
-        let str_y_len = player.balance_y().to_string().chars().count(); 
-        if str_x_len < 5 && str_y_len < 5 {
-            message.push_str(&format!("Balance: ({}, {})", player.balance_x().to_string(), player.balance_y().to_string()));
-        }
-        else if str_x_len < 5 && str_y_len >= 5 {
-            message.push_str(&format!("Balance: ({}, {})", player.balance_x().to_string(), &player.balance_y().to_string()[0..4]));
-        }
-        else if str_x_len >= 5 && str_y_len < 5 {
-            message.push_str(&format!("Balance: ({}, {})", &player.balance_x().to_string()[0..4], player.balance_y().to_string()));
-        }
-        else if str_x_len >= 5 && str_y_len >= 5 {
-            message.push_str(&format!("Balance: ({}, {})", &player.balance_x().to_string()[0..4], &player.balance_y().to_string()[0..4]));
-        }
-
-        self.message_log.push(message);
-
-        if self.message_log.len() >= self.log_length {
-            self.message_log.remove(0);
-        }
-        */
     }
 
     pub fn game_over_screen(&self, table: &CellTable, player: &Player, width: u32, height: u32) -> Screen {
