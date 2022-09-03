@@ -631,15 +631,18 @@ impl CellTable {
             },
             Obstacle::Rail(_, (x_dir, y_dir)) => {
                 // compute speed
-                clone.speed.0 = x_dir * vec_ops::magnitude(clone.speed) * speed_damp;
-                clone.speed.1 = y_dir * vec_ops::magnitude(clone.speed) * speed_damp;
+                clone.speed.0 = clone.speed.0 * speed_damp + x_dir + inst_x;
+                clone.speed.1 = clone.speed.1 * speed_damp + y_dir + inst_y;
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
 
                 // compute balance
-                clone.balance.0 = clone.balance.0 * balance_damp;
-                clone.balance.1 = clone.balance.1 * balance_damp;
+                clone.balance.0 = clone.balance.0 * balance_damp + 
+                                        (clone.speed.0 - last_speed.0) * turn_fact;
+
+                clone.balance.1 = clone.balance.1 * balance_damp + 
+                                        (clone.speed.1 - last_speed.1) * turn_fact;
             }
             _ => { }
         }
@@ -657,8 +660,8 @@ impl CellTable {
 
         let mut clone = Player::clone(player);
 
-        clone.balance.0 += (clone.speed.0 - x_dir) * onrail_balance_fact;
-        clone.balance.1 += (clone.speed.1 - y_dir) * onrail_balance_fact;
+        clone.balance.0 += (clone.speed.0 - x_dir * clone.speed.0) * onrail_balance_fact;
+        clone.balance.1 += (clone.speed.1 - y_dir * clone.speed.1) * onrail_balance_fact;
 
         (clone, next_pos)
     }
@@ -667,11 +670,11 @@ impl CellTable {
         let mut next_pos = player.position;
         let temp = player.speed.0;
         next_pos.0 = (next_pos.0 + temp as i32).clamp(next_pos.0 - 1, next_pos.0 + 1);
-        next_pos.0 = next_pos.0.clamp(0, self.width as i32);
+        next_pos.0 = next_pos.0.clamp(0, self.width as i32 - 1);
 
         let temp = player.speed.1;
         next_pos.1 = (next_pos.1 + temp as i32).clamp(next_pos.1 - 1, next_pos.1 + 1);
-        next_pos.1 = next_pos.1.clamp(0, self.height as i32);
+        next_pos.1 = next_pos.1.clamp(0, self.height as i32 - 1);
 
         next_pos.2 = self.get_height(next_pos.0, next_pos.1);
 
@@ -702,51 +705,40 @@ impl CellTable {
 
         // compute position
         let obs_at_next = self.get_obstacle(player.x() + unit_x, player.y() + unit_y);
-        match obs_at_next {
-            Obstacle::Rail(height, (x_dir, y_dir)) => {
-                match last_obstacle {
-                    Obstacle::Rail(last_height, (last_x_dir, last_y_dir))=> {
-                        let last_units = util::vec_ops::discrete_jmp((last_x_dir, last_y_dir));
-                        let cur_units = util::vec_ops::discrete_jmp((x_dir, y_dir));
-                        if height > last_height {
+        match last_obstacle {
+            Obstacle::Rail(last_height, _) => {
+                match obs_at_next {
+                    Obstacle::Rail(height, _)=> {
+                        if (height - last_height).abs() > 1 {
                             clone = self.fallover(player);
                             p_event = PlayerEvent::FallOver;
                         }
-                        else if cur_units.0 != last_units.0 || cur_units.1 != last_units.1 {
-                            let result = self.compute_onrail(player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
-                            clone = result.0;
-                            next_pos = result.1;
-                            clone.balance.0 += inst_x * offrail_balance_fact;
-                            clone.balance.1 += inst_y * offrail_balance_fact;
-                            p_event = PlayerEvent::OffRail;
-                        } 
                         else {
                             next_pos = self.compute_continue(player);
+                            p_event = PlayerEvent::OffRail;
                         }
                     },
                     _ => {
+                        next_pos = self.compute_continue(player);
+                        p_event = PlayerEvent::OnRail;                       
+                    },
+                }
+            },
+            Obstacle::Platform(_) => {
+                match obs_at_next {
+                    Obstacle::Rail(_, (x_dir, y_dir)) => {
                         let result = self.compute_onrail(player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
                         clone = result.0;
                         next_pos = result.1;
                         p_event = PlayerEvent::OnRail;
                     },
-                }
-            },
-            _ => {
-                match last_obstacle {
-                    Obstacle::Rail(height, _) => {
-                        next_pos = (player.x() + unit_x, 
-                                    player.y() + unit_y, 
-                                    height);
-                        clone.balance.0 += inst_x * offrail_balance_fact;
-                        clone.balance.1 += inst_y * offrail_balance_fact;
-                        p_event = PlayerEvent::OffRail;
-                    },
                     _ => {
                         next_pos = self.compute_continue(player);
                     },
                 }
-            }
+            },
+
+            _ => {},
         }
 
         if next_pos.0 == player.x() && next_pos.1 == player.y() {
@@ -792,10 +784,12 @@ impl CellTable {
                 // move player to next position
                 clone.position = next_pos;
             } else {
+                /*
                 if let Obstacle::Rail(_, _) = self.get_obstacle(clone.x(), clone.y()) {
                     clone = self.fallover(player);
                     p_event = PlayerEvent::FallOver;
                 }
+               */ 
             }
         // fallover if we cannot traverse to next_pos
         // and do not update the player's position

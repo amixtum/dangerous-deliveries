@@ -7,13 +7,13 @@ balance_damp 0.7
 # amount of the orthogonal components of 
 # the player's last speed with respect to the player's current
 # speed to add to the player's balance vector
-turn_factor 0.55
+turn_factor 0.2
 
 # amount of orthogonal components of 
 # the player's last speed with respect to the direction
 # of the rail to add to the player's balance
 # vector
-onrail_balance_factor 0.1
+onrail_balance_factor 0.2
 
 # amount of orthogonal compoents
 # of the player's current speed with respect to the
@@ -28,7 +28,7 @@ up_speed_factor 0.5
 down_speed_factor 1.5
 
 # the player's speed will not exceed this value
-max_speed 10
+max_speed 5
 
 # if any component of the player's balance vector
 # is above this value, they fall over

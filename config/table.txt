@@ -6,13 +6,13 @@ max_falls 16
 
 # number of times we iterate the lsystem
 # WARNING: Numbers >= 7 will take some time
-lsystem_update 3
+lsystem_update 4
 
 # number of lsystem turtles to make
-n_turtles 3
+n_turtles 2
 
 # probability the turtle generates a pit when executing Place
-pit_gen_p 0.2
+pit_gen_p 0.0
 
 # probability the turtle generates a rail
 rail_gen_p 1.0
