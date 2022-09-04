@@ -5,14 +5,32 @@ Menus
         chooses an lsystem to use
         options
           a list of files matching lsystem*.txt in config directory
+      parameters
+        changes the way the lsystem is used in mapgen 
+        options
+          iterations
+            an integer
+          turtles
+            an integer
+
       size
         sets the size of the game world
+        warns the player that they must update their lsystem parameters as well
+        proportionally sets the number of goals
         options
-          small medium large very large
+          small 
+            32, 16 
+          medium 
+            64, 32
+          large 
+            128, 64
+          very large
+            256, 128 
         
     difficulty levels
-      sets model parameters
+      chooses which model file to load 
       options
         easy
         medium
         hard
+

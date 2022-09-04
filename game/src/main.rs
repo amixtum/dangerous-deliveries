@@ -1,4 +1,5 @@
 pub mod game;
+pub mod state;
 
 use std::env;
 use std::fs;
@@ -16,7 +17,7 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
 
-    Err(String::from("Could not parse args"))
+    Err(String::from("Could not load game"))
 }
 
 fn load_game() -> Result<Game, String> {

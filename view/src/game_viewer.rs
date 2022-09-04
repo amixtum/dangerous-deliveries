@@ -7,6 +7,7 @@ use console_engine::{
 use std::collections::HashMap;
 
 use util::vec_ops;
+use util::files;
 
 use model::cell_table::CellTable;
 use model::obstacle::Obstacle;
@@ -420,6 +421,27 @@ impl GameViewer {
         sc_y += 1;
         
         screen.print_fbg(0, sc_y, "Up one level", Color::Magenta, Color::Black);
+
+        screen
+    }
+
+    // TODO
+    //pub fn main_menu(&self, )
+
+    pub fn file_chooser(&self, width: u32, height: u32, starts_with: &str) -> Screen {
+        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
+
+        let files = files::get_config_filenames(starts_with);
+
+        let mut sc_y = 0;
+        let mut index = 0;
+        for filename in files {
+            let number = format!("{} : ", index);
+            screen.print(0, sc_y, &number);
+            screen.print(number.chars().count() as i32, sc_y, &filename);
+            sc_y += 1;
+            index += 1;
+        }
 
         screen
     }

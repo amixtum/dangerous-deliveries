@@ -1,5 +1,6 @@
 use console_engine::{ConsoleEngine, screen::Screen, KeyCode};
 
+use super::state::GameState;
 use model::cell_table::CellTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -25,6 +26,8 @@ pub struct Game {
     gameover: bool,
     youwin: bool,
     gameover_done: bool,
+
+    state: GameState,
 }
 
 impl Game {
@@ -38,21 +41,28 @@ impl Game {
                turtle_file: &str,) -> Result<Self, String> {
         if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
             return Ok(Game {
-                table: CellTable::new(table_width as usize, table_height as usize, lsystem_file, turtle_file),
+                table: CellTable::new(table_width, table_height, lsystem_file, turtle_file),
                 viewer: GameViewer::new(64), // setting log length here, will specialize if needed
                 player_control: PlayerController::new(conf_file),
                 lookmode: LookMode::new(),
                 player: Player::new(table_width as i32 / 2, table_height as i32 / 2, 0),
+
                 engine,
                 window_width,
                 window_height,
+
                 redraw: true,
                 has_drawn: false,
+
                 lookmode_on: false,
+
                 helpscreen_on: false,
+
                 gameover: false,
                 youwin: false,
                 gameover_done: false,
+
+                state: GameState::MainMenu,
             });
         }
         Err(format!("Could not create window of width {}, height {}, at target_fps {}", window_width, window_height, target_fps))
@@ -62,6 +72,7 @@ impl Game {
 impl Game {
     pub fn run(&mut self) -> bool {
         self.engine.wait_frame();
+
         self.handle_input(); 
 
         if !self.has_drawn {
@@ -190,5 +201,32 @@ impl Game {
                                              self.window_height);
         }
         self.engine.print_screen(0, 0, &screen);
+    }
+
+    fn get_screen(&self) -> Screen {
+        match self.state {
+            // GameState::MainMenu => { // TODO },
+            // GameState::SizeChooser => { // TODO },
+            GameState::LSystemChooser => {
+                return self.viewer.file_chooser(self.window_width, self.window_height, "lsystem");
+            }
+            GameState::Help => {
+                return self.viewer.help_screen(self.window_width, self.window_height);
+            },
+            GameState::GameOver => {
+                return self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
+            },
+            GameState::YouWin => {
+                return self.viewer.win_screen(&self.player, self.window_width, self.window_height);
+            },
+            GameState::Playing | _ => {
+                return self.viewer.draw_layout(&self.table, 
+                                               &self.player, 
+                                               self.player_control.max_speed, 
+                                               self.player_control.fallover_threshold, 
+                                               self.window_width, 
+                                               self.window_height);
+            },
+        }
     }
 }

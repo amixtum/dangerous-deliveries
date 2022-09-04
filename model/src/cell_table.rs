@@ -13,8 +13,8 @@ pub struct CellTable {
     goals: Vec<(i32, i32)>,
     n_goals: u32,
 
-    width: usize,
-    height: usize,
+    width: u32,
+    height: u32,
     table: Vec<Vec<Obstacle>>,
 
     n_falls: u32,
@@ -23,15 +23,13 @@ pub struct CellTable {
     lsystem: LSystem,
     turtles: Vec<Turtle>,
     saved_positions: Vec<Vec<(i32, i32, i32)>>,
-    lsystem_update: u32,
     pit_gen_p: f32,
     rail_gen_p: f32,
     continue_rail: bool,
-    n_turtles: u32,
 }
 
 impl CellTable {
-    pub fn new(width: usize, height: usize, lsystem_file: &str, turtle_file: &str) -> Self {
+    pub fn new(width: u32, height: u32, lsystem_file: &str, turtle_file: &str) -> Self {
         let mut ct = CellTable {
             goals: Vec::new(),
             n_goals: 16,
@@ -46,24 +44,21 @@ impl CellTable {
             lsystem: LSystem::from_file(lsystem_file),
             turtles: Vec::new(),
             saved_positions: Vec::new(),
-            lsystem_update: 8,
             pit_gen_p: 0.1,
             rail_gen_p: 0.2,
             continue_rail: false,
-            n_turtles: 8,
         };
 
         for x in 0..width {
             ct.table.push(Vec::new());
             for _ in 0..height {
-                ct.table[x].push(Obstacle::Platform(0));
+                ct.table[x as usize].push(Obstacle::Platform(0));
             }
         }
 
         ct.properties_from_file(turtle_file);
 
-        ct.lsystem.update_n(ct.lsystem_update);
-
+        ct.lsystem.update_n(ct.lsystem.iterations);
         ct.regen_table();
 
         ct
@@ -84,17 +79,7 @@ impl CellTable {
                 }
 
                 let words: Vec<&str> = line.split_ascii_whitespace().collect(); 
-                if words[0] == "lsystem_update" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.lsystem_update = num; 
-                    }
-                }
-                else if words[0] == "n_turtles" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.n_turtles = num; 
-                    }
-                }
-                else if words[0] == "pit_gen_p" {
+                if words[0] == "pit_gen_p" {
                     if let Ok(num) = words[1].parse::<f32>() {
                         self.pit_gen_p = num; 
                     }
@@ -118,7 +103,11 @@ impl CellTable {
         }
     }
 
-
+    pub fn set_lsystem(&mut self, lsystem: LSystem) {
+        self.lsystem = lsystem;
+        self.lsystem.update_n(self.lsystem.iterations);
+        self.regen_table();
+    }
 
     pub fn inc_fallover(&mut self) {
         self.n_falls += 1;
@@ -144,46 +133,41 @@ impl CellTable {
         self.n_goals - self.goals_reached()
     }
 
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.width = width; 
+        self.height = height;
+        self.regen_table();
+    }
+
     pub fn regen_table(&mut self) {
          for x in 0..self.width {
             for y in 0..self.height {
-                self.table[x][y] = Obstacle::Platform(0);
+                self.table[x as usize][y as usize] = Obstacle::Platform(0);
             }
         }
 
         self.turtles.clear();
         self.saved_positions.clear();
 
-        for _ in 0..self.n_turtles {
-            let p_x = rand::thread_rng().gen_range(1..(self.width - 1)) as i32;
-            let p_y = rand::thread_rng().gen_range(1..(self.height - 1)) as i32;
+        let x_skip = self.width / self.lsystem.turtles;
+        let y_skip = self.height / self.lsystem.turtles; 
+        let mut p_x = 0;
+        let mut p_y = 0;
+        for _ in 0..self.lsystem.turtles {
             let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
-            let mut d_x: i32;
-            let mut d_y: i32;
-            if p_x - self.width as i32 / 2 > 0 {
-                d_x = -1;
-            } 
-            else {
-                d_x = 1;
-            }
 
-            if p_x - self.height as i32 / 2 > 0 {
-                d_y = -1;
-            }
-            else {
-                d_y = 1;
-            }
-            while d_x == 0 && d_y == 0 {
-                d_x = rand::thread_rng().gen_range(-1..=1);
-                d_y = rand::thread_rng().gen_range(-1..=1);
-            }
+            let d_x = rand::thread_rng().gen_range(-1..=1);
+            let d_y = rand::thread_rng().gen_range(-1..=1);
             self.turtles.push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
             self.saved_positions.push(Vec::new());
+
+            p_x += x_skip as i32;
+            p_y += y_skip as i32;
         }
 
         let mut c_idx = 0; 
-        while c_idx < self.lsystem.current.len() {
-            self.compute_turtles(self.lsystem.current[c_idx]);
+        while c_idx < self.lsystem.get_current().len() {
+            self.compute_turtles(self.lsystem.get_current()[c_idx]);
             c_idx += 1;
         }
 
@@ -191,6 +175,7 @@ impl CellTable {
 
         self.regen_goals();
     }
+
     pub fn regen_goals(&mut self) {
         self.goals.clear();
 
@@ -238,11 +223,11 @@ impl CellTable {
         removed
     }
 
-    pub fn width(&self) -> usize {
+    pub fn width(&self) -> u32 {
         self.width
     }
 
-    pub fn height(&self) -> usize {
+    pub fn height(&self) -> u32 {
         self.height
     }
 
@@ -348,50 +333,29 @@ impl CellTable {
             if self.turtles[turtle_index].position.0 < 0 {
                 self.turtles[turtle_index].direction.0 = 1;
             }
-            else if self.turtles[turtle_index].position.0 as usize >= self.width {
+            else if self.turtles[turtle_index].position.0 >= self.width as i32 {
                 self.turtles[turtle_index].direction.0 = -1;
             }
 
             if self.turtles[turtle_index].position.1 < 0 {
                 self.turtles[turtle_index].direction.1 = 1;
             }
-            else if self.turtles[turtle_index].position.1 as usize >= self.height {
+            else if self.turtles[turtle_index].position.1 >= self.height as i32{
                 self.turtles[turtle_index].direction.1 = -1;
             }
 
             self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32 - 1);
             self.turtles[turtle_index].position.1 = self.turtles[turtle_index].position.1.clamp(0, self.height as i32 - 1);
             self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(-1, 1);
-            while self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2 {
-                self.turtles[turtle_index].position.0 += self.turtles[turtle_index].direction.0;
-                self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
-                self.turtles[turtle_index].position.2 += self.turtles[turtle_index].direction.2;
-
-                if self.turtles[turtle_index].position.0 < 0 {
-                    self.turtles[turtle_index].direction.0 = 1;
-                }
-                else if self.turtles[turtle_index].position.0 as usize >= self.width {
-                    self.turtles[turtle_index].direction.0 = -1;
-                }
-
-                if self.turtles[turtle_index].position.1 < 0 {
-                    self.turtles[turtle_index].direction.1 = 1;
-                }
-                else if self.turtles[turtle_index].position.1 as usize >= self.height {
-                    self.turtles[turtle_index].direction.1 = -1;
-                }
-
-                self.turtles[turtle_index].position.0 = self.turtles[turtle_index].position.0.clamp(0, self.width as i32 - 1);
-                self.turtles[turtle_index].position.1 = self.turtles[turtle_index].position.1.clamp(0, self.height as i32 - 1);
-                self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(-1, 1);
-            }       
     }
 
     fn place_turtle(&mut self, turtle_index: usize) {
         if rand::thread_rng().gen_bool(self.pit_gen_p as f64) {
                 self.continue_rail = false;
-                self.table[self.turtles[turtle_index].position.0 as usize]
-                          [self.turtles[turtle_index].position.1 as usize] = Obstacle::Pit;
+                if !(self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2){
+                    self.table[self.turtles[turtle_index].position.0 as usize]
+                              [self.turtles[turtle_index].position.1 as usize] = Obstacle::Pit;
+                }
             }
             else if self.continue_rail {
                 self.table[self.turtles[turtle_index].position.0 as usize]

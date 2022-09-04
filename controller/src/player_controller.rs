@@ -149,6 +149,27 @@ impl PlayerController {
 }
 
 impl PlayerController {
+     pub fn set_model(&mut self,     
+                      speed_damp: f32, 
+                      balance_damp: f32, 
+                      turn_factor: f32,
+                      onrail_balance_factor: f32,
+                      offrail_balance_factor: f32,
+                      up_speed_factor: f32,
+                      down_speed_factor: f32,
+                      max_speed: f32,
+                      fallover_threshold: f32,) {
+        self.speed_damp = speed_damp;
+        self.balance_damp = balance_damp;
+        self.turn_factor = turn_factor;
+        self.onrail_balance_factor = onrail_balance_factor;
+        self.offrail_balance_factor = offrail_balance_factor;
+        self.up_speed_factor = up_speed_factor;
+        self.down_speed_factor = down_speed_factor;
+        self.max_speed = max_speed;
+        self.fallover_threshold = fallover_threshold;
+     }
+
     pub fn get_keys(&self) -> hash_map::Keys<KeyCode, (f32, f32)> {
         self.key_map.keys()
     }

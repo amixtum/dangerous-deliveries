@@ -63,8 +63,11 @@ impl Alphabet {
 }
 
 pub struct LSystem {
-    pub current: Vec<Alphabet>,
+    current: Vec<Alphabet>,
     rules: HashMap<(Alphabet, Alphabet, Alphabet), Vec<Alphabet>>,
+
+    pub iterations: u32,
+    pub turtles: u32,
 }
 
 pub struct Turtle {
@@ -86,6 +89,8 @@ impl LSystem {
         LSystem {
             current: Vec::new(),
             rules: HashMap::new(),
+            iterations: 2,
+            turtles: 1,
         }
     }
 
@@ -101,6 +106,21 @@ impl LSystem {
                     }
                 } else {
                     continue;
+                }
+
+                let words: Vec<&str> = line.split_ascii_whitespace().collect();
+
+                if words[0] == "iterations" {
+                    if let Ok(num) = words[1].parse::<u32>() {
+                        lsystem.iterations = num;
+                    }
+                    continue;
+                }
+                else if words[0] == "turtles" {
+                     if let Ok(num) = words[1].parse::<u32>() {
+                        lsystem.turtles = num;
+                    }
+                    continue;                   
                 }
 
                 if first_line {
