@@ -1,5 +1,6 @@
 pub enum GameState {
     MainMenu,
+    Options,
     LSystemChooser,
     SizeChooser,
     ModelChooser,

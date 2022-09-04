@@ -1,6 +1,7 @@
 use console_engine::{ConsoleEngine, screen::Screen, KeyCode};
 
 use super::state::GameState;
+use util::files;
 use model::cell_table::CellTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -73,7 +74,7 @@ impl Game {
     pub fn run(&mut self) -> bool {
         self.engine.wait_frame();
 
-        self.handle_input(); 
+        let done = self.handle_input(); 
 
         if !self.has_drawn {
             self.engine.clear_screen();
@@ -88,124 +89,193 @@ impl Game {
             self.engine.draw();
         }
 
-        if self.engine.is_key_pressed(KeyCode::Esc) {
-            return false;
-        }
-
-        true
+        done
     }
 
-    pub fn handle_input(&mut self) {
+
+
+    pub fn handle_input(&mut self) -> bool {
         self.redraw = false;
-        if self.gameover {
-            if !self.gameover_done {
-                self.table.regen_table();
-                self.player = PlayerController::reset_player(&self.table, &self.player);
-                self.viewer.clear_log();
-                self.gameover_done = true;
-            }
-
-            if self.engine.is_key_pressed(KeyCode::Char('r')) {
-                self.gameover = false;
-                self.gameover_done = false;
-                self.youwin = false;
-                self.redraw = true;
-            }
-        } 
-        else {
-            if self.engine.is_key_pressed(KeyCode::Char(';')) {
-                self.viewer.add_string(String::from("Look where?"));
-                self.redraw = true;
-                self.lookmode_on = true; 
-            }
-            else if self.engine.is_key_pressed(KeyCode::Enter) {
-                self.table.regen_table();
-                self.player = PlayerController::reset_player(&self.table, &self.player);
-                self.viewer.clear_log();
-                self.redraw = true;
-            }
-            else if self.engine.is_key_pressed(KeyCode::Char('0')) {
-                self.helpscreen_on = !self.helpscreen_on;
-                self.redraw = true;
-            }
-
-            if self.lookmode_on {
-                for keycode in self.lookmode.get_keys()  {
-                     if self.engine.is_key_pressed(*keycode) {
-                        let result = self.lookmode.describe_direction(&self.table, &self.player, *keycode);
-                        self.viewer.add_string(result);
-                        self.redraw = true;
-                        self.lookmode_on = false;
-                        break;
-                     }
-                }
-            }
-            else {
-                for keycode in self.player_control.get_keys() {
-                    if self.engine.is_key_pressed(*keycode) {
-                        let result = self.player_control.move_player(&self.table, &self.player, *keycode);
-
-                        self.viewer.add_message(&self.table, &result, &result.recent_event);
-
-                        self.player = result;
-
-                        if self.table.remove_goal_if_reached(&self.player) {
-                            self.viewer.add_string(String::from("Delivered"));
-                        }
-
-                        if let PlayerEvent::GameOver(_) = self.player.recent_event {
-                            self.gameover = true;
-                        } else if let PlayerEvent::FallOver = self.player.recent_event {
-                            self.table.inc_fallover();
-                            if self.table.check_falls() {
-                                self.gameover = true;
-                                self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
-                            }
-                        }
-
-                        if self.table.get_goals().len() <= 0 {
-                            self.gameover = true;
-                            self.youwin = true;
-                            self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
-                        }
-
-                        self.redraw = true;
-
-                        break;
-                    }
-                }
-            }
-        }
+        self.process()
     }
 
     pub fn draw(&mut self) {
-        let screen: Screen;
-
-        if self.gameover {
-            if self.youwin {
-                screen = self.viewer.win_screen(&self.player, self.window_width, self.window_height);
-            }
-            else {
-                screen = self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
-            }
-        }
-        else if self.helpscreen_on {
-            screen = self.viewer.help_screen(self.window_width, self.window_height);
-        }
-        else {
-            screen = self.viewer.draw_layout(&self.table, 
-                                             &self.player, 
-                                             self.player_control.max_speed, 
-                                             self.player_control.fallover_threshold, 
-                                             self.window_width, 
-                                             self.window_height);
-        }
+        let screen = self.get_screen();
         self.engine.print_screen(0, 0, &screen);
+    }
+
+    fn process(&mut self) -> bool {
+        match self.state {
+            GameState::MainMenu => {
+                if self.engine.is_key_pressed(KeyCode::Esc) {
+                    return false;
+                }
+                if self.engine.is_key_pressed(KeyCode::Char('0')) {
+                    self.state = GameState::Help;
+                    self.redraw = true;
+                }
+                else if self.engine.is_key_pressed(KeyCode::Char('1')) {
+                    self.state = GameState::Playing;
+                    self.redraw = true;
+                }
+                else if self.engine.is_key_pressed(KeyCode::Char('2')) {
+                    self.state = GameState::Options;  
+                    self.redraw = true;
+                }
+
+                return true;
+            },
+            GameState::Options => {
+                return false;
+            },
+            GameState::Help => {
+                if self.engine.is_key_pressed(KeyCode::Esc) {
+                    self.state = GameState::MainMenu;
+                    self.redraw = true;
+                }
+
+                return true;
+            },
+            GameState::GameOver => {
+                if !self.gameover_done {
+                    self.table.regen_table();
+                    self.player = PlayerController::reset_player(&self.table, &self.player);
+                    self.viewer.clear_log();
+                    self.gameover_done = true;
+                }
+
+                if self.engine.is_key_pressed(KeyCode::Char('r')) {
+                    self.state = GameState::Playing;
+                    self.gameover_done = false;
+                    self.redraw = true;
+                }
+
+                if self.engine.is_key_pressed(KeyCode::Esc) {
+                    return false;
+                }
+
+                return true;
+            },
+            GameState::YouWin => {
+                if !self.gameover_done {
+                    self.table.regen_table();
+                    self.player = PlayerController::reset_player(&self.table, &self.player);
+                    self.viewer.clear_log();
+                    self.gameover_done = true;
+                }
+
+                if self.engine.is_key_pressed(KeyCode::Char('r')) {
+                    self.state = GameState::Playing;
+                    self.gameover_done = false;
+                    self.redraw = true;
+                }
+
+                if self.engine.is_key_pressed(KeyCode::Esc) {
+                    return false;
+                }
+
+                return true;
+            },
+            GameState::Playing => {
+                if self.engine.is_key_pressed(KeyCode::Esc) {
+                    self.state = GameState::MainMenu;
+                    self.redraw = true;
+                }
+                else if self.engine.is_key_pressed(KeyCode::Char(';')) {
+                    self.state = GameState::LookMode;
+                    self.viewer.add_string(String::from("Look where?"));
+                    self.redraw = true;
+                }
+                else if self.engine.is_key_pressed(KeyCode::Enter) {
+                    self.table.regen_table();
+                    self.player = PlayerController::reset_player(&self.table, &self.player);
+                    self.viewer.clear_log();
+                    self.redraw = true;
+                }
+                else {
+                    for keycode in self.player_control.get_keys() {
+                        if self.engine.is_key_pressed(*keycode) {
+                            let result = self.player_control.move_player(&self.table, &self.player, *keycode);
+
+                            self.viewer.add_message(&self.table, &result, &result.recent_event);
+
+                            self.player = result;
+
+                            if self.table.remove_goal_if_reached(&self.player) {
+                                self.viewer.add_string(String::from("Delivered"));
+                            }
+
+                            if let PlayerEvent::GameOver(_) = self.player.recent_event {
+                                self.state = GameState::GameOver;
+                                self.gameover = true;
+                            } else if let PlayerEvent::FallOver = self.player.recent_event {
+                                self.table.inc_fallover();
+                                if self.table.check_falls() {
+                                    self.state = GameState::GameOver;
+                                    self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
+                                }
+                            }
+
+                            if self.table.get_goals().len() <= 0 {
+                                self.state = GameState::YouWin;
+                                self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
+                            }
+
+                            self.redraw = true;
+
+                            break;
+                        }
+                    }
+                }
+
+                return true;
+            },
+            GameState::LookMode => {
+                if self.engine.is_key_pressed(KeyCode::Esc) {
+                    self.state = GameState::Options;
+                }
+
+                for keycode in self.lookmode.get_keys()  {
+                     if self.engine.is_key_pressed(*keycode) {
+                         self.state = GameState::Playing;
+                        let result = self.lookmode.describe_direction(&self.table, &self.player, *keycode);
+                        self.viewer.add_string(result);
+                        self.redraw = true;
+                        self.state = GameState::Playing;
+                        break;
+                     }
+                }
+
+                return true;
+            },
+            GameState::LSystemChooser => {
+                let mut lsystems = files::get_lsystems();
+                let mut index = 0;
+                while index < lsystems.len() {
+                    if let Some(c) = index.to_string().chars().nth(0) {
+                        if self.engine.is_key_pressed(KeyCode::Char(c)) {
+                            let lsystem = lsystems.remove(index);
+                            self.table.set_lsystem(lsystem);
+                            self.state = GameState::MainMenu;
+                            break;
+                        }
+                    }
+                    index += 1;
+                }
+
+                return true;
+            },
+            _  => {
+                return true;
+            },
+        }
     }
 
     fn get_screen(&self) -> Screen {
         match self.state {
-            // GameState::MainMenu => { // TODO },
+            GameState::MainMenu => {
+                return self.viewer.draw_main_menu(self.window_width, self.window_height);
+            },
             // GameState::SizeChooser => { // TODO },
             GameState::LSystemChooser => {
                 return self.viewer.file_chooser(self.window_width, self.window_height, "lsystem");

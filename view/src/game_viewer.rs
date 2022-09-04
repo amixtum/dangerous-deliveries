@@ -103,7 +103,7 @@ impl GameViewer {
         s.push_str(&(player.time.round()).to_string());
         s.push_str(&format!(", Deliveries Left: {}, ", table.goals_left()));
         s.push_str(&format!("HP: {}, ", table.max_falls() - table.get_falls()));
-        s.push_str("Help: press 0");
+        s.push_str("Help: press Esc");
         
         screen.print(0, height as i32 - 1, &s);
 
@@ -391,8 +391,11 @@ impl GameViewer {
         left_col.push(String::from("Exit"));
         right_col.push(String::from("Esc"));
 
-        left_col.push(String::from("Display/Hide This Message"));
+        left_col.push(String::from("Display This Message"));
         right_col.push(String::from("0 (zero)"));
+
+        left_col.push(String::from("Hide This Message"));
+        right_col.push(String::from("Esc"));
 
         let mut col = 0;
         let mut sc_y = 0;
@@ -425,9 +428,6 @@ impl GameViewer {
         screen
     }
 
-    // TODO
-    //pub fn main_menu(&self, )
-
     pub fn file_chooser(&self, width: u32, height: u32, starts_with: &str) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
@@ -442,6 +442,40 @@ impl GameViewer {
             sc_y += 1;
             index += 1;
         }
+
+        screen
+    }
+
+    pub fn draw_main_menu(&self, width: u32, height: u32) -> Screen {
+        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
+
+        let mut left_col = Vec::new();
+        let mut right_col = Vec::new();
+
+        left_col.push(("Dangerous Deliveries", Color::Yellow));
+        right_col.push("");
+
+        left_col.push(("How to Play", Color::Green));
+        right_col.push("Press 0");
+
+        left_col.push(("Play", Color::Cyan));
+        right_col.push("Press 1");
+
+        left_col.push(("Options", Color::Magenta));
+        right_col.push("Press 2");
+
+        left_col.push(("Exit", Color::Red));
+        right_col.push("Press Esc");
+
+        let mut index = 0;
+        let mut sc_y = 0;
+
+        while index < left_col.len() {
+            screen.print_fbg(1, sc_y, &left_col[index].0, left_col[index].1, Color::Black);
+            screen.print_fbg(width as i32 / 2, sc_y, &right_col[index], left_col[index].1, Color::Black);
+            index += 1;
+            sc_y += height as i32 / left_col.len() as i32;
+        } 
 
         screen
     }
