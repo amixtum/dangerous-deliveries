@@ -461,9 +461,6 @@ impl GameViewer {
         left_col.push(("Play", Color::Cyan));
         right_col.push("Press 1");
 
-        left_col.push(("Options", Color::Magenta));
-        right_col.push("Press 2");
-
         left_col.push(("Exit", Color::Red));
         right_col.push("Press Esc");
 
