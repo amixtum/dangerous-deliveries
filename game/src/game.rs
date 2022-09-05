@@ -1,4 +1,4 @@
-use console_engine::{ConsoleEngine, screen::Screen, KeyCode};
+use console_engine::{ConsoleEngine, screen::Screen, KeyCode, KeyModifiers};
 
 use super::state::GameState;
 use util::files;
@@ -35,10 +35,10 @@ impl Game {
                table_height: u32, 
                conf_file: &str,
                lsystem_file: &str,
-               turtle_file: &str,) -> Result<Self, String> {
+               table_file: &str,) -> Result<Self, String> {
         if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
             return Ok(Game {
-                table: ObstacleTable::new(table_width, table_height, lsystem_file, turtle_file),
+                table: ObstacleTable::new(table_width, table_height, lsystem_file, table_file),
                 viewer: GameViewer::new(64), // setting log length here, will specialize if needed
                 player_control: PlayerController::new(conf_file),
                 lookmode: LookMode::new(),
@@ -77,6 +77,10 @@ impl Game {
             self.engine.clear_screen();
             self.draw();
             self.engine.draw();
+        }
+
+        if self.engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
+            return false;
         }
 
         done

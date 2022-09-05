@@ -8,7 +8,7 @@ Otherwise install Rust first
 
 <h3>How to play:</h3>
 
-* Display/Hide Help = 0 (zero)
+* Display/Hide Menu = Esc 
 
 * Look = Semicolon (Press a direction key afterwards to look in that direction)
 
@@ -32,20 +32,14 @@ Otherwise install Rust first
 
 * Restart = Enter
 
-* Exit = Esc
-
 * Don't fall over (or into a bottomless pit of spikes)!
 
 <h3>Configuring</h3>
 
 The config directory contains all data files necessary to compute the game
 
-If you would like to add an [lsystem](https://en.wikipedia.org/wiki/L-system), create a new file (adhering to the format in the existing lsystem files) in the config directory and set:
+If you would like to add an [lsystem](https://en.wikipedia.org/wiki/L-system), or use a different one, create a new file (adhering to the format described in lsystem0.txt) in the config directory and set:
 
     lsystem <filename>
 
 in config/game.txt
-
-additionally config/table.txt contains values that affect how the lsystem is used for map generation 
-
-All other values are commented to explain how they affect the model (explained more in design/doc.txt)

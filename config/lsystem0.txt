@@ -1,10 +1,26 @@
+# the number of times to iterate the system
+# higher numbers yield VERY slow mapgen. 
+# A number in [2, 6] is usually enough
 iterations 2
+
+# the number of turtles that draw our lsystem to the screen
+# higher numbers yield denser maps
 turtles 5
 
-# Key
+# Alphabet 
 # end_key = :, fwd = f, left = l, right = r, up = u, down = d, save = [, return = ], place = p, 0 = none
-# Axiom
+
+# Rule form
+# predicate_symbol target_symbol successor_symbol : list of symbols from the alphabet
+# 
+# the 0 symbol as a predicate or successor matches against any symbol (a 'wildcard')
+# only if a rule that matches a specific predicate or successor is not evaluated
+# e.g. with '0 f p : f', and '0 f 0 : f p', if '0 f p' matches, then '0 f 0' is not
+# checked
+
+# Axiom (just a list of symbols from our alphabet)
 f r [ p f ] f r [ p f ] f l [ p f ] f l [ p f ]
+
 # Rules
 0 f 0 : f p
 f p 0 : r r f f p l l f f p

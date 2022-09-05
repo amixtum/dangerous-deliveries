@@ -29,7 +29,7 @@ pub struct ObstacleTable {
 }
 
 impl ObstacleTable {
-    pub fn new(width: u32, height: u32, lsystem_file: &str, turtle_file: &str) -> Self {
+    pub fn new(width: u32, height: u32, lsystem_file: &str, table_file: &str) -> Self {
         let mut ct = ObstacleTable {
             goals: Vec::new(),
             n_goals: 16,
@@ -56,7 +56,7 @@ impl ObstacleTable {
             }
         }
 
-        ct.properties_from_file(turtle_file);
+        ct.properties_from_file(table_file);
 
         ct.lsystem.update_n(ct.lsystem.iterations);
         ct.regen_table();
