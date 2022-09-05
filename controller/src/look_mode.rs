@@ -18,30 +18,39 @@ impl LookMode {
         
         // left
         lm.key_map.insert(KeyCode::Char('h'), (-1, 0));
+        lm.key_map.insert(KeyCode::Char('a'), (-1, 0));
 
         // right
         lm.key_map.insert(KeyCode::Char('l'), (1, 0));
+        lm.key_map.insert(KeyCode::Char('d'), (1, 0));
 
         // up
         lm.key_map.insert(KeyCode::Char('k'), (0, -1));
+        lm.key_map.insert(KeyCode::Char('w'), (0, -1));
 
         // down
         lm.key_map.insert(KeyCode::Char('j'), (0, 1));
+        lm.key_map.insert(KeyCode::Char('s'), (0, 1));
 
         // up right
         lm.key_map.insert(KeyCode::Char('u'), (1, -1));
+        lm.key_map.insert(KeyCode::Char('e'), (1, -1));
 
         // up left
         lm.key_map.insert(KeyCode::Char('y'), (-1, -1));
+        lm.key_map.insert(KeyCode::Char('q'), (-1, -1));
 
         // down left
         lm.key_map.insert(KeyCode::Char('b'), (-1, 1));
+        lm.key_map.insert(KeyCode::Char('z'), (-1, 1));
 
         // down right
         lm.key_map.insert(KeyCode::Char('n'), (1, 1));
+        lm.key_map.insert(KeyCode::Char('c'), (1, 1));
 
         // here
         lm.key_map.insert(KeyCode::Char('.'), (0, 0));
+        lm.key_map.insert(KeyCode::Tab, (0, 0));
 
         lm
     }
