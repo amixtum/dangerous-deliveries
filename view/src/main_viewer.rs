@@ -7,7 +7,6 @@ use console_engine::{
 use std::collections::HashMap;
 
 use util::vec_ops;
-use util::files;
 
 use model::obstacle_table::ObstacleTable;
 use model::goal_table::GoalTable;
@@ -17,7 +16,7 @@ use model::traversability::Traversability;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 
-pub struct GameViewer {
+pub struct MainViewer {
     color_map: HashMap<Traversability, (Color, Color)>,
     symbol_map: HashMap<ObstacleType, char>,
     message_log: Vec<String>,
@@ -25,9 +24,9 @@ pub struct GameViewer {
     max_message_length: u32,
 }
 
-impl GameViewer {
+impl MainViewer {
     pub fn new(log_length: usize) -> Self {
-        let mut gv = GameViewer {
+        let mut gv = MainViewer {
             color_map: HashMap::new(),
             symbol_map: HashMap::new(),
             message_log: Vec::new(),
@@ -74,7 +73,7 @@ impl GameViewer {
     }
 }
 
-impl GameViewer {
+impl MainViewer {
     pub fn draw_layout(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, max_falls: u32, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
         let balance_size = 5;
         let speed_x = width as i32 - (balance_size * 2) - 1;
@@ -237,7 +236,59 @@ impl GameViewer {
     }
 
     pub fn add_message(&mut self, table: &ObstacleTable, player: &Player, event: &PlayerEvent) {
-        /*
+        let mut message = String::new();
+        match event {
+            PlayerEvent::Move => {
+                match table.get_obstacle(player.x(), player.y()) {
+                    Obstacle::Platform(_) => message.push_str("On Platform"),
+                    Obstacle::Pit => {},
+                    Obstacle::Rail(_, _) => message.push_str("Grinding")
+                }
+            },
+            PlayerEvent::Wait => {
+                match table.get_obstacle(player.x(), player.y()) {
+                    Obstacle::Platform(_) => message.push_str("Waiting"),
+                    Obstacle::Pit => {},
+                    Obstacle::Rail(_, _) => message.push_str("Grinding")
+                }
+            },
+            PlayerEvent::FallOver => {
+                match table.get_obstacle(player.x(), player.y()) {
+                    Obstacle::Platform(_) => message.push_str("Fell over"),
+                    Obstacle::Pit => {},
+                    Obstacle::Rail(_, _) => message.push_str("Fell over"),
+                }
+            },
+            PlayerEvent::OffRail => {
+                match table.get_obstacle(player.x(), player.y()) {
+                    Obstacle::Platform(_) => message.push_str("Offrail"),
+                    Obstacle::Pit => {}, 
+                    Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
+                }
+            },
+            PlayerEvent::OnRail => {
+                match table.get_obstacle(player.x(), player.y()) {
+                    Obstacle::Platform(_) => message.push_str("On Platform"),
+                    Obstacle::Pit => {},
+                    Obstacle::Rail(_, _) => message.push_str("Grinding"),
+                }
+            }
+
+            PlayerEvent::GameOver(_) => {}
+        }
+
+        self.message_log.push(message);
+
+        if self.message_log.len() >= self.log_length {
+            self.message_log.remove(0);
+        }
+    }
+
+    pub fn clear_log(&mut self) {
+        self.message_log.clear();
+    }
+
+    pub fn debug_speed_balance(&mut self, player: &Player) {
         let mut message = String::new();
         message.push_str("B: ");
         message.push_str(&player.balance.0.to_string());
@@ -256,232 +307,6 @@ impl GameViewer {
         message.push_str(", ");
         message.push_str(&player.speed_y().to_string());
 
-        self.message_log.push(message); */
-
-        if self.message_log.len() >= self.log_length {
-            self.message_log.remove(0);
-        }
-        let mut message = String::new();
-        match event {
-            PlayerEvent::Move => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("On Platform"),
-                    Obstacle::Pit => message.push_str("Game Over"),
-                    Obstacle::Rail(_, _) => message.push_str("Grinding")
-                }
-            },
-            PlayerEvent::Wait => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Waiting"),
-                    Obstacle::Pit => message.push_str("Game Over"),
-                    Obstacle::Rail(_, _) => message.push_str("Grinding")
-                }
-            },
-            PlayerEvent::FallOver => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Fell over"),
-                    Obstacle::Pit => message.push_str("Game Over"),
-                    Obstacle::Rail(_, _) => message.push_str("Fell over"),
-                }
-            },
-            PlayerEvent::OffRail => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Offrail"),
-                    Obstacle::Pit => message.push_str("Game Over."),
-                    Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
-                }
-            },
-            PlayerEvent::OnRail => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("On Platform"),
-                    Obstacle::Pit => message.push_str("Game Over"),
-                    Obstacle::Rail(_, _) => message.push_str("Grinding"),
-                }
-            }
-
-            PlayerEvent::GameOver(_) => {
-                message.push_str("Game Over");
-            }
-        }
-
         self.message_log.push(message);
-
-        if self.message_log.len() >= self.log_length {
-            self.message_log.remove(0);
-        }
-    }
-
-    pub fn game_over_screen(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, max_goals: u32, width: u32, height: u32) -> Screen {
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-        screen.print_fbg((width as i32 / 2) - "Game Over".chars().count() as i32 / 2, (height as i32 / 2) - 1, "Game Over", Color::Red, Color::Black);
-
-        let mut info = String::new();
-        if let PlayerEvent::GameOver(time) = player.recent_event {
-            info.push_str(&format!("Time: {}, Packages Delivered: {}", time, max_goals as i32 - goals.count() as i32));
-        } 
-        else {
-            info.push_str(&format!("Packages Delivered: {}", max_goals as i32 - goals.count() as i32));
-        }
-        screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, height as i32 / 2, &info);
-
-        info.clear(); 
-
-        info.push_str("Press R to restart. Press Esc to exit.");
-        screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, (height as i32 / 2) + 1, &info);
-
-        screen
-    }
-
-    pub fn win_screen(&self, player: &Player, width: u32, height: u32) -> Screen {
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-        screen.print_fbg((width as i32 / 2) - "You Win".chars().count() as i32 / 2, (height as i32 / 2) - 1, "You Win", Color::Green, Color::Black);
-
-        let mut info = String::new();
-        if let PlayerEvent::GameOver(time) = player.recent_event {
-            info.push_str(&format!("Time: {}", time));
-            screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, height as i32 / 2, &info);
-        } 
-
-        info.clear(); 
-
-        info.push_str("Press R to restart. Press Esc to exit.");
-        screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, (height as i32 / 2) + 1, &info);
-
-        screen
-    }
-
-    pub fn help_screen(&self, width: u32, height: u32) -> Screen {
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-
-        let mut left_col = Vec::new();
-        let mut right_col = Vec::new();
-
-        left_col.push(String::from("Look Mode"));
-        right_col.push(String::from("Semicolon"));
-
-        left_col.push(String::from("Left"));
-        right_col.push(String::from("A or H"));
-
-        left_col.push(String::from("Right"));
-        right_col.push(String::from("D or L"));
-
-        left_col.push(String::from("Up"));
-        right_col.push(String::from("W or K"));
-
-        left_col.push(String::from("Down"));
-        right_col.push(String::from("S or J"));
-
-        left_col.push(String::from("NorthEast"));
-        right_col.push(String::from("E or U"));
-
-        left_col.push(String::from("NorthWest"));
-        right_col.push(String::from("Q or Y"));
-
-        left_col.push(String::from("SouthEast"));
-        right_col.push(String::from("C or N"));
-
-        left_col.push(String::from("SouthWest"));
-        right_col.push(String::from("Z or B"));
-
-        left_col.push(String::from("Wait"));
-        right_col.push(String::from("Tab or Period"));
-
-        left_col.push(String::from("Restart"));
-        right_col.push(String::from("Enter"));
-
-        left_col.push(String::from("Menu"));
-        right_col.push(String::from("Esc"));
-
-        left_col.push(String::from("Exit Game"));
-        right_col.push(String::from("Ctrl+C"));
-
-        let mut col = 0;
-        let mut sc_y = 0;
-
-        while col < left_col.len() && col < right_col.len() {
-            screen.print(1, sc_y, &left_col[col]);
-            screen.print(width as i32 / 2, sc_y, &right_col[col]);
-            sc_y += 1;
-            col += 1;
-        }
-
-        screen.print_fbg(1, sc_y, "Color Coding", Color::Yellow, Color::Black);
-
-        sc_y += 1;
-
-        screen.print_fbg(1, sc_y, "Not Traversable", Color::Green, Color::Black);
-
-        sc_y += 1;
-
-        screen.print_fbg(1, sc_y, "Same level", Color::Blue, Color::Black);
-
-        sc_y += 1;
-
-        screen.print_fbg(1, sc_y, "Down one level", Color::Cyan, Color::Black);
-
-        sc_y += 1;
-        
-        screen.print_fbg(1, sc_y, "Up one level", Color::Magenta, Color::Black);
-
-        screen
-    }
-
-    pub fn file_chooser(&self, width: u32, height: u32, starts_with: &str) -> Screen {
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-
-        let files = files::get_config_filenames(starts_with);
-
-        let mut sc_y = 0;
-        let mut index = 0;
-        for filename in files {
-            let number = format!("{} : ", index);
-            screen.print(1, sc_y, &number);
-            screen.print(number.chars().count() as i32 + 1, sc_y, &filename);
-            sc_y += 1;
-            index += 1;
-        }
-
-        screen
-    }
-
-    pub fn draw_main_menu(&self, width: u32, height: u32) -> Screen {
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-
-        let mut left_col = Vec::new();
-        let mut right_col = Vec::new();
-
-        left_col.push(("Dangerous Deliveries", Color::Yellow));
-        right_col.push("");
-
-        left_col.push(("How to Play", Color::Green));
-        right_col.push("Press 0");
-
-        left_col.push(("Play", Color::Cyan));
-        right_col.push("Press 1 or Esc");
-
-        left_col.push(("Exit", Color::Red));
-        right_col.push("Press Q or Ctrl+C");
-
-        let mut index = 0;
-        let mut sc_y = 0;
-
-        while index < left_col.len() {
-            if index == 0 {
-                screen.print_fbg(width as i32 / 4, sc_y + 1, &left_col[index].0, left_col[index].1, Color::Black);
-            }
-            else {
-                screen.print_fbg(1, sc_y, &left_col[index].0, left_col[index].1, Color::Black);
-                screen.print_fbg(width as i32 / 2, sc_y, &right_col[index], left_col[index].1, Color::Black);
-            }
-
-            index += 1;
-            sc_y += height as i32 / left_col.len() as i32;
-        } 
-
-        screen
-    }
-
-    pub fn clear_log(&mut self) {
-        self.message_log.clear();
     }
 }

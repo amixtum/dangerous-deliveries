@@ -4,3 +4,4 @@ pub mod player_event;
 pub mod obstacle_table;
 pub mod goal_table;
 pub mod traversability;
+pub mod state;

@@ -5,7 +5,7 @@ iterations 2
 
 # the number of turtles that draw our lsystem to the screen
 # higher numbers yield denser maps
-turtles 6
+turtles 5
 
 # Alphabet 
 # end_key = :, fwd = f, left = l, right = r, up = u, down = d, save = [, return = ], place = p, 0 = none
@@ -23,7 +23,6 @@ f r [ p f ] f r [ p f ] f l [ p f ] f l [ p f ]
 
 # Rules
 0 f 0 : f p
-f f f : [ f p ]
 f p 0 : r r f f p l l f f p
 0 r 0 : f [ f f r u ]
 0 l 0 : f [ f f l d ] 

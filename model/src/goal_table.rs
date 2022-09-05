@@ -42,7 +42,7 @@ impl GoalTable {
     pub fn regen_goals(&mut self, width: u32, height: u32, count: u32) {
         self.goals.clear();
 
-        let mut region = (1, 0);
+        let mut region: (i32, i32) = (1, 0);
         for _ in 0..count {
             let p_x = (width as i32 / 2) + 
                   (region.0 * (width as i32 / 4)) +
@@ -55,9 +55,8 @@ impl GoalTable {
             // self.table[p_x as usize][p_y as usize] = Obstacle::Platform(self.get_height(p_x, p_y));
 
             self.goals.insert((p_x, p_y));
-            for _ in 0..(rand::thread_rng().gen_range(1..=2) as u32) {
-                region = vec_ops::rotate_left(region);
-            }
+            region = vec_ops::rotate_left(region);
+            region = vec_ops::rotate_left(region);
         }
     }
 }

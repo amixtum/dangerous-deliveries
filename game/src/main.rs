@@ -1,5 +1,4 @@
 pub mod game;
-pub mod state;
 
 use std::env;
 use std::fs;

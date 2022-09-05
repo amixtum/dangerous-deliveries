@@ -113,8 +113,35 @@ impl ObstacleTable {
         for _ in 0..self.lsystem.turtles {
             let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
 
-            let d_x = rand::thread_rng().gen_range(-1..=1);
-            let d_y = rand::thread_rng().gen_range(-1..=1);
+            let mut d_x: i32;
+            let mut d_y: i32;
+
+            let xdiff = p_x - self.width as i32 / 2;
+            let ydiff = p_y - self.height as i32 / 2;
+
+            if xdiff > 0 {
+                d_x = -1;
+            } else if xdiff == 0 {
+                d_x = 0;
+            }
+            else {
+                d_x = 1;
+            }
+
+            if ydiff > 0 {
+                d_y = 1;
+            } else if xdiff == 0 {
+                d_y = 0;
+            }
+            else {
+                d_y = -1;
+            }
+
+            while d_x == 0 && d_y == 0 {
+                d_x = rand::thread_rng().gen_range(-1..=1);
+                d_y = rand::thread_rng().gen_range(-1..=1);
+            }
+
             self.turtles.push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
             self.saved_positions.push(Vec::new());
 
@@ -236,17 +263,17 @@ impl ObstacleTable {
             self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
             self.turtles[turtle_index].position.2 += self.turtles[turtle_index].direction.2;
 
-            if self.turtles[turtle_index].position.0 < 0 {
+            if self.turtles[turtle_index].position.0 <= 0 {
                 self.turtles[turtle_index].direction.0 = 1;
             }
-            else if self.turtles[turtle_index].position.0 >= self.width as i32 {
+            else if self.turtles[turtle_index].position.0 >= self.width as i32 - 1{
                 self.turtles[turtle_index].direction.0 = -1;
             }
 
-            if self.turtles[turtle_index].position.1 < 0 {
+            if self.turtles[turtle_index].position.1 <= 0 {
                 self.turtles[turtle_index].direction.1 = 1;
             }
-            else if self.turtles[turtle_index].position.1 >= self.height as i32{
+            else if self.turtles[turtle_index].position.1 >= self.height as i32 - 1{
                 self.turtles[turtle_index].direction.1 = -1;
             }
 
@@ -256,6 +283,9 @@ impl ObstacleTable {
     }
 
     fn place_turtle(&mut self, turtle_index: usize) {
+        if self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2 {
+            return;
+        }
         if rand::thread_rng().gen_bool(self.pit_gen_p as f64) {
                 self.continue_rail = false;
                 if !(self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2){
