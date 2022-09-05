@@ -13,12 +13,12 @@ pub struct ObstacleTable {
     goals: Vec<(i32, i32)>,
     n_goals: u32,
 
+    n_falls: u32,
+    max_falls: u32,
+
     width: u32,
     height: u32,
     table: Vec<Vec<Obstacle>>,
-
-    n_falls: u32,
-    max_falls: u32,
 
     lsystem: LSystem,
     turtles: Vec<Turtle>,
@@ -179,22 +179,21 @@ impl ObstacleTable {
     pub fn regen_goals(&mut self) {
         self.goals.clear();
 
+        let mut region = (1, 0);
         for _ in 0..self.n_goals {
-            let mut p_x = rand::thread_rng().gen_range(1..(self.width - 1)) as i32;
-            let mut p_y = rand::thread_rng().gen_range(1..(self.height - 1)) as i32;        
+            let p_x = (self.width as i32 / 2) + 
+                  (region.0 * (self.width as i32 / 4)) +
+                  rand::thread_rng().gen_range((self.width as i32 / 8)..(self.width as i32 / 4 - 1)) as i32 * region.0.signum();
 
-            let mut found = false;
-            while !found {
-                match self.get_obstacle(p_x, p_y) {
-                    Obstacle::Pit => {
-                        p_x = rand::thread_rng().gen_range(1..(self.width - 1)) as i32;
-                        p_y = rand::thread_rng().gen_range(1..(self.height - 1)) as i32;        
-                    },
-                    _ => {
-                        found = true;
-                        self.goals.push((p_x, p_y));
-                    }
-                }
+            let p_y = (self.height as i32 / 2) + 
+                  (region.1 * (self.height as i32 / 4)) +
+                  rand::thread_rng().gen_range((self.height as i32 / 8)..(self.height as i32 / 4 - 1)) as i32 * region.1.signum();
+
+            self.table[p_x as usize][p_y as usize] = Obstacle::Platform(self.get_height(p_x, p_y));
+
+            self.goals.push((p_x, p_y));
+            for _ in 0..(rand::thread_rng().gen_range(1..=2)) {
+                region = vec_ops::rotate_left(region);
             }
         }
     }

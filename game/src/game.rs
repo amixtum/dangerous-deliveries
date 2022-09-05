@@ -64,6 +64,10 @@ impl Game {
     pub fn run(&mut self) -> bool {
         self.engine.wait_frame();
 
+        if self.engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
+            return false;
+        }
+
         let done = self.handle_input(); 
 
         if !self.has_drawn {
@@ -77,10 +81,6 @@ impl Game {
             self.engine.clear_screen();
             self.draw();
             self.engine.draw();
-        }
-
-        if self.engine.is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL) {
-            return false;
         }
 
         done
@@ -151,7 +151,7 @@ impl Game {
     }
 
     fn process_main_menu(&mut self) -> bool {
-        if self.engine.is_key_pressed(KeyCode::Esc) {
+        if self.engine.is_key_pressed(KeyCode::Char('q')) {
             return false;
         }
 
@@ -159,7 +159,7 @@ impl Game {
             self.state = GameState::Help;
             self.redraw = true;
         }
-        else if self.engine.is_key_pressed(KeyCode::Char('1')) {
+        else if self.engine.is_key_pressed(KeyCode::Char('1')) || self.engine.is_key_pressed(KeyCode::Esc) {
             self.state = GameState::Playing;
             self.redraw = true;
         }

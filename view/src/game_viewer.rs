@@ -388,42 +388,39 @@ impl GameViewer {
         left_col.push(String::from("Restart"));
         right_col.push(String::from("Enter"));
 
-        left_col.push(String::from("Exit"));
+        left_col.push(String::from("Menu"));
         right_col.push(String::from("Esc"));
 
-        left_col.push(String::from("Display This Message"));
-        right_col.push(String::from("0 (zero)"));
-
-        left_col.push(String::from("Hide This Message"));
-        right_col.push(String::from("Esc"));
+        left_col.push(String::from("Exit Game"));
+        right_col.push(String::from("Ctrl+C"));
 
         let mut col = 0;
         let mut sc_y = 0;
 
         while col < left_col.len() && col < right_col.len() {
-            screen.print(0, sc_y, &left_col[col]);
+            screen.print(1, sc_y, &left_col[col]);
             screen.print(width as i32 / 2, sc_y, &right_col[col]);
             sc_y += 1;
             col += 1;
         }
 
-        screen.print_fbg(0, sc_y, "Color Coding", Color::Yellow, Color::Black);
+        screen.print_fbg(1, sc_y, "Color Coding", Color::Yellow, Color::Black);
 
         sc_y += 1;
 
-        screen.print_fbg(0, sc_y, "Not Traversable", Color::Green, Color::Black);
+        screen.print_fbg(1, sc_y, "Not Traversable", Color::Green, Color::Black);
 
         sc_y += 1;
 
-        screen.print_fbg(0, sc_y, "Same level", Color::Blue, Color::Black);
+        screen.print_fbg(1, sc_y, "Same level", Color::Blue, Color::Black);
 
         sc_y += 1;
 
-        screen.print_fbg(0, sc_y, "Down one level", Color::Cyan, Color::Black);
+        screen.print_fbg(1, sc_y, "Down one level", Color::Cyan, Color::Black);
 
         sc_y += 1;
         
-        screen.print_fbg(0, sc_y, "Up one level", Color::Magenta, Color::Black);
+        screen.print_fbg(1, sc_y, "Up one level", Color::Magenta, Color::Black);
 
         screen
     }
@@ -437,8 +434,8 @@ impl GameViewer {
         let mut index = 0;
         for filename in files {
             let number = format!("{} : ", index);
-            screen.print(0, sc_y, &number);
-            screen.print(number.chars().count() as i32, sc_y, &filename);
+            screen.print(1, sc_y, &number);
+            screen.print(number.chars().count() as i32 + 1, sc_y, &filename);
             sc_y += 1;
             index += 1;
         }
@@ -459,17 +456,23 @@ impl GameViewer {
         right_col.push("Press 0");
 
         left_col.push(("Play", Color::Cyan));
-        right_col.push("Press 1");
+        right_col.push("Press 1 or Esc");
 
         left_col.push(("Exit", Color::Red));
-        right_col.push("Press Esc");
+        right_col.push("Press Q or Ctrl+C");
 
         let mut index = 0;
         let mut sc_y = 0;
 
         while index < left_col.len() {
-            screen.print_fbg(1, sc_y, &left_col[index].0, left_col[index].1, Color::Black);
-            screen.print_fbg(width as i32 / 2, sc_y, &right_col[index], left_col[index].1, Color::Black);
+            if index == 0 {
+                screen.print_fbg(width as i32 / 4, sc_y + 1, &left_col[index].0, left_col[index].1, Color::Black);
+            }
+            else {
+                screen.print_fbg(1, sc_y, &left_col[index].0, left_col[index].1, Color::Black);
+                screen.print_fbg(width as i32 / 2, sc_y, &right_col[index], left_col[index].1, Color::Black);
+            }
+
             index += 1;
             sc_y += height as i32 / left_col.len() as i32;
         } 
