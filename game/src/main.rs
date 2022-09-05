@@ -28,6 +28,7 @@ fn load_game() -> Result<Game, String> {
     let mut lsystem_path = "";
     let mut table_path = "";
     let mut model_path = "";
+    let mut game_conf_path = "";
 
     if let Ok(pr) = project_root::get_project_root() {
         let mut path = String::from("");
@@ -38,7 +39,7 @@ fn load_game() -> Result<Game, String> {
             },
             None => { },
         }
-        if let Ok(contents) = fs::read_to_string(format!("{}/config/{}", path, "game.txt")) {
+        if let Ok(contents) = fs::read_to_string(format!("{}/config/{}", path, "window.txt")) {
             for line in contents.lines() {
                 if let Some(c) = line.chars().nth(0) {
                     if c == '#' {
@@ -79,6 +80,9 @@ fn load_game() -> Result<Game, String> {
                     else if words[0] == "table" {
                         table_path = &words[1]; 
                     }
+                    else if words[0] == "game" {
+                        game_conf_path = &words[1]; 
+                    }
                 }
             }
             if let Ok(g) = Game::new(window_width,
@@ -86,6 +90,7 @@ fn load_game() -> Result<Game, String> {
                                      30,
                                      game_width,
                                      game_height,
+                                     &format!("{}/config/{}", path, game_conf_path),
                                      &format!("{}/config/{}", path, model_path),
                                      &format!("{}/config/{}", path, lsystem_path),
                                      &format!("{}/config/{}", path, table_path)) {

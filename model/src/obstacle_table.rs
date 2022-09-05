@@ -1,6 +1,5 @@
 use super::obstacle::Obstacle;
 use super::traversability::Traversability;
-use super::player::Player;
 
 use util::vec_ops;
 use util::lsystem::{Turtle, Alphabet, LSystem};
@@ -10,12 +9,6 @@ use rand::Rng;
 use std::fs;
 
 pub struct ObstacleTable {
-    goals: Vec<(i32, i32)>,
-    n_goals: u32,
-
-    n_falls: u32,
-    max_falls: u32,
-
     width: u32,
     height: u32,
     table: Vec<Vec<Obstacle>>,
@@ -31,15 +24,9 @@ pub struct ObstacleTable {
 impl ObstacleTable {
     pub fn new(width: u32, height: u32, lsystem_file: &str, table_file: &str) -> Self {
         let mut ct = ObstacleTable {
-            goals: Vec::new(),
-            n_goals: 16,
-
             width,
             height,
             table: Vec::new(),
-
-            n_falls: 0,
-            max_falls: 5,
 
             lsystem: LSystem::from_file(lsystem_file),
             turtles: Vec::new(),
@@ -89,16 +76,6 @@ impl ObstacleTable {
                         self.rail_gen_p = num; 
                     }
                 }
-                else if words[0] == "n_goals" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.n_goals = num;
-                    }
-                }
-                else if words[0] == "max_falls" {
-                     if let Ok(num) = words[1].parse::<u32>() {
-                        self.max_falls = num;
-                    }                   
-                }
             }
         }
     }
@@ -109,28 +86,8 @@ impl ObstacleTable {
         self.regen_table();
     }
 
-    pub fn inc_fallover(&mut self) {
-        self.n_falls += 1;
-    }
-
-    pub fn check_falls(&mut self) -> bool {
-        let b = self.n_falls >= self.max_falls;
-        if b {
-            self.n_falls = 0;
-        }
-        b
-    }
-
-    pub fn get_falls(&self) -> u32 {
-        self.n_falls
-    }
-
-    pub fn max_falls(&self) -> u32 {
-        self.max_falls
-    }
-
-    pub fn goals_left(&self) -> u32 {
-        self.n_goals - self.goals_reached()
+    pub fn set_obstacle(&mut self, (x, y): (i32, i32), obs: Obstacle) {
+        self.table[x as usize][y as usize] = obs;
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
@@ -170,56 +127,6 @@ impl ObstacleTable {
             self.compute_turtles(self.lsystem.get_current()[c_idx]);
             c_idx += 1;
         }
-
-        self.n_falls = 0;
-
-        self.regen_goals();
-    }
-
-    pub fn regen_goals(&mut self) {
-        self.goals.clear();
-
-        let mut region = (1, 0);
-        for _ in 0..self.n_goals {
-            let p_x = (self.width as i32 / 2) + 
-                  (region.0 * (self.width as i32 / 4)) +
-                  rand::thread_rng().gen_range((self.width as i32 / 8)..(self.width as i32 / 4 - 1)) as i32 * region.0.signum();
-
-            let p_y = (self.height as i32 / 2) + 
-                  (region.1 * (self.height as i32 / 4)) +
-                  rand::thread_rng().gen_range((self.height as i32 / 8)..(self.height as i32 / 4 - 1)) as i32 * region.1.signum();
-
-            self.table[p_x as usize][p_y as usize] = Obstacle::Platform(self.get_height(p_x, p_y));
-
-            self.goals.push((p_x, p_y));
-            for _ in 0..(rand::thread_rng().gen_range(1..=2)) {
-                region = vec_ops::rotate_left(region);
-            }
-        }
-    }
-
-    pub fn goals_reached(&self) -> u32 {
-        self.n_goals - self.goals.len() as u32
-    }
-
-    pub fn get_goals(&self) -> &Vec<(i32, i32)> {
-        return &self.goals;
-    }
-
-    pub fn remove_goal_if_reached(&mut self, player: &Player) -> bool {
-        let mut removed = false;
-        let mut to_remove = Vec::new();
-        for index in (0..self.goals.len()).rev() {
-            if self.goals[index].0 == player.x() && self.goals[index].1 == player.y() {
-                to_remove.push(index);
-            }
-        }
-        for index in to_remove {
-            removed = true;
-            self.goals.remove(index);
-        }
-
-        removed
     }
 
     pub fn width(&self) -> u32 {

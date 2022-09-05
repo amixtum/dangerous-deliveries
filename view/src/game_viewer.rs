@@ -10,6 +10,7 @@ use util::vec_ops;
 use util::files;
 
 use model::obstacle_table::ObstacleTable;
+use model::goal_table::GoalTable;
 use model::obstacle::Obstacle;
 use model::obstacle::ObstacleType;
 use model::traversability::Traversability;
@@ -74,7 +75,7 @@ impl GameViewer {
 }
 
 impl GameViewer {
-    pub fn draw_layout(&self, table: &ObstacleTable, player: &Player, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
+    pub fn draw_layout(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, max_falls: u32, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
         let balance_size = 5;
         let speed_x = width as i32 - (balance_size * 2) - 1;
         let balance_x = speed_x - (balance_size * 2) - 1;
@@ -85,7 +86,7 @@ impl GameViewer {
         let table_view_width = width as i32 - r_panel_width;
         let table_view_height = height as i32;
 
-        let table_view = self.draw_table(table, player, table_view_width as u32, table_view_height as u32);
+        let table_view = self.draw_table(table, goals, player, table_view_width as u32, table_view_height as u32);
         let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
         let speed_view = self.draw_speed(player, max_speed, balance_size as u32);
         let msg_log_view = self.draw_msg_log(msg_log_height as u32);
@@ -101,8 +102,8 @@ impl GameViewer {
 
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
-        s.push_str(&format!(", Deliveries Left: {}, ", table.goals_left()));
-        s.push_str(&format!("HP: {}, ", table.max_falls() - table.get_falls()));
+        s.push_str(&format!(", Deliveries Left: {}, ", goals.count()));
+        s.push_str(&format!("HP: {}, ", max_falls as i32 - player.n_falls));
         s.push_str("Help: press Esc");
         
         screen.print(0, height as i32 - 1, &s);
@@ -113,7 +114,7 @@ impl GameViewer {
     // return a Screen of dimensions width x height that maps a width x height section
     // of the ObstacleTable centered on the player (any ObstacleTable coordinates that are out of bounds
     // are clamped out and the screen doesn't draw anything there)
-    pub fn draw_table(&self, table: &ObstacleTable, player: &Player, width: u32, height: u32) -> Screen {
+    pub fn draw_table(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, width: u32, height: u32) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
         // compute ObstacleTable coordinates
@@ -143,7 +144,7 @@ impl GameViewer {
 
                 screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
 
-                for goal in table.get_goals() {
+                for goal in goals.goals() {
                     if x == goal.0 && y == goal.1 {
                         screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Red));
                         break;
@@ -310,16 +311,16 @@ impl GameViewer {
         }
     }
 
-    pub fn game_over_screen(&self, table: &ObstacleTable, player: &Player, width: u32, height: u32) -> Screen {
+    pub fn game_over_screen(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, max_goals: u32, width: u32, height: u32) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
         screen.print_fbg((width as i32 / 2) - "Game Over".chars().count() as i32 / 2, (height as i32 / 2) - 1, "Game Over", Color::Red, Color::Black);
 
         let mut info = String::new();
         if let PlayerEvent::GameOver(time) = player.recent_event {
-            info.push_str(&format!("Time: {}, Packages Delivered: {}", time, table.goals_reached()));
+            info.push_str(&format!("Time: {}, Packages Delivered: {}", time, max_goals as i32 - goals.count() as i32));
         } 
         else {
-            info.push_str(&format!("Packages Delivered: {}", table.goals_reached()));
+            info.push_str(&format!("Packages Delivered: {}", max_goals as i32 - goals.count() as i32));
         }
         screen.print((width as i32 / 2) - info.chars().count() as i32 / 2, height as i32 / 2, &info);
 

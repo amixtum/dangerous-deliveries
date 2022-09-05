@@ -1,20 +1,5 @@
-# width of the console window
-window_width 64
+# number of falls before game over
+max_falls 4
 
-# height of the console window 
-window_height 20
-
-# width of the game world
-game_width 40
-
-# height of the game world
-game_height 20
-
-# lsystem file (in config directory)
-lsystem lsystem0.txt 
-
-# table file (in config directory)
-table table.txt
-
-# model file (in config directory)
-model model.txt
+# number of goals
+n_goals 4

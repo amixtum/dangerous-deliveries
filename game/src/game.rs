@@ -1,8 +1,11 @@
 use console_engine::{ConsoleEngine, screen::Screen, KeyCode, KeyModifiers};
 
+use std::fs;
+
 use super::state::GameState;
 use util::files;
 use model::obstacle_table::ObstacleTable;
+use model::goal_table::GoalTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 use view::game_viewer::GameViewer;
@@ -10,21 +13,29 @@ use controller::player_controller::PlayerController;
 use controller::look_mode::LookMode;
 
 pub struct Game {
-    table: ObstacleTable,
+    obs_table: ObstacleTable,
+    goal_table: GoalTable,
+
     viewer: GameViewer,
+
     player_control: PlayerController,
     lookmode: LookMode,
+
     player: Player,
 
     engine: ConsoleEngine,
     window_width: u32,
     window_height: u32,
 
+    max_falls: u32,
+    n_goals: u32,
+
+    state: GameState,
+
     redraw: bool,
     has_drawn: bool,
     gameover_done: bool,
 
-    state: GameState,
 }
 
 impl Game {
@@ -34,33 +45,73 @@ impl Game {
                table_width: u32, 
                table_height: u32, 
                conf_file: &str,
+               model_file: &str,
                lsystem_file: &str,
                table_file: &str,) -> Result<Self, String> {
         if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
-            return Ok(Game {
-                table: ObstacleTable::new(table_width, table_height, lsystem_file, table_file),
+            let mut g = Game {
+                obs_table: ObstacleTable::new(table_width, table_height, lsystem_file, table_file),
+                goal_table: GoalTable::new(),
+
                 viewer: GameViewer::new(64), // setting log length here, will specialize if needed
-                player_control: PlayerController::new(conf_file),
+
+                player_control: PlayerController::new(model_file),
                 lookmode: LookMode::new(),
+
                 player: Player::new(table_width as i32 / 2, table_height as i32 / 2, 0),
 
                 engine,
                 window_width,
                 window_height,
 
-                redraw: true,
-                has_drawn: false,
-
-                gameover_done: false,
+                max_falls: 4,
+                n_goals: 4,
 
                 state: GameState::MainMenu,
-            });
+
+                redraw: true,
+                has_drawn: false,
+                gameover_done: false,
+
+            };
+
+            g.properties_from_file(conf_file);
+
+            g.goal_table.regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
+
+            return Ok(g);
         }
         Err(format!("Could not create window of width {}, height {}, at target_fps {}", window_width, window_height, target_fps))
     }
 }
 
 impl Game {
+    pub fn properties_from_file(&mut self, path: &str) {
+        if let Ok(contents) = fs::read_to_string(path) {
+            for line in contents.lines() {
+                if let Some(c) = line.chars().nth(0) {
+                    if c == '#' {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+
+                let words: Vec<&str> = line.split_ascii_whitespace().collect(); 
+                if words[0] == "n_goals" {
+                    if let Ok(num) = words[1].parse::<u32>() {
+                        self.n_goals = num;
+                    }
+                }
+                else if words[0] == "max_falls" {
+                     if let Ok(num) = words[1].parse::<u32>() {
+                        self.max_falls = num;
+                    }                   
+                }
+            }
+        }
+    }
+
     pub fn run(&mut self) -> bool {
         self.engine.wait_frame();
 
@@ -134,14 +185,16 @@ impl Game {
                 return self.viewer.help_screen(self.window_width, self.window_height);
             },
             GameState::GameOver => {
-                return self.viewer.game_over_screen(&self.table, &self.player, self.window_width, self.window_height);
+                return self.viewer.game_over_screen(&self.obs_table, &self.goal_table, &self.player, self.n_goals, self.window_width, self.window_height);
             },
             GameState::YouWin => {
                 return self.viewer.win_screen(&self.player, self.window_width, self.window_height);
             },
             GameState::Playing | _ => {
-                return self.viewer.draw_layout(&self.table, 
+                return self.viewer.draw_layout(&self.obs_table, 
+                                               &self.goal_table,
                                                &self.player, 
+                                               self.max_falls,
                                                self.player_control.max_speed, 
                                                self.player_control.fallover_threshold, 
                                                self.window_width, 
@@ -178,8 +231,9 @@ impl Game {
 
     fn process_gameover(&mut self) -> bool {
         if !self.gameover_done {
-            self.table.regen_table();
-            self.player = PlayerController::reset_player(&self.table, &self.player);
+            self.obs_table.regen_table();
+            self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+            self.player = PlayerController::reset_player(&self.obs_table, &self.player);
             self.viewer.clear_log();
             self.gameover_done = true;
         }
@@ -208,36 +262,33 @@ impl Game {
             self.redraw = true;
         }
         else if self.engine.is_key_pressed(KeyCode::Enter) {
-            self.table.regen_table();
-            self.player = PlayerController::reset_player(&self.table, &self.player);
+            self.obs_table.regen_table();
+            self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+            self.player = PlayerController::reset_player(&self.obs_table, &self.player);
             self.viewer.clear_log();
             self.redraw = true;
         }
         else {
             for keycode in self.player_control.get_keys() {
                 if self.engine.is_key_pressed(*keycode) {
-                    let result = self.player_control.move_player(&self.table, &self.player, *keycode);
+                    let result = self.player_control.move_player(&self.obs_table, &self.player, *keycode);
 
-                    self.viewer.add_message(&self.table, &result, &result.recent_event);
+                    self.viewer.add_message(&self.obs_table, &result, &result.recent_event);
 
                     self.player = result;
 
-                    if self.table.remove_goal_if_reached(&self.player) {
+                    if self.goal_table.remove_goal_if_reached(self.player.xy()) {
                         self.viewer.add_string(String::from("Delivered"));
                     }
 
-                    if let PlayerEvent::GameOver(_) = self.player.recent_event {
-                        self.state = GameState::GameOver;
-                    } else if let PlayerEvent::FallOver = self.player.recent_event {
-                        self.table.inc_fallover();
-                        if self.table.check_falls() {
-                            self.state = GameState::GameOver;
-                            self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
-                        }
-                    }
-
-                    if self.table.get_goals().len() <= 0 {
+                    if self.goal_table.count() <= 0 {
                         self.state = GameState::YouWin;
+                        self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
+                    }
+                    else if let PlayerEvent::GameOver(_) = self.player.recent_event {
+                        self.state = GameState::GameOver;
+                    }
+                    else if self.player.n_falls >= self.max_falls as i32 {
                         self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
                     }
 
@@ -258,7 +309,7 @@ impl Game {
 
         for keycode in self.lookmode.get_keys()  {
              if self.engine.is_key_pressed(*keycode) {
-                let result = self.lookmode.describe_direction(&self.table, &self.player, *keycode);
+                let result = self.lookmode.describe_direction(&self.obs_table, &self.player, *keycode);
                 self.viewer.add_string(result);
                 self.redraw = true;
                 self.state = GameState::Playing;
@@ -276,7 +327,7 @@ impl Game {
             if let Some(c) = index.to_string().chars().nth(0) {
                 if self.engine.is_key_pressed(KeyCode::Char(c)) {
                     let lsystem = lsystems.remove(index);
-                    self.table.set_lsystem(lsystem);
+                    self.obs_table.set_lsystem(lsystem);
                     self.state = GameState::MainMenu;
                     break;
                 }

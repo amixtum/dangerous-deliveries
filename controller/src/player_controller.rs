@@ -216,6 +216,7 @@ impl PlayerController {
         clone.balance = (0.0, 0.0);
         clone.recent_event = PlayerEvent::GameOver(clone.time as i32);
         clone.time = 0.0;
+        clone.n_falls = 0;
         clone
     }
 
@@ -269,6 +270,7 @@ impl PlayerController {
         clone.recent_event = PlayerEvent::FallOver;
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
+        clone.n_falls += 1;
 
         match table.get_obstacle(player.x(), player.y()) {
             Obstacle::Rail(height, _) => {

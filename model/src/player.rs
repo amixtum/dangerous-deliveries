@@ -7,6 +7,8 @@ pub struct Player {
     pub balance: (f32, f32),
     pub time: f32, 
     pub recent_event: PlayerEvent,
+
+    pub n_falls: i32,
 }
 
 impl Player {
@@ -17,6 +19,7 @@ impl Player {
             balance: (0.0, 0.0),
             time: 0.0,
             recent_event: PlayerEvent::Wait,
+            n_falls: 0,
         } 
     }
 
