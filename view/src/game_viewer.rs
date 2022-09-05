@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use util::vec_ops;
 use util::files;
 
-use model::cell_table::CellTable;
+use model::obstacle_table::ObstacleTable;
 use model::obstacle::Obstacle;
 use model::obstacle::ObstacleType;
 use model::traversability::Traversability;
@@ -74,7 +74,7 @@ impl GameViewer {
 }
 
 impl GameViewer {
-    pub fn draw_layout(&self, table: &CellTable, player: &Player, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
+    pub fn draw_layout(&self, table: &ObstacleTable, player: &Player, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
         let balance_size = 5;
         let speed_x = width as i32 - (balance_size * 2) - 1;
         let balance_x = speed_x - (balance_size * 2) - 1;
@@ -111,12 +111,12 @@ impl GameViewer {
     }
 
     // return a Screen of dimensions width x height that maps a width x height section
-    // of the CellTable centered on the player (any CellTable coordinates that are out of bounds
+    // of the ObstacleTable centered on the player (any ObstacleTable coordinates that are out of bounds
     // are clamped out and the screen doesn't draw anything there)
-    pub fn draw_table(&self, table: &CellTable, player: &Player, width: u32, height: u32) -> Screen {
+    pub fn draw_table(&self, table: &ObstacleTable, player: &Player, width: u32, height: u32) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
-        // compute CellTable coordinates
+        // compute ObstacleTable coordinates
         let middle = player.xy();
         let tl_x = (middle.0 - (width / 2) as i32).clamp(0, table.width() as i32 - 1);
         let tl_y = (middle.1 - (height / 2) as i32).clamp(0, table.height() as i32 - 1);
@@ -235,7 +235,7 @@ impl GameViewer {
         }
     }
 
-    pub fn add_message(&mut self, table: &CellTable, player: &Player, event: &PlayerEvent) {
+    pub fn add_message(&mut self, table: &ObstacleTable, player: &Player, event: &PlayerEvent) {
         /*
         let mut message = String::new();
         message.push_str("B: ");
@@ -310,7 +310,7 @@ impl GameViewer {
         }
     }
 
-    pub fn game_over_screen(&self, table: &CellTable, player: &Player, width: u32, height: u32) -> Screen {
+    pub fn game_over_screen(&self, table: &ObstacleTable, player: &Player, width: u32, height: u32) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
         screen.print_fbg((width as i32 / 2) - "Game Over".chars().count() as i32 / 2, (height as i32 / 2) - 1, "Game Over", Color::Red, Color::Black);
 

@@ -1,5 +1,5 @@
 # dampening for the player's speed
-speed_damp 0.6
+speed_damp 0.7
 
 # dampening for the player's balance
 balance_damp 0.7

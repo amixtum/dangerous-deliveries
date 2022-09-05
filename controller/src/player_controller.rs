@@ -6,7 +6,7 @@ use std::fs;
 
 use model::player::Player;
 use model::player_event::PlayerEvent;
-use model::cell_table::CellTable;
+use model::obstacle_table::ObstacleTable;
 use model::obstacle::Obstacle;
 
 use util::vec_ops;
@@ -178,7 +178,7 @@ impl PlayerController {
         self.key_map.get(&key)
     }
 
-    pub fn move_player(&self, table: &CellTable, player: &Player, key: KeyCode) -> Player {
+    pub fn move_player(&self, table: &ObstacleTable, player: &Player, key: KeyCode) -> Player {
         if let Some(inst_v) = self.get_inst_velocity(key) {
             return PlayerController::compute_move(
                 table,
@@ -209,7 +209,7 @@ impl PlayerController {
         );
     }
 
-    pub fn reset_player(table: &CellTable, player: &Player) -> Player {
+    pub fn reset_player(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
         clone.speed = (0.0, 0.0);
@@ -219,7 +219,7 @@ impl PlayerController {
         clone
     }
 
-    pub fn compute_move(table: &CellTable, 
+    pub fn compute_move(table: &ObstacleTable, 
                         player: &Player,
                         (inst_x, inst_y): (f32, f32),
                         speed_damp: f32, 
@@ -264,7 +264,7 @@ impl PlayerController {
         return PlayerController::try_traverse(table, &player, next_pos, up_speed_fact, down_speed_fact);
     }
 
-    fn fallover(table: &CellTable, player: &Player) -> Player {
+    fn fallover(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         clone.recent_event = PlayerEvent::FallOver;
         clone.speed = (0.0, 0.0);
@@ -303,7 +303,7 @@ impl PlayerController {
         clone
     }
 
-    fn compute_initial_speed_balance(table: &CellTable, 
+    fn compute_initial_speed_balance(table: &ObstacleTable, 
                                      player: &Player, 
                                      (inst_x, inst_y): (f32, f32), 
                                      max_speed: f32, 
@@ -354,7 +354,7 @@ impl PlayerController {
     }
 
     // updated a player's balance so it must return a new player as well
-    fn compute_onrail(table: &CellTable, player: &Player, (inst_x, inst_y): (f32, f32), (x_dir, y_dir): (f32, f32), onrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
+    fn compute_onrail(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32), (x_dir, y_dir): (f32, f32), onrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
         let (unit_x, unit_y) = vec_ops::discrete_jmp((inst_x, inst_y));
         let mut next_pos = player.position;
         next_pos.0 = player.position.0 + unit_x;
@@ -369,7 +369,7 @@ impl PlayerController {
         (clone, next_pos)
     }
 
-    fn compute_continue(table: &CellTable, player: &Player) -> (i32, i32, i32) {
+    fn compute_continue(table: &ObstacleTable, player: &Player) -> (i32, i32, i32) {
         let mut next_pos = player.position;
         let temp = player.speed.0;
         next_pos.0 = (next_pos.0 + temp as i32).clamp(next_pos.0 - 1, next_pos.0 + 1);
@@ -387,7 +387,7 @@ impl PlayerController {
     // Note: Must call compute_intitial_speed_balance first in order to update speed and balance
     // values, otherwise, this will compute the next position without taking into account user
     // input
-    fn compute_next_position(table: &CellTable, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
+    fn compute_next_position(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = table.get_obstacle(player.x(), player.y());
         let units = vec_ops::discrete_jmp((inst_x, inst_y));
@@ -459,7 +459,7 @@ impl PlayerController {
         (clone, next_pos)
     }
 
-    fn try_traverse(table: &CellTable, player: &Player, next_pos: (i32, i32, i32), up_speed_fact: f32, down_speed_fact: f32) -> Player {
+    fn try_traverse(table: &ObstacleTable, player: &Player, next_pos: (i32, i32, i32), up_speed_fact: f32, down_speed_fact: f32) -> Player {
         // check if next_pos is adjacent to current position
         let mut clone = Player::clone(player);
 

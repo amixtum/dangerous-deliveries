@@ -9,7 +9,7 @@ use rand::Rng;
 
 use std::fs;
 
-pub struct CellTable {
+pub struct ObstacleTable {
     goals: Vec<(i32, i32)>,
     n_goals: u32,
 
@@ -28,9 +28,9 @@ pub struct CellTable {
     continue_rail: bool,
 }
 
-impl CellTable {
+impl ObstacleTable {
     pub fn new(width: u32, height: u32, lsystem_file: &str, turtle_file: &str) -> Self {
-        let mut ct = CellTable {
+        let mut ct = ObstacleTable {
             goals: Vec::new(),
             n_goals: 16,
 
@@ -66,7 +66,7 @@ impl CellTable {
 }
 
 
-impl CellTable {
+impl ObstacleTable {
     pub fn properties_from_file(&mut self, path: &str) {
         if let Ok(contents) = fs::read_to_string(path) {
             for line in contents.lines() {

@@ -2,7 +2,7 @@ use console_engine::KeyCode;
 
 use std::collections::{hash_map, HashMap};
 
-use model::cell_table::CellTable;
+use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::obstacle::Obstacle;
 
@@ -56,7 +56,7 @@ impl LookMode {
         self.key_map.get(&key)
     }
 
-    pub fn describe_direction(&self, table: &CellTable, player: &Player, key: KeyCode) -> String {
+    pub fn describe_direction(&self, table: &ObstacleTable, player: &Player, key: KeyCode) -> String {
         let mut s = String::new();
 
         if let Some(direction) = self.get_direction(key) {

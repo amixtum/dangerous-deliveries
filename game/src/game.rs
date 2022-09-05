@@ -2,7 +2,7 @@ use console_engine::{ConsoleEngine, screen::Screen, KeyCode};
 
 use super::state::GameState;
 use util::files;
-use model::cell_table::CellTable;
+use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 use view::game_viewer::GameViewer;
@@ -10,7 +10,7 @@ use controller::player_controller::PlayerController;
 use controller::look_mode::LookMode;
 
 pub struct Game {
-    table: CellTable,
+    table: ObstacleTable,
     viewer: GameViewer,
     player_control: PlayerController,
     lookmode: LookMode,
@@ -38,7 +38,7 @@ impl Game {
                turtle_file: &str,) -> Result<Self, String> {
         if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
             return Ok(Game {
-                table: CellTable::new(table_width, table_height, lsystem_file, turtle_file),
+                table: ObstacleTable::new(table_width, table_height, lsystem_file, turtle_file),
                 viewer: GameViewer::new(64), // setting log length here, will specialize if needed
                 player_control: PlayerController::new(conf_file),
                 lookmode: LookMode::new(),
@@ -91,8 +91,6 @@ impl Game {
         let screen = self.get_screen();
         self.engine.print_screen(0, 0, &screen);
     }
-
-
 
     fn process(&mut self) -> bool {
         match self.state {
@@ -152,7 +150,8 @@ impl Game {
         if self.engine.is_key_pressed(KeyCode::Esc) {
             return false;
         }
-        if self.engine.is_key_pressed(KeyCode::Char('0')) {
+
+        else if self.engine.is_key_pressed(KeyCode::Char('0')) {
             self.state = GameState::Help;
             self.redraw = true;
         }
@@ -186,9 +185,9 @@ impl Game {
             self.gameover_done = false;
             self.redraw = true;
         }
-
-        if self.engine.is_key_pressed(KeyCode::Esc) {
+        else if self.engine.is_key_pressed(KeyCode::Esc) {
             self.state = GameState::MainMenu;
+            self.redraw = true;
         }
 
         return true;
@@ -250,12 +249,11 @@ impl Game {
 
     fn process_lookmode(&mut self) -> bool {
         if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.state = GameState::Options;
+            self.state = GameState::MainMenu;
         }
 
         for keycode in self.lookmode.get_keys()  {
              if self.engine.is_key_pressed(*keycode) {
-                 self.state = GameState::Playing;
                 let result = self.lookmode.describe_direction(&self.table, &self.player, *keycode);
                 self.viewer.add_string(result);
                 self.redraw = true;
