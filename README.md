@@ -43,4 +43,3 @@ If you would like to add an [lsystem](https://en.wikipedia.org/wiki/L-system), o
     lsystem <filename>
 
 in config/window.txt
-
