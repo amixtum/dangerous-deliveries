@@ -204,12 +204,11 @@ impl Game {
         }
 
         else if self.engine.is_key_pressed(KeyCode::Char('0')) {
-            self.state = GameState::Help;
-            self.redraw = true;
+            self.set_state(GameState::Help);
         }
         else if self.engine.is_key_pressed(KeyCode::Char('1')) || self.engine.is_key_pressed(KeyCode::Esc) {
-            self.state = GameState::Playing;
-            self.redraw = true;
+            self.set_state(GameState::Playing);
+
         }
 
         return true;
@@ -217,8 +216,7 @@ impl Game {
 
     fn process_help(&mut self) -> bool {
         if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.state = GameState::MainMenu;
-            self.redraw = true;
+            self.set_state(GameState::MainMenu);
         }
 
         return true;
@@ -233,13 +231,11 @@ impl Game {
         }
 
         if self.engine.is_key_pressed(KeyCode::Char('r')) {
-            self.state = GameState::Playing;
+            self.set_state(GameState::Playing);
             self.gameover_done = false;
-            self.redraw = true;
         }
         else if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.state = GameState::MainMenu;
-            self.redraw = true;
+            self.set_state(GameState::MainMenu);
         }
 
         return true;
@@ -249,55 +245,57 @@ impl Game {
         self.obs_table.regen_table();
         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
         self.player = PlayerController::reset_player(&self.obs_table, &self.player);
-        self.redraw = true;
-        self.state = GameState::Playing;
+        self.set_state(GameState::Playing);
         return true;
     }
 
     fn process_playing(&mut self) -> bool {
         if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.state = GameState::MainMenu;
-            self.redraw = true;
+            self.set_state(GameState::MainMenu);
         }
         else if self.engine.is_key_pressed(KeyCode::Char(';')) {
-            self.state = GameState::LookMode;
-            self.redraw = true;
+            self.set_state(GameState::LookMode);
         }
         else if self.engine.is_key_pressed(KeyCode::Enter) {
-            self.state = GameState::Restart;
-            self.redraw = true;
+            self.set_state(GameState::Restart);
         }
         else {
             for keycode in self.player_control.get_keys() {
                 if self.engine.is_key_pressed(*keycode) {
+                    // move player according to the key pressed
                     let result = self.player_control.move_player(&self.obs_table, &self.player, *keycode);
-
                     self.player = result;
 
+                    // check if we reached a goal
                     if self.goal_table.remove_goal_if_reached(self.player.xy()) {
-                        self.state = GameState::DeliveredPackage;
-                        self.redraw = true;
+                        self.set_state(GameState::DeliveredPackage);
                     }
 
+                    // check if the player has reached all the goals
                     if self.goal_table.count() <= 0 {
-                        self.state = GameState::YouWin;
+                        self.set_state(GameState::YouWin);
                         self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
                     }
+
+                    // check if move player returned a player with a GameOver event
                     else if let PlayerEvent::GameOver(_) = self.player.recent_event {
-                        self.state = GameState::GameOver;
+                        self.set_state(GameState::GameOver);
                     }
+
+                    // check if the player's hp has reached 0
                     else if self.player.n_falls >= self.max_falls as i32 {
                         self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
-                        self.state = GameState::GameOver;
-                    }
-                    else {
-                        self.state = match self.state {
-                            GameState::DeliveredPackage => GameState::DeliveredPackage,
-                            _ => GameState::PostMove,
-                        };
+                        self.set_state(GameState::GameOver);
                     }
 
-                    self.redraw = true;
+                    // otherwise go to the state where we update the message log
+                    // after computing the result of the turn
+                    else {
+                        self.set_state(match self.state {
+                            GameState::DeliveredPackage => GameState::DeliveredPackage,
+                            _ => GameState::PostMove,
+                        });
+                    }
 
                     break;
                 }
@@ -307,24 +305,22 @@ impl Game {
         return true;
     }
 
+    // dummy state for the purposes of updating the view after process_move
     fn process_post_move(&mut self) -> bool {
-        self.state = GameState::Playing;
-        self.redraw = true;
+        self.set_state(GameState::Playing);
         return true;
     }
 
 
     fn process_lookmode(&mut self) -> bool {
         if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.state = GameState::MainMenu;
-            self.redraw = true;
+            self.set_state(GameState::MainMenu);
         }
 
         for keycode in self.lookmode.get_keys()  {
              if self.engine.is_key_pressed(*keycode) {
                 let result = self.lookmode.describe_direction(&self.obs_table, &self.player, *keycode);
-                self.state = GameState::LookedAt(result);
-                self.redraw = true;
+                self.set_state(GameState::LookedAt(result));
                 break;
              }
         }
@@ -333,15 +329,18 @@ impl Game {
     }
 
     fn process_looked_at(&mut self) -> bool {
-        self.state = GameState::Playing;
-        self.redraw = true;
+        self.set_state(GameState::Playing);
         return true;
     }
 
     fn process_delivered(&mut self) -> bool {
-        self.state = GameState::Playing;
-        self.redraw = true;
+        self.set_state(GameState::Playing);
         return true;
+    }
+
+    fn set_state(&mut self, state: GameState) {
+        self.state = state;
+        self.redraw = true;
     }
 
     /*
