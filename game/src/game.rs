@@ -29,8 +29,6 @@ pub struct Game {
     player: Player,
 
     engine: ConsoleEngine,
-    window_width: u32,
-    window_height: u32,
 
     max_falls: u32,
     n_goals: u32,
@@ -68,8 +66,6 @@ impl Game {
                 player: Player::new(table_width as i32 / 2, table_height as i32 / 2, 0),
 
                 engine,
-                window_width,
-                window_height,
 
                 max_falls: 4,
                 n_goals: 4,
@@ -144,8 +140,6 @@ impl Game {
 
         if let Some(resize) = self.engine.get_resize() {
             self.engine.resize(resize.0 as u32, resize.1 as u32);
-            self.window_width = resize.0 as u32;
-            self.window_height = resize.1 as u32;
             self.redraw = true;
         }
 
@@ -175,8 +169,8 @@ impl Game {
             self.max_falls,
             self.player_control.max_speed,
             self.player_control.fallover_threshold,
-            self.window_width,
-            self.window_height,
+            self.engine.get_width(),
+            self.engine.get_height(),
             &self.current_lsystem,
         );
         self.engine.print_screen(0, 0, &screen);
