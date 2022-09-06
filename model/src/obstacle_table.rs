@@ -188,9 +188,15 @@ impl ObstacleTable {
                         (to_x, to_y): (i32, i32)) -> bool {
         let x_diff = to_x as i32 - from_x as i32; 
         let y_diff = to_y as i32 - from_y as i32;
-        let h_diff = self.get_height(to_x, to_y) - self.get_height(from_x, from_y);
 
-        x_diff.abs() <= 1 && y_diff.abs() <= 1 && h_diff.abs() <= 1 
+
+        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 {
+            let h_diff = self.get_height(to_x, to_y) - self.get_height(from_x, from_y);
+
+            return x_diff.abs() <= 1 && y_diff.abs() <= 1 && h_diff.abs() <= 1;
+        }
+
+        false
     }
 
     pub fn traversability(&self, 

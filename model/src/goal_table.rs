@@ -52,10 +52,7 @@ impl GoalTable {
                   (region.1 * (height as i32 / 4)) +
                   rand::thread_rng().gen_range((height as i32 / 8)..(height as i32 / 4 - 2)) as i32 * region.1.signum();
 
-            // self.table[p_x as usize][p_y as usize] = Obstacle::Platform(self.get_height(p_x, p_y));
-
             self.goals.insert((p_x, p_y));
-            region = vec_ops::rotate_left(region);
             region = vec_ops::rotate_left(region);
         }
     }

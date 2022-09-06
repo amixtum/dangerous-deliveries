@@ -82,7 +82,7 @@ impl MainViewer {
         let r_panel_x = width as i32 - r_panel_width - 1;
         let msg_log_tl_y = balance_size;
         let msg_log_height = height as i32 - msg_log_tl_y - 2;
-        let table_view_width = width as i32 - r_panel_width;
+        let table_view_width = balance_x;
         let table_view_height = height as i32;
 
         let table_view = self.draw_table(table, goals, player, table_view_width as u32, table_view_height as u32);
@@ -118,10 +118,29 @@ impl MainViewer {
 
         // compute ObstacleTable coordinates
         let middle = player.xy();
-        let tl_x = (middle.0 - (width / 2) as i32).clamp(0, table.width() as i32 - 1);
-        let tl_y = (middle.1 - (height / 2) as i32).clamp(0, table.height() as i32 - 1);
-        let br_x = (middle.0 + (width / 2) as i32).clamp(0, table.width() as i32 - 1);
-        let br_y = (middle.1 + (height / 2) as i32).clamp(0, table.height() as i32 - 1);
+        let mut tl_x = (middle.0 - (width / 2) as i32).clamp(0, table.width() as i32 - 1);
+        let mut tl_y = (middle.1 - (height / 2) as i32).clamp(0, table.height() as i32 - 1);
+
+        let mut br_x = (middle.0 + (width as i32 / 2)).clamp(0, table.width() as i32 - 1);
+        let mut br_y = (middle.1 + (height as i32 / 2)).clamp(0, table.height() as i32 - 1);
+
+        if br_x ==  table.width() as i32 - 1 {
+            tl_x -= (middle.0 + width as i32 / 2) - br_x;
+            tl_x = tl_x.clamp(0, table.width() as i32 - 1);
+        }
+        else if tl_x == 0 {
+            br_x += (middle.0 + width as i32 / 2) - tl_x;
+            br_x = br_x.clamp(0, table.width() as i32 - 1);
+        }
+        
+        if br_y == table.height() as i32 - 1 {
+            tl_y -= (middle.1 + height as i32 / 2) - br_y;
+            tl_y = tl_y.clamp(0, table.height() as i32 - 1)
+        }
+        else if tl_y == 0 {
+            br_y += (middle.1 + height as i32 / 2) - tl_y;
+            br_y = br_y.clamp(0, table.height() as i32 - 1);
+        }
 
         // screen coords
         let mut sc_x = 0;
@@ -288,7 +307,7 @@ impl MainViewer {
         self.message_log.clear();
     }
 
-    pub fn debug_speed_balance(&mut self, player: &Player) {
+    pub fn debug(&mut self, player: &Player) {
         let mut message = String::new();
         message.push_str("B: ");
         message.push_str(&player.balance.0.to_string());
@@ -306,6 +325,14 @@ impl MainViewer {
         message.push_str(&player.speed_x().to_string());
         message.push_str(", ");
         message.push_str(&player.speed_y().to_string());
+
+        self.message_log.push(message);
+
+        let mut message = String::new();
+        message.push_str("P: ");
+        message.push_str(&player.x().to_string());
+        message.push_str(", ");
+        message.push_str(&player.y().to_string());
 
         self.message_log.push(message);
     }

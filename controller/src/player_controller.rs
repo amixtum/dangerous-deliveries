@@ -359,8 +359,8 @@ impl PlayerController {
     fn compute_onrail(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32), (x_dir, y_dir): (f32, f32), onrail_balance_fact: f32) -> (Player, (i32, i32, i32)) {
         let (unit_x, unit_y) = vec_ops::discrete_jmp((inst_x, inst_y));
         let mut next_pos = player.position;
-        next_pos.0 = player.position.0 + unit_x;
-        next_pos.1 = player.position.1 + unit_y;
+        next_pos.0 = (player.position.0 + unit_x).clamp(0, table.width() as i32 - 1);
+        next_pos.1 = (player.position.1 + unit_y).clamp(0, table.height() as i32 - 1);
         next_pos.2 = table.get_height(next_pos.0, next_pos.1);
 
         let mut clone = Player::clone(player);
@@ -479,7 +479,9 @@ impl PlayerController {
 
             if clone.x() != next_pos.0 || clone.y() != next_pos.1 {
                 // move player to next position
-                clone.position = next_pos;
+                clone.position.0 = next_pos.0.clamp(0, table.width() as i32 - 2);
+                clone.position.1 = next_pos.1.clamp(0, table.height() as i32 - 2);
+                clone.position.2 = table.get_height(clone.x(), clone.y());
             } 
 
         // fallover if we cannot traverse to next_pos

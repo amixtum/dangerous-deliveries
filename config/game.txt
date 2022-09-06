@@ -1,5 +1,5 @@
 # number of falls before game over
-max_falls 4
+max_falls 16
 
 # number of goals
-n_goals 4
+n_goals 8

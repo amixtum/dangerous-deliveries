@@ -1,9 +1,3 @@
-# number of goals to be reached
-n_goals 4
-
-# number of falls before game over
-max_falls 4
-
 # probability the turtle generates a pit when executing Place
 pit_gen_p 0.1
 
