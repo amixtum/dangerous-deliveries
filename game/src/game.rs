@@ -1,11 +1,12 @@
 use console_engine::{ConsoleEngine, KeyCode, KeyModifiers};
 
+
 use std::fs;
 
+use util::lsystem::LSystem;
+use util::files;
+
 use model::state::GameState;
-
-//use util::files;
-
 use model::obstacle_table::ObstacleTable;
 use model::goal_table::GoalTable;
 use model::player::Player;
@@ -127,14 +128,14 @@ impl Game {
 
         if self.first_draw {
             self.engine.clear_screen();
-            self.draw();
+            self.print_screen();
             self.engine.draw();
             self.first_draw = false;
         }
 
         if self.redraw {
             self.engine.clear_screen();
-            self.draw();
+            self.print_screen();
             self.engine.draw();
         }
 
@@ -146,7 +147,7 @@ impl Game {
         self.process()
     }
 
-    pub fn draw(&mut self) {
+    pub fn print_screen(&mut self) {
         let screen = self.viewer.get_screen(
             &self.state,
             &self.obs_table,
@@ -167,6 +168,12 @@ impl Game {
             GameState::MainMenu => {
                 return self.process_main_menu();
             },
+            GameState::SizeChooser => {
+                return self.process_size_chooser();
+            },
+            GameState::LSystemChooser(_) => {
+                return self.process_lsystem_chooser();
+            }
             GameState::Help => {
                 return self.process_help();
             },
@@ -209,6 +216,9 @@ impl Game {
         else if self.engine.is_key_pressed(KeyCode::Char('1')) || self.engine.is_key_pressed(KeyCode::Esc) {
             self.set_state(GameState::Playing);
 
+        }
+        else if self.engine.is_key_pressed(KeyCode::Char('2')) {
+            self.set_state(GameState::SizeChooser);
         }
 
         return true;
@@ -343,23 +353,44 @@ impl Game {
         self.redraw = true;
     }
 
-    /*
     fn process_lsystem_chooser(&mut self) -> bool {
-        let mut lsystems = files::get_lsystems();
-        let mut index = 0;
-        while index < lsystems.len() {
-            if let Some(c) = index.to_string().chars().nth(0) {
-                if self.engine.is_key_pressed(KeyCode::Char(c)) {
-                    let lsystem = lsystems.remove(index);
-                    self.obs_table.set_lsystem(lsystem);
-                    self.state = GameState::MainMenu;
-                    break;
+        if let GameState::LSystemChooser(size_index) = self.state {
+            let mut lsystems = files::get_lsystems(&files::get_file_chooser_string(size_index as u32));
+            let mut index = 0;
+            while index < lsystems.len() {
+                if let Some(c) = index.to_string().chars().nth(0) {
+                    if self.engine.is_key_pressed(KeyCode::Char(c)) {
+                        let lsystem = lsystems.remove(index);
+                        self.obs_table.set_lsystem(lsystem);
+                        self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+                        self.player = PlayerController::reset_player(&self.obs_table, &self.player);
+                        self.set_state(GameState::Playing);
+                        break;
+                    }
                 }
-            }
-            index += 1;
+                index += 1;
+            }           
+        }
+
+
+        return true;
+    }
+
+    fn process_size_chooser(&mut self) -> bool {
+        if self.engine.is_key_pressed(KeyCode::Esc) {
+            self.set_state(GameState::MainMenu);
+        }
+        else if self.engine.is_key_pressed(KeyCode::Char('0')) {
+            self.obs_table.resize(40, 20);
+            self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+            self.set_state(GameState::LSystemChooser(0));
+        }
+        else if self.engine.is_key_pressed(KeyCode::Char('1')) {
+            self.obs_table.resize(80, 40);
+            self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+            self.set_state(GameState::LSystemChooser(1));
         }
 
         return true;
     }
-    */
 }

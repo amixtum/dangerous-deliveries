@@ -93,6 +93,13 @@ impl ObstacleTable {
     pub fn resize(&mut self, width: u32, height: u32) {
         self.width = width; 
         self.height = height;
+        self.table.clear();
+        for x in 0..width {
+            self.table.push(Vec::new());
+            for _ in 0..height {
+                self.table[x as usize].push(Obstacle::Platform(0));
+            }
+        }
         self.regen_table();
     }
 

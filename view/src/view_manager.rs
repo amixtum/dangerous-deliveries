@@ -1,10 +1,14 @@
 use console_engine::screen::Screen;
 
+use util::files;
+
 use super::main_viewer::MainViewer;
 use super::gameover_viewer;
 use super::help_viewer;
 use super::main_menu_viewer;
 use super::youwin_viewer;
+use super::options_viewer;
+use super::file_chooser_viewer;
 
 use model::state::GameState;
 use model::obstacle_table::ObstacleTable;
@@ -24,6 +28,7 @@ impl ViewManager {
 }
 
 impl ViewManager {
+
     pub fn get_screen(&mut self, 
                       state: &GameState,
                       obs_table: &ObstacleTable,
@@ -38,6 +43,12 @@ impl ViewManager {
         match state {
             GameState::MainMenu => {
                 return main_menu_viewer::main_menu_screen(window_width, window_height);
+            },
+            GameState::SizeChooser => {
+                return options_viewer::size_chooser_viewer(window_width, window_height);
+            },
+            GameState::LSystemChooser(size_index) => {
+                return file_chooser_viewer::file_chooser_screen(window_width, window_height, &files::get_file_chooser_string(*size_index as u32));
             },
             GameState::Help => {
                 return help_viewer::help_screen(window_width, window_height);
