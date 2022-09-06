@@ -1,25 +1,17 @@
 # dampening for the player's speed
+# (0, 1)
+# 0 for discrete movement
 speed_damp 0.75
 
 # dampening for the player's balance
+# (0, 1)
 balance_damp 0.7
 
-# amount of the orthogonal components of 
-# the player's last speed with respect to the player's current
-# speed to add to the player's balance vector
+# how much turning around affects your balance 
 turn_factor 0.5
 
-# amount of orthogonal components of 
-# the player's last speed with respect to the direction
-# of the rail to add to the player's balance
-# vector
+# how much being on a rail affects your balance
 onrail_balance_factor 0.2
-
-# amount of orthogonal compoents
-# of the player's current speed with respect to the
-# direction of the rail they jumped off
-# of to add to the player's balance vector
-offrail_balance_factor 0.1
 
 # amount speed is mutliplied by when going up
 up_speed_factor 0.66
@@ -33,3 +25,7 @@ max_speed 5
 # if any component of the player's balance vector
 # is above this value, they fall over
 fallover_threshold 1.1
+
+
+# no longer used 
+offrail_balance_factor 0.1

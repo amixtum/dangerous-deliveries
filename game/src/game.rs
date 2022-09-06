@@ -142,11 +142,20 @@ impl Game {
             self.first_draw = false;
         }
 
+        if let Some(resize) = self.engine.get_resize() {
+            self.engine.resize(resize.0 as u32, resize.1 as u32);
+            self.window_width = resize.0 as u32;
+            self.window_height = resize.1 as u32;
+            self.redraw = true;
+        }
+
         if self.redraw {
             //self.engine.clear_screen();
             self.print_screen();
             self.engine.draw();
         }
+
+
 
         done
     }
