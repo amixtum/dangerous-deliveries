@@ -8,7 +8,6 @@ window_height 20
 game_width 40
 
 # height of the game world
-# must be greater than or equal to window_height
 game_height 20
 
 # lsystem file (in config directory)
