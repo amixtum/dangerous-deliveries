@@ -1,6 +1,5 @@
 pub mod game;
 
-use std::env;
 use std::fs;
 
 use project_root;
@@ -8,8 +7,6 @@ use project_root;
 use game::Game;
 
 fn main() -> Result<(), String> {
-    env::set_var("RUST_BACKTRACE", "1");
-    
     if let Ok(mut game) = load_game() {
         while game.run() {
         }
