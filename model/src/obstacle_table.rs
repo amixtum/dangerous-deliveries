@@ -103,13 +103,26 @@ impl ObstacleTable {
             }
         }
 
+        self.regen_turtles();
+         
+        let mut c_idx = 0; 
+        while c_idx < self.lsystem.get_current().len() {
+            self.compute_turtles(self.lsystem.get_current()[c_idx]);
+            c_idx += 1;
+        }
+    }
+
+    fn regen_turtles(&mut self) {
         self.turtles.clear();
         self.saved_positions.clear();
 
-        let x_skip = self.width / self.lsystem.turtles;
-        let y_skip = self.height / self.lsystem.turtles; 
-        let mut p_x = 0;
-        let mut p_y = 0;
+        let x_skip = (self.width as i32 - self.width as i32 / 4) / 
+                     self.lsystem.turtles as i32;
+        let y_skip = (self.height as i32 - self.height as i32 / 4) / 
+                     self.lsystem.turtles as i32;
+
+        let mut p_x = self.width as i32 / 8;
+        let mut p_y = self.height as i32 / 8;
         for _ in 0..self.lsystem.turtles {
             let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
 
@@ -142,17 +155,14 @@ impl ObstacleTable {
                 d_y = rand::thread_rng().gen_range(-1..=1);
             }
 
-            self.turtles.push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
+            self.turtles.push(
+                Turtle::new((p_x as i32, p_y as i32, p_z), 
+                            (d_x, d_y, 0))
+            );
             self.saved_positions.push(Vec::new());
 
             p_x += x_skip as i32;
             p_y += y_skip as i32;
-        }
-
-        let mut c_idx = 0; 
-        while c_idx < self.lsystem.get_current().len() {
-            self.compute_turtles(self.lsystem.get_current()[c_idx]);
-            c_idx += 1;
         }
     }
 
@@ -186,9 +196,8 @@ impl ObstacleTable {
 
     pub fn can_traverse(&self, (from_x, from_y): (i32, i32),
                         (to_x, to_y): (i32, i32)) -> bool {
-        let x_diff = to_x as i32 - from_x as i32; 
-        let y_diff = to_y as i32 - from_y as i32;
-
+        let x_diff = to_x - from_x; 
+        let y_diff = to_y - from_y;
 
         if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 {
             let h_diff = self.get_height(to_x, to_y) - self.get_height(from_x, from_y);

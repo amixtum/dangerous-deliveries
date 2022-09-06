@@ -232,16 +232,24 @@ impl PlayerController {
                         max_speed: f32,
                         fallover_threshold: f32,) -> Player {
         // compute initial speed and balance values
-        let mut player = PlayerController::compute_initial_speed_balance(table,
-                                                                         player, 
-                                                                        (inst_x, inst_y), 
-                                                                        max_speed, 
-                                                                        speed_damp, 
-                                                                        balance_damp, 
-                                                                        turn_fact,);
+        let mut player = PlayerController::compute_initial_speed_balance(
+            table,
+            player, 
+            (inst_x, inst_y), 
+            max_speed, 
+            speed_damp, 
+            balance_damp, 
+            turn_fact,
+        );
 
         // compute position and updated player fields
-        let result = PlayerController::compute_next_position(table, &player, (inst_x, inst_y), onrail_balance_fact);
+        let result = PlayerController::compute_next_position(
+            table, 
+            &player, 
+            (inst_x, inst_y), 
+            onrail_balance_fact
+        );
+
         player = result.0;
         let next_pos = result.1;
 
@@ -479,8 +487,8 @@ impl PlayerController {
 
             if clone.x() != next_pos.0 || clone.y() != next_pos.1 {
                 // move player to next position
-                clone.position.0 = next_pos.0.clamp(0, table.width() as i32 - 2);
-                clone.position.1 = next_pos.1.clamp(0, table.height() as i32 - 2);
+                clone.position.0 = next_pos.0.clamp(0, table.width() as i32 - 1);
+                clone.position.1 = next_pos.1.clamp(0, table.height() as i32 - 1);
                 clone.position.2 = table.get_height(clone.x(), clone.y());
             } 
 

@@ -1,4 +1,4 @@
-iterations 6
+iterations 8
 turtles 1
 
 # Key

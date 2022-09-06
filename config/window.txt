@@ -1,17 +1,17 @@
 # width of the console window
-window_width 64
+window_width 80
 
 # height of the console window 
 window_height 20
 
 # width of the game world
-game_width 40
+game_width 80
 
 # height of the game world
-game_height 20
+game_height 40
 
 # lsystem file (in config directory)
-lsystem lsystem0.txt 
+lsystem lsystem2.txt 
 
 # table file (in config directory)
 table table.txt

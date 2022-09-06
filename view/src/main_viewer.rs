@@ -82,8 +82,8 @@ impl MainViewer {
         let r_panel_x = width as i32 - r_panel_width - 1;
         let msg_log_tl_y = balance_size;
         let msg_log_height = height as i32 - msg_log_tl_y - 2;
-        let table_view_width = balance_x;
-        let table_view_height = height as i32;
+        let table_view_width = balance_x - 1;
+        let table_view_height = height as i32 - 1;
 
         let table_view = self.draw_table(table, goals, player, table_view_width as u32, table_view_height as u32);
         let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
@@ -92,7 +92,7 @@ impl MainViewer {
 
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
-        screen.print_screen(0, 0, &table_view);
+        screen.print_screen(1, 0, &table_view);
         screen.print_fbg(speed_x as i32, 0, "Speed", Color::Cyan, Color::Black);
         screen.print_screen(speed_x as i32, 1, &speed_view);
         screen.print_fbg(balance_x as i32, 0, "Balance", Color::Blue, Color::Black);
@@ -126,20 +126,20 @@ impl MainViewer {
 
         if br_x ==  table.width() as i32 - 1 {
             tl_x -= (middle.0 + width as i32 / 2) - br_x;
-            tl_x = tl_x.clamp(0, table.width() as i32 - 1);
+            tl_x = tl_x.clamp(0, table.width() as i32 - 2);
         }
         else if tl_x == 0 {
             br_x += (middle.0 + width as i32 / 2) - tl_x;
-            br_x = br_x.clamp(0, table.width() as i32 - 1);
+            br_x = br_x.clamp(0, table.width() as i32 - 2);
         }
         
         if br_y == table.height() as i32 - 1 {
             tl_y -= (middle.1 + height as i32 / 2) - br_y;
-            tl_y = tl_y.clamp(0, table.height() as i32 - 1)
+            tl_y = tl_y.clamp(0, table.height() as i32 - 2)
         }
         else if tl_y == 0 {
             br_y += (middle.1 + height as i32 / 2) - tl_y;
-            br_y = br_y.clamp(0, table.height() as i32 - 1);
+            br_y = br_y.clamp(0, table.height() as i32 - 2);
         }
 
         // screen coords

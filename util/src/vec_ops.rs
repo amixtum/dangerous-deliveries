@@ -56,19 +56,20 @@ pub fn dot((x, y): (f32, f32), (w, z): (f32, f32)) -> f32 {
 }
 
 pub fn discrete_jmp((x, y): (f32, f32)) -> (i32, i32) {
+    let min = 0.01;
     let mut unit_x: i32 = 0;
-    if x > 0.0 {
+    if x > 0.0 && x - min > 0.0 {
         unit_x = 1;
     }
-    else if x < 0.0 {
+    else if x < 0.0 && x + min < 0.0 {
         unit_x = -1; 
     }
 
     let mut unit_y: i32 = 0;
-    if y > 0.0 {
+    if y > 0.0 && y - min > 0.0 {
         unit_y = 1;
     }
-    else if y < 0.0 {
+    else if y < 0.0 && y + min < 0.0 {
         unit_y = -1; 
     }
 

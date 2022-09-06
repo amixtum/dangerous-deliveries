@@ -109,7 +109,6 @@ impl LSystem {
                 }
 
                 let words: Vec<&str> = line.split_ascii_whitespace().collect();
-
                 if words[0] == "iterations" {
                     if let Ok(num) = words[1].parse::<u32>() {
                         lsystem.iterations = num;
@@ -123,7 +122,7 @@ impl LSystem {
                     continue;                   
                 }
 
-                if first_line {
+                else if first_line {
                     for s in line.split_ascii_whitespace() {
                         if let Some(c) = s.chars().nth(0) {
                             if let Some(letter) = Alphabet::from_char(c) {
