@@ -39,7 +39,8 @@ impl ViewManager {
                       max_speed: f32,
                       fallover_threshold: f32,
                       window_width: u32,
-                      window_height: u32) -> Screen {
+                      window_height: u32,
+                      current_lsystem: &str) -> Screen {
         match state {
             GameState::MainMenu => {
                 return main_menu_viewer::main_menu_screen(window_width, window_height);
@@ -48,7 +49,11 @@ impl ViewManager {
                 return options_viewer::size_chooser_viewer(window_width, window_height);
             },
             GameState::LSystemChooser(size_index) => {
-                return file_chooser_viewer::file_chooser_screen(window_width, window_height, &files::get_file_chooser_string(*size_index as u32));
+                return file_chooser_viewer::file_chooser_screen(
+                    window_width, 
+                    window_height, 
+                    &files::get_file_chooser_string(*size_index as u32),
+                    current_lsystem);
             },
             GameState::Help => {
                 return help_viewer::help_screen(window_width, window_height);

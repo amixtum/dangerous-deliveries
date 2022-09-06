@@ -3,9 +3,9 @@ use console_engine::{ConsoleEngine, KeyCode, KeyModifiers};
 
 use std::fs;
 
-use util::lsystem::LSystem;
 use util::files;
 
+use model::obstacle::Obstacle;
 use model::state::GameState;
 use model::obstacle_table::ObstacleTable;
 use model::goal_table::GoalTable;
@@ -36,11 +36,13 @@ pub struct Game {
     n_goals: u32,
 
     state: GameState,
+    last_state: GameState,
 
     redraw: bool,
     first_draw: bool,
     gameover_done: bool,
 
+    current_lsystem: String,
 }
 
 impl Game {
@@ -73,16 +75,23 @@ impl Game {
                 n_goals: 4,
 
                 state: GameState::MainMenu,
+                last_state: GameState::MainMenu,
 
                 redraw: true,
                 first_draw: true,
                 gameover_done: false,
 
+                current_lsystem: String::new(), 
             };
+
+            if let Some(pair) = lsystem_file.rsplit_once('/') {
+                g.current_lsystem.push_str(pair.1);
+            }
 
             g.properties_from_file(conf_file);
 
             g.goal_table.regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
+            g.clear_obstacles_at_goals();
 
             return Ok(g);
         }
@@ -127,14 +136,14 @@ impl Game {
         let done = self.handle_input(); 
 
         if self.first_draw {
-            self.engine.clear_screen();
+            //self.engine.clear_screen();
             self.print_screen();
             self.engine.draw();
             self.first_draw = false;
         }
 
         if self.redraw {
-            self.engine.clear_screen();
+            //self.engine.clear_screen();
             self.print_screen();
             self.engine.draw();
         }
@@ -159,6 +168,7 @@ impl Game {
             self.player_control.fallover_threshold,
             self.window_width,
             self.window_height,
+            &self.current_lsystem,
         );
         self.engine.print_screen(0, 0, &screen);
     }
@@ -214,8 +224,10 @@ impl Game {
             self.set_state(GameState::Help);
         }
         else if self.engine.is_key_pressed(KeyCode::Char('1')) || self.engine.is_key_pressed(KeyCode::Esc) {
-            self.set_state(GameState::Playing);
-
+            self.set_state(match self.last_state {
+                GameState::LookMode => GameState::LookMode,
+                _ => GameState::Playing, 
+            });
         }
         else if self.engine.is_key_pressed(KeyCode::Char('2')) {
             self.set_state(GameState::SizeChooser);
@@ -234,9 +246,7 @@ impl Game {
 
     fn process_gameover(&mut self) -> bool {
         if !self.gameover_done {
-            self.obs_table.regen_table();
-            self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
-            self.player = PlayerController::reset_player(&self.obs_table, &self.player);
+            self.reset_game();
             self.gameover_done = true;
         }
 
@@ -252,9 +262,7 @@ impl Game {
     }
 
     fn process_restart(&mut self) -> bool {
-        self.obs_table.regen_table();
-        self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
-        self.player = PlayerController::reset_player(&self.obs_table, &self.player);
+        self.reset_game();
         self.set_state(GameState::Playing);
         return true;
     }
@@ -349,6 +357,7 @@ impl Game {
     }
 
     fn set_state(&mut self, state: GameState) {
+        self.last_state = GameState::clone(&self.state);
         self.state = state;
         self.redraw = true;
     }
@@ -356,13 +365,17 @@ impl Game {
     fn process_lsystem_chooser(&mut self) -> bool {
         if let GameState::LSystemChooser(size_index) = self.state {
             let mut lsystems = files::get_lsystems(&files::get_file_chooser_string(size_index as u32));
+            let filenames = files::get_config_filenames(&files::get_file_chooser_string(size_index as u32));
             let mut index = 0;
             while index < lsystems.len() {
                 if let Some(c) = index.to_string().chars().nth(0) {
                     if self.engine.is_key_pressed(KeyCode::Char(c)) {
+                        self.current_lsystem.clear();
+                        self.current_lsystem.push_str(&filenames[index]);
                         let lsystem = lsystems.remove(index);
                         self.obs_table.set_lsystem(lsystem);
                         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+                        self.clear_obstacles_at_goals();
                         self.player = PlayerController::reset_player(&self.obs_table, &self.player);
                         self.set_state(GameState::Playing);
                         break;
@@ -372,8 +385,20 @@ impl Game {
             }           
         }
 
-
         return true;
+    }
+
+    fn reset_game(&mut self) {
+        self.obs_table.regen_table();
+        self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
+        self.clear_obstacles_at_goals();
+        self.player = PlayerController::reset_player(&self.obs_table, &self.player);
+    }
+
+    fn clear_obstacles_at_goals(&mut self) {
+        for goal in self.goal_table.goals() {
+            self.obs_table.set_obstacle(*goal, Obstacle::Platform(0));
+        }
     }
 
     fn process_size_chooser(&mut self) -> bool {

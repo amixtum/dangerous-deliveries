@@ -11,7 +11,7 @@ game_width 40
 game_height 20
 
 # lsystem file (in config directory)
-lsystem small_lsystem2.txt 
+lsystem small_lsystem0.txt 
 
 # table file (in config directory)
 table table.txt

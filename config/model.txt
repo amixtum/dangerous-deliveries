@@ -1,13 +1,13 @@
 # dampening for the player's speed
-speed_damp 0.8
+speed_damp 0.75
 
 # dampening for the player's balance
-balance_damp 0.7
+balance_damp 0.8
 
 # amount of the orthogonal components of 
 # the player's last speed with respect to the player's current
 # speed to add to the player's balance vector
-turn_factor 0.5
+turn_factor 0.6
 
 # amount of orthogonal components of 
 # the player's last speed with respect to the direction
@@ -22,10 +22,10 @@ onrail_balance_factor 0.2
 offrail_balance_factor 0.1
 
 # amount speed is mutliplied by when going up
-up_speed_factor 0.5
+up_speed_factor 0.66
 
 # amount speed is multiplied by when going down
-down_speed_factor 1.5
+down_speed_factor 1.33
 
 # the player's speed will not exceed this value
 max_speed 5
