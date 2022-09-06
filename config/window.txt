@@ -5,10 +5,10 @@ window_width 80
 window_height 20
 
 # width of the game world
-game_width 80
+game_width 40
 
 # height of the game world
-game_height 40
+game_height 20
 
 # lsystem file (in config directory)
 lsystem lsystem2.txt 

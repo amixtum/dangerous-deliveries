@@ -1,4 +1,6 @@
-iterations 8
+# iteration 7, turtles 2 for 80x40 maps
+# iterations 6, turtles 1 for 40x20 maps
+iterations 6
 turtles 1
 
 # Key
