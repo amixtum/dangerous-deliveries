@@ -364,6 +364,9 @@ impl PlayerController {
             clone.balance.1 = clone.balance.1 * balance_damp;
         }
 
+        clone.balance.0 += inst_x * turn_fact;
+        clone.balance.1 += inst_y * turn_fact;
+
         if inst_x - 0.01 > 0.0 {
             if clone.speed.0 + 0.01 < 0.0 {
                 clone.balance.0 += inst_x * turn_fact;

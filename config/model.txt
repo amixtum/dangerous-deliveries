@@ -8,7 +8,7 @@ speed_damp 0.66
 balance_damp 0.66
 
 # how much turning around affects your balance 
-turn_factor 0.4
+turn_factor 0.33
 
 # how much being on a rail affects your balance
 onrail_balance_factor 0.2
