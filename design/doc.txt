@@ -51,9 +51,10 @@ Dangerous Deliveries:
       to their current Speed vector or (3) encounters an obstacle.
       In the first two cases, the Balance vector is further
       modified by the equation:
-        Balance_i_t += (Speed_i_t - Speed_i_[t-1]) * turn_factor
+        Balance_x_t += ((Speed_y_t - Speed_y_[t-1]) * Speed_x_t) * turn_factor
         with:
           turn_factor = a number in (0, 1)
+        and the same for Balance_y_t with x and y switched
 
     Falling Over:
       sets:
@@ -106,10 +107,6 @@ Dangerous Deliveries:
           * moving forwards in the parellel direction of a rail does nothing
           * moving backwards in the parallel direction of a rail reduces speed
           * if a player's speed reaches (0, 0) they fall off the rail
-          * moving in any other direction jumps off the rail, and sets:
-            Balance_i_t *= inst_i * offrail_balance_factor 
-            with:
-              offrail_balance_factor in (0, 1)
         Pit:
           * x y position
           * falling into a pit is game over

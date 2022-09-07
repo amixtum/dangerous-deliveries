@@ -3,6 +3,7 @@ use console_engine::KeyCode;
 use std::collections::HashMap;
 use std::collections::hash_map;
 use std::fs;
+//use std::f32::consts::PI;
 
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -334,13 +335,6 @@ impl PlayerController {
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
-
-                // compute balance
-                clone.balance.0 = clone.balance.0 * balance_damp + 
-                                        (inst_y * clone.speed.0) * turn_fact;
-
-                clone.balance.1 = clone.balance.1 * balance_damp + 
-                                        (inst_x * clone.speed.1) * turn_fact;
             },
             Obstacle::Rail(_, (x_dir, y_dir)) => {
                 // compute speed
@@ -349,15 +343,47 @@ impl PlayerController {
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
-
-                // compute balance
-                clone.balance.0 = clone.balance.0 * balance_damp + 
-                                        (y_dir * clone.speed.0) * turn_fact;
-
-                clone.balance.1 = clone.balance.1 * balance_damp + 
-                                        (x_dir * clone.speed.1) * turn_fact;
             }
             _ => { }
+        }
+
+        let norm_speed = vec_ops::normalize(last_speed);
+        let norm_inst = vec_ops::normalize((inst_x, inst_y));
+        if !f32::is_nan(norm_speed.0) && !f32::is_nan(norm_inst.0) { 
+            clone.balance.0 = clone.balance.0 * balance_damp + 
+                              (1.0 - vec_ops::dot(norm_speed, norm_inst)) * 
+                              turn_fact;
+
+            clone.balance.1 = clone.balance.1 * balance_damp + 
+                              (1.0 - vec_ops::dot(norm_speed, norm_inst)) *
+                              turn_fact;
+
+        }
+        else {
+            clone.balance.0 = clone.balance.0 * balance_damp;
+            clone.balance.1 = clone.balance.1 * balance_damp;
+        }
+
+        if inst_x - 0.01 > 0.0 {
+            if clone.speed.0 + 0.01 < 0.0 {
+                clone.balance.0 += inst_x * turn_fact;
+            }
+        }
+        else if inst_x + 0.01 < 0.0 {
+            if clone.speed.0 - 0.01 > 0.0 {
+                clone.balance.0 += inst_x * turn_fact;
+            }
+        }
+
+        if inst_y - 0.01 > 0.0 {
+            if clone.speed.1 + 0.01 < 0.0 {
+                clone.balance.1 += inst_y * turn_fact;
+            }
+        }
+        else if inst_y + 0.01 < 0.0 {
+            if clone.speed.1 - 0.01 > 0.0 {
+                clone.balance.1 += inst_y * turn_fact;
+            }
         }
 
         clone
