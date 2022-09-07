@@ -71,6 +71,24 @@ impl MainViewer {
 
         gv
     }
+
+    pub fn direction_string((xdir, ydir): (i32, i32)) -> String {
+        let mut s = String::new();
+        if ydir == 1 {
+            s.push_str("Down");
+        }
+        else if ydir == -1 {
+            s.push_str("Up");
+        }
+        if xdir == 1 {
+            s.push_str("Right");
+        }
+        else if xdir == -1 {
+            s.push_str("Left");
+        }
+
+        s
+    }
 }
 
 impl MainViewer {
@@ -258,17 +276,23 @@ impl MainViewer {
         let mut message = String::new();
         match event {
             PlayerEvent::Move => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("On Platform"),
-                    Obstacle::Pit => {},
-                    Obstacle::Rail(_, _) => message.push_str("Grinding")
+                match table.get_obstacle_type(player.x(), player.y()) {
+                    ObstacleType::Platform => message.push_str("On Platform"),
+                    ObstacleType::Pit => {},
+                    ObstacleType::Rail(xdir, ydir) => {
+                        message.push_str("Grinding ");
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                    },
                 }
             },
             PlayerEvent::Wait => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Waiting"),
-                    Obstacle::Pit => {},
-                    Obstacle::Rail(_, _) => message.push_str("Grinding")
+                match table.get_obstacle_type(player.x(), player.y()) {
+                    ObstacleType::Platform => message.push_str("Waiting"),
+                    ObstacleType::Pit => {},
+                    ObstacleType::Rail(xdir, ydir) => {
+                        message.push_str("Stalled ");
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                    },
                 }
             },
             PlayerEvent::FallOver => {
@@ -279,17 +303,24 @@ impl MainViewer {
                 }
             },
             PlayerEvent::OffRail => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Offrail"),
-                    Obstacle::Pit => {}, 
-                    Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
+                match table.get_obstacle_type(player.x(), player.y()) {
+                    ObstacleType::Platform => message.push_str("On Platform"),
+                    ObstacleType::Pit => {},
+                    ObstacleType::Rail(xdir, ydir) => {
+                        message.push_str("Grinding ");
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                    },
                 }
+                //Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
             },
             PlayerEvent::OnRail => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("On Platform"),
-                    Obstacle::Pit => {},
-                    Obstacle::Rail(_, _) => message.push_str("Grinding"),
+                match table.get_obstacle_type(player.x(), player.y()) {
+                    ObstacleType::Platform => message.push_str("On Platform"),
+                    ObstacleType::Pit => {},
+                    ObstacleType::Rail(xdir, ydir) => {
+                        message.push_str("Grinding ");
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                    },
                 }
             }
 
@@ -336,4 +367,5 @@ impl MainViewer {
 
         self.message_log.push(message);
     }
+
 }

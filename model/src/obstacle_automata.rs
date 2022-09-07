@@ -54,7 +54,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
         },
         ObstacleType::Rail(xdir, ydir) => {
             if count_rail > count_platform {
-                if rand::thread_rng().gen_bool(0.1) {
+                if rand::thread_rng().gen_bool(0.17) {
                     let mut rng = rand::thread_rng();
                     let dirs: Vec<(i32, i32)>= neighbors.iter().map(|p| {
                         match obs_table.get_obstacle_type(p.0, p.1) {
