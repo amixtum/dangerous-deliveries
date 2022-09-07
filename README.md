@@ -12,7 +12,7 @@ Otherwise install Rust first
 
 * Apply Cellular Automata = G
 
-* Look = Semicolon (Press a direction key afterwards to look in that direction)
+* Look = Semicolon (Press a direction key afterwards to look in that direction) It's a good idea to look at what you're standing on by pressing Semicolon, then Period or Tab
 
 * Move Left = A or H
 
