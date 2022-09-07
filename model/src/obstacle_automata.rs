@@ -42,7 +42,13 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                 return Obstacle::Platform(obs_table.get_height(x, y));
             }
             else {
-                let dir = vec_ops::rotate_left((xdir, ydir));
+                let dir: (i32, i32);
+                if rand::thread_rng().gen_bool(0.5) {
+                    dir = vec_ops::rotate_left((xdir, ydir));
+                }
+                else {
+                    dir = vec_ops::rotate_right((xdir, ydir));
+                }
                 return Obstacle::Rail(obs_table.get_height(x, y), (dir.0 as f32, dir.1 as f32));
             }
         },

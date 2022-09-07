@@ -77,7 +77,7 @@ impl Game {
                 redraw: true,
                 first_draw: true,
                 gameover_done: false,
-                applied_automata: false,
+                applied_automata: true,
 
                 current_lsystem: String::new(), 
             };
@@ -150,8 +150,6 @@ impl Game {
             self.print_screen();
             self.engine.draw();
         }
-
-
 
         done
     }

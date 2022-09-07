@@ -83,7 +83,7 @@ fn load_game() -> Result<Game, String> {
             }
             if let Ok(g) = Game::new(window_width,
                                      window_height,
-                                     30,
+                                     30, // 30 fps
                                      game_width,
                                      game_height,
                                      &format!("{}/config/{}", path, game_conf_path),

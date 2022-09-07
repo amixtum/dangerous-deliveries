@@ -337,10 +337,10 @@ impl PlayerController {
 
                 // compute balance
                 clone.balance.0 = clone.balance.0 * balance_damp + 
-                                        (clone.speed.0 - last_speed.0) * turn_fact;
+                                        (inst_y * clone.speed.0) * turn_fact;
 
                 clone.balance.1 = clone.balance.1 * balance_damp + 
-                                        (clone.speed.1 - last_speed.1) * turn_fact;
+                                        (inst_x * clone.speed.1) * turn_fact;
             },
             Obstacle::Rail(_, (x_dir, y_dir)) => {
                 // compute speed
@@ -352,10 +352,10 @@ impl PlayerController {
 
                 // compute balance
                 clone.balance.0 = clone.balance.0 * balance_damp + 
-                                        (clone.speed.0 - last_speed.0) * turn_fact;
+                                        (inst_y * clone.speed.0) * turn_fact;
 
                 clone.balance.1 = clone.balance.1 * balance_damp + 
-                                        (clone.speed.1 - last_speed.1) * turn_fact;
+                                        (inst_x * clone.speed.1) * turn_fact;
             }
             _ => { }
         }
