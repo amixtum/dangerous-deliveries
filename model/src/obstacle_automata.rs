@@ -30,7 +30,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
             return Obstacle::Pit;
         },
         ObstacleType::Platform => {
-            if count_platform > count_rail && count_platform > 1 {
+            if count_platform > count_rail && count_platform > 2 {
                 return Obstacle::Platform(obs_table.get_height(x, y));
             } 
             else {
@@ -54,7 +54,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
         },
         ObstacleType::Rail(xdir, ydir) => {
             if count_rail > count_platform {
-                if rand::thread_rng().gen_bool(0.17) {
+                if rand::thread_rng().gen_bool(0.16) {
                     let mut rng = rand::thread_rng();
                     let dirs: Vec<(i32, i32)>= neighbors.iter().map(|p| {
                         match obs_table.get_obstacle_type(p.0, p.1) {
@@ -75,10 +75,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                 return Obstacle::Platform(obs_table.get_height(x, y));
             }
             else {
-                let mut dir = (xdir, ydir);
-                if rand::thread_rng().gen_bool(0.5) {
-                    dir = vec_ops::rotate_left((xdir, ydir));
-                }
+                let dir = (xdir, ydir);
                 return Obstacle::Rail(obs_table.get_height(x, y), (dir.0 as f32, dir.1 as f32));
             }
         },
