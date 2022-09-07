@@ -5,7 +5,7 @@ pub enum Obstacle {
     Rail(i32, (f32, f32)),
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ObstacleType {
     Platform,
     Pit,

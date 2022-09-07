@@ -1,5 +1,6 @@
-use super::obstacle::Obstacle;
+use super::obstacle::{Obstacle, ObstacleType};
 use super::traversability::Traversability;
+use super::obstacle_automata;
 
 use util::vec_ops;
 use util::lsystem::{Turtle, Alphabet, LSystem};
@@ -7,6 +8,7 @@ use util::lsystem::{Turtle, Alphabet, LSystem};
 use rand::Rng;
 
 use std::fs;
+use std::collections::HashMap;
 
 pub struct ObstacleTable {
     width: u32,
@@ -47,6 +49,10 @@ impl ObstacleTable {
 
         ct.lsystem.update_n(ct.lsystem.iterations);
         ct.regen_table();
+
+        for _ in 0..8 {
+            ct.apply_automata();
+        }
 
         ct
     }
@@ -117,6 +123,27 @@ impl ObstacleTable {
             self.compute_turtles(self.lsystem.get_current()[c_idx]);
             c_idx += 1;
         }
+
+        for _ in 0..8 {
+            self.apply_automata();
+        }
+    }
+
+    pub fn apply_automata(&mut self) {
+        let mut next = HashMap::new();
+        for x in 0..self.width {
+            for y in 0..self.height {
+                next.insert((x as i32, y as i32), obstacle_automata::compute_next(&self, x as i32, y as i32));
+            }
+        }
+
+        for x in 0..self.width {
+            for y in 0..self.height {
+                if let Some(obstacle) = next.remove(&(x as i32, y as i32)) {
+                    self.set_obstacle((x as i32, y as i32), obstacle);
+                }
+            }
+        }
     }
 
     fn regen_turtles(&mut self) {
@@ -183,6 +210,17 @@ impl ObstacleTable {
 
     pub fn get_obstacle(&self, x: i32, y: i32) -> Obstacle {
         Obstacle::clone(&self.table[x as usize][y as usize])
+    }
+
+    pub fn get_obstacle_type(&self, x: i32, y: i32) -> ObstacleType {
+        match self.get_obstacle(x, y) {
+            Obstacle::Platform(_) => ObstacleType::Platform,
+            Obstacle::Pit => ObstacleType::Pit,
+            Obstacle::Rail(_, dir) => {
+                let i_dir = vec_ops::discrete_jmp(dir);
+                ObstacleType::Rail(i_dir.0, i_dir.1)
+            },
+        }
     }
 
     pub fn get_height(&self, x: i32, y: i32) -> i32 {

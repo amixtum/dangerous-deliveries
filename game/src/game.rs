@@ -39,6 +39,7 @@ pub struct Game {
     redraw: bool,
     first_draw: bool,
     gameover_done: bool,
+    applied_automata: bool,
 
     current_lsystem: String,
 }
@@ -76,6 +77,7 @@ impl Game {
                 redraw: true,
                 first_draw: true,
                 gameover_done: false,
+                applied_automata: false,
 
                 current_lsystem: String::new(), 
             };
@@ -280,6 +282,13 @@ impl Game {
         else if self.engine.is_key_pressed(KeyCode::Enter) {
             self.set_state(GameState::Restart);
         }
+        else if self.engine.is_key_pressed(KeyCode::Char('g')) {
+            if !self.applied_automata {
+                self.obs_table.apply_automata();
+                self.applied_automata = true;
+                self.redraw = true;
+            }
+        }
         else {
             for keycode in self.player_control.get_keys() {
                 if self.engine.is_key_pressed(*keycode) {
@@ -316,6 +325,13 @@ impl Game {
                             GameState::DeliveredPackage => GameState::DeliveredPackage,
                             _ => GameState::PostMove,
                         });
+                    }
+
+                    match self.player.recent_event {
+                        PlayerEvent::Wait => {},
+                        _ => {
+                            self.applied_automata = false;
+                        },
                     }
 
                     break;

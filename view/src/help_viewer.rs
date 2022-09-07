@@ -40,6 +40,9 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
     left_col.push(String::from("Wait"));
     right_col.push(String::from("Tab or Period"));
 
+    left_col.push(String::from("Apply Automata"));
+    right_col.push(String::from("G"));
+
     left_col.push(String::from("Restart"));
     right_col.push(String::from("Enter"));
 
