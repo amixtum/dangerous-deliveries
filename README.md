@@ -10,6 +10,8 @@ Otherwise install Rust first
 
 * Display/Hide Menu = Esc 
 
+* Apply Cellular Automata = G
+
 * Look = Semicolon (Press a direction key afterwards to look in that direction)
 
 * Move Left = A or H
@@ -32,7 +34,11 @@ Otherwise install Rust first
 
 * Restart = Enter
 
-* Don't fall over (or into a bottomless pit of spikes)!
+* Don't fall over (or into a bottomless pit of spikes)! 
+
+* Tip: You can press G to modify the level while you are playing.
+
+* Movement is calculated by adding an instantaneous velocity to your speed when you press a key.
 
 <h3>Configuring</h3>
 
