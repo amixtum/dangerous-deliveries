@@ -1,4 +1,45 @@
+use std::collections::HashSet;
 use std::f32::consts::PI;
+
+pub fn neighbors_set((x, y): (i32, i32),
+                 (tl_x, tl_y): (i32, i32), 
+                 (br_x, br_y): (i32, i32)) -> HashSet<(i32, i32)> {
+    let mut v = HashSet::new();
+
+    if x > tl_x {
+        v.insert((x - 1, y));
+
+        if y > tl_y {
+            v.insert((x - 1, y - 1));
+        }
+
+        if y < br_y {
+            v.insert((x - 1, y + 1));
+        }
+    }
+
+    if x < br_x {
+        v.insert((x + 1, y));
+
+        if y > tl_y {
+            v.insert((x + 1, y - 1));
+        }
+
+        if y < br_y {
+            v.insert((x + 1, y + 1));
+        }
+    }
+
+    if y > tl_y {
+        v.insert((x, y - 1));
+    }
+
+    if y < br_y {
+        v.insert((x, y + 1));
+    }
+
+    v
+}
 
 pub fn neighbors((x, y): (i32, i32), 
                  (tl_x, tl_y): (i32, i32), 

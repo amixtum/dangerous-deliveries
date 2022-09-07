@@ -343,12 +343,9 @@ impl ObstacleTable {
     }
 
     fn place_turtle(&mut self, turtle_index: usize) {
-        if self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2 {
-            return;
-        }
         if rand::thread_rng().gen_bool(self.pit_gen_p as f64) {
                 self.continue_rail = false;
-                if !(self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2){
+                if !(self.turtles[turtle_index].position.0 == self.width as i32 / 2 && self.turtles[turtle_index].position.1 == self.height as i32 / 2) {
                     self.table[self.turtles[turtle_index].position.0 as usize]
                               [self.turtles[turtle_index].position.1 as usize] = Obstacle::Pit;
                 }

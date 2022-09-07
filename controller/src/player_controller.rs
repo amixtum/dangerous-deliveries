@@ -322,7 +322,7 @@ impl PlayerController {
                                      balance_damp: f32, 
                                      turn_fact: f32,) -> Player {
         let norm_inst = vec_ops::normalize((inst_x, inst_y));
-        let last_speed = player.speed;
+        //let last_speed = player.speed;
         let last_obstacle = table.get_obstacle(player.position.0, 
                                                player.position.1);
 
@@ -349,8 +349,14 @@ impl PlayerController {
                 let norm_dir = vec_ops::normalize((x_dir, y_dir));
 
                 let l: f32 = 2.0;
-                clone.speed.0 = clone.speed.0 * speed_damp + norm_dir.0 * l.sqrt();
-                clone.speed.1 = clone.speed.1 * speed_damp + norm_dir.1 * l.sqrt();
+
+                clone.speed.0 = clone.speed.0 * speed_damp;
+                clone.speed.1 = clone.speed.1 * speed_damp;
+
+                if !f32::is_nan(norm_dir.0) {
+                    clone.speed.0 += norm_dir.0 * l.sqrt();
+                    clone.speed.1 += norm_dir.1 * l.sqrt();
+                }
 
                 if !f32::is_nan(norm_inst.0) {
                     clone.speed.0 += norm_inst.0;
@@ -367,12 +373,12 @@ impl PlayerController {
 
         if !f32::is_nan(norm_speed.0) && !f32::is_nan(norm_inst.0) { 
             clone.balance.0 = clone.balance.0 * balance_damp + 
-                              norm_inst.0.signum() *
+                              inst_x.signum() *
                               (1.0 - vec_ops::dot(norm_speed, norm_inst)) * 
                               turn_fact;
 
             clone.balance.1 = clone.balance.1 * balance_damp + 
-                              norm_inst.1.signum() *
+                              inst_y.signum() *
                               (1.0 - vec_ops::dot(norm_speed, norm_inst)) *
                               turn_fact;
 
@@ -427,13 +433,15 @@ impl PlayerController {
         let norm_speed = vec_ops::normalize(clone.speed);
         let norm_dir = vec_ops::normalize((x_dir, y_dir));
 
-        clone.balance.0 += norm_dir.0.signum() * 
-                           (1.0 - vec_ops::dot(norm_speed, norm_dir)) * 
-                           onrail_balance_fact;
+        if !f32::is_nan(norm_speed.0) && !f32::is_nan(norm_dir.0) {
+            clone.balance.0 += norm_dir.0.signum() * 
+                               (1.0 - vec_ops::dot(norm_speed, norm_dir)) * 
+                               onrail_balance_fact;
 
-        clone.balance.1 += norm_dir.1.signum() *
-                           (1.0 - vec_ops::dot(norm_speed, norm_dir)) * 
-                           onrail_balance_fact;
+            clone.balance.1 += norm_dir.1.signum() *
+                               (1.0 - vec_ops::dot(norm_speed, norm_dir)) * 
+                               onrail_balance_fact;
+        }
 
         (clone, next_pos)
     }
