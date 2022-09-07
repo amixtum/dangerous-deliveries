@@ -5,10 +5,10 @@ speed_damp 0.66
 
 # dampening for the player's balance
 # (0, 1)
-balance_damp 0.66
+balance_damp 0.5
 
 # how much turning around affects your balance 
-turn_factor 0.66
+turn_factor 0.33
 
 # how much being on a rail affects your balance
 onrail_balance_factor 0.2
@@ -24,7 +24,7 @@ max_speed 6
 
 # if any component of the player's balance vector
 # is above this value, they fall over
-fallover_threshold 1.0
+fallover_threshold 1.1
 
 
 # no longer used 

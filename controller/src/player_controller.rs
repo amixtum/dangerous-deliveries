@@ -352,10 +352,10 @@ impl PlayerController {
 
                 // compute balance
                 clone.balance.0 = clone.balance.0 * balance_damp + 
-                                        (inst_y * clone.speed.0) * turn_fact;
+                                        (y_dir * clone.speed.0) * turn_fact;
 
                 clone.balance.1 = clone.balance.1 * balance_damp + 
-                                        (inst_x * clone.speed.1) * turn_fact;
+                                        (x_dir * clone.speed.1) * turn_fact;
             }
             _ => { }
         }
