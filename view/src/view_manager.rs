@@ -115,7 +115,7 @@ impl ViewManager {
             },
             GameState::PostMove => {
                 self.main_view.add_message(&obs_table, &player, &player.recent_event);
-                //self.main_view.debug(&player);
+                self.main_view.debug(&player);
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 

@@ -122,7 +122,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                 }
                 return Obstacle::Platform(obs_table.get_height(x, y));
             }
-            else if count_rail < 3 || count_rail == 6 {
+            else if count_rail < 3 || count_rail == 5 {
                 let dir = (xdir, ydir);
                 return Obstacle::Rail(obs_table.get_height(x, y), (dir.0 as f32, dir.1 as f32));
             }
