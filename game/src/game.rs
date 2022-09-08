@@ -267,6 +267,7 @@ impl Game {
     fn process_restart(&mut self) -> bool {
         self.reset_game();
         self.set_state(GameState::Playing);
+        self.applied_automata = true;
         return true;
     }
 
@@ -283,6 +284,7 @@ impl Game {
         else if self.engine.is_key_pressed(KeyCode::Char('g')) {
             if !self.applied_automata {
                 self.obs_table.apply_automata();
+                self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())));
                 self.applied_automata = true;
                 self.redraw = true;
             }
@@ -326,7 +328,10 @@ impl Game {
                     }
 
                     match self.player.recent_event {
-                        PlayerEvent::Wait | PlayerEvent::OnRail | PlayerEvent::OffRail => {},
+                        PlayerEvent::OnRail | PlayerEvent::OffRail => {
+                            self.applied_automata = true;
+                        },
+                        PlayerEvent::Wait => { },
                         _ => {
                             self.applied_automata = false;
                         },
@@ -389,12 +394,15 @@ impl Game {
                     if self.engine.is_key_pressed(KeyCode::Char(c)) {
                         self.current_lsystem.clear();
                         self.current_lsystem.push_str(&filenames[index]);
+
                         let lsystem = lsystems.remove(index);
                         self.obs_table.set_lsystem(lsystem);
+
                         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
                         self.clear_obstacles_at_goals();
                         self.player = PlayerController::reset_player(&self.obs_table, &self.player);
                         self.set_state(GameState::Playing);
+                        self.applied_automata = true;
                         break;
                     }
                 }
@@ -409,6 +417,7 @@ impl Game {
         self.obs_table.regen_table();
         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
         self.clear_obstacles_at_goals();
+        self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())));
         self.player = PlayerController::reset_player(&self.obs_table, &self.player);
     }
 

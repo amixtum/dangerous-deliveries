@@ -369,8 +369,27 @@ impl PlayerController {
                 clone.speed.0 = clone.speed.0 * speed_damp;
                 clone.speed.1 = clone.speed.1 * speed_damp;
                 if !f32::is_nan(norm_inst.0) {
-                    clone.speed.0 += norm_inst.0 * inst_length.sqrt();
-                    clone.speed.1 += norm_inst.1 * inst_length.sqrt();
+                    let units = vec_ops::discrete_jmp(norm_inst);
+                    if inst_length.abs() < 1.0 {
+                        if units.0 == 1 && units.1 == 1 {
+                            clone.speed.0 += norm_inst.0 * inst_length.sqrt();
+                            clone.speed.1 += norm_inst.1 * inst_length.sqrt();
+                        }
+                        else {
+                            clone.speed.0 += norm_inst.0 * inst_length;
+                            clone.speed.1 += norm_inst.1 * inst_length;
+                        }
+                    }
+                    else {
+                        if units.0 == 1 && units.1 == 1 {
+                            clone.speed.0 += norm_inst.0 * inst_length;
+                            clone.speed.1 += norm_inst.1 * inst_length;
+                        }
+                        else {
+                            clone.speed.0 += norm_inst.0 * inst_length.sqrt();
+                            clone.speed.1 += norm_inst.1 * inst_length.sqrt();
+                        }
+                    }
                 }
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
@@ -392,8 +411,8 @@ impl PlayerController {
                 }
 
                 if !f32::is_nan(norm_inst.0) {
-                    clone.speed.0 += norm_inst.0 * (rail_boost / 2.0);
-                    clone.speed.1 += norm_inst.1 * (rail_boost / 2.0);
+                    clone.speed.0 += norm_inst.0 * (rail_boost / 1.5);
+                    clone.speed.1 += norm_inst.1 * (rail_boost / 1.5);
                 }
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
@@ -406,14 +425,15 @@ impl PlayerController {
 
         if !f32::is_nan(norm_inst.0) && !f32::is_nan(norm_last_speed.0) { 
             let inst_v = (norm_inst.0 * inst_length.sqrt(), norm_inst.1 * inst_length.sqrt());
+            let units = vec_ops::discrete_jmp(inst_v);
             let turn = vec_ops::magnitude(inst_v)*vec_ops::magnitude(last_speed) - vec_ops::dot(inst_v, last_speed);
             clone.balance.0 = clone.balance.0 * balance_damp - 
-                              inst_y.signum() *
+                              units.1.signum() as f32 *
                               turn * 
                               turn_fact;
 
             clone.balance.1 = clone.balance.1 * balance_damp + 
-                              inst_x.signum() *
+                              units.0.signum() as f32 *
                               turn *
                               turn_fact;
 
@@ -504,7 +524,7 @@ impl PlayerController {
                 match obs_at_next {
                     Obstacle::Rail(height, _)=> {
                         if (height - last_height).abs() > 1 ||
-                           vec_ops::magnitude(player.speed).abs() < 0.01 {
+                           vec_ops::magnitude(player.speed).abs() < 0.1 {
                             clone = PlayerController::fallover(table, player);
                         }
                         else {

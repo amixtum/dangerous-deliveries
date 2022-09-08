@@ -43,7 +43,7 @@ impl MainViewer {
         gv.symbol_map.insert(ObstacleType::Platform,  '.');
 
         // bug (havent' found it yet)
-        gv.symbol_map.insert(ObstacleType::Rail(0, 0), '.');
+        gv.symbol_map.insert(ObstacleType::Rail(0, 0), '_');
 
         // right
         gv.symbol_map.insert(ObstacleType::Rail(1, 0), '>');
@@ -175,10 +175,23 @@ impl MainViewer {
                     },
                 };
 
+                let t = table.traversability((player.x(), player.y()), (x, y));
                 let symbol = self.symbol_map[&obstacle_type];
-                let colors = self.color_map[&table.traversability((player.x(), player.y()), (x, y))];
+                let colors = self.color_map[&t];
 
-                screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
+                match t {
+                    Traversability::No => {
+                        if symbol == '.' {
+                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::DarkGrey, colors.1));
+                        }
+                        else {
+                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
+                        }
+                    },
+                    _ => {
+                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
+                    }
+                }
 
                 for goal in goals.goals() {
                     if x == goal.0 && y == goal.1 {
