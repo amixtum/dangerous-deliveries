@@ -520,7 +520,8 @@ impl PlayerController {
             },
             Obstacle::Platform(_) => {
                 match obs_at_next {
-                    Obstacle::Rail(_, (x_dir, y_dir)) => {
+                    Obstacle::Rail(_, (_x_dir, _y_dir)) => {
+                        /*
                         let result = PlayerController::compute_onrail(
                             table, 
                             player, 
@@ -532,6 +533,8 @@ impl PlayerController {
                         clone = result.0;
                         next_pos = result.1;
                         clone.recent_event = PlayerEvent::OnRail;
+                        */
+                        next_pos = PlayerController::compute_continue(table, player);
                     },
                     _ => {
                         next_pos = PlayerController::compute_continue(table, player);
