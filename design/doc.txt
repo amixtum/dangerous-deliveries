@@ -36,7 +36,8 @@ Dangerous Deliveries:
           inst_i = i'th component of the Player's instantaneous velocity
           max_speed = a constant
 
-    Balance 
+    Balance (out of date: See controller/src/player_controller.rs for 
+             current computations)
       A 2d vector that represents which direction the Player is leaning.
       If this vector reaches a certain length, the Player falls over.
       A component of a Balance vector is first (later we will
@@ -51,7 +52,9 @@ Dangerous Deliveries:
       to their current Speed vector or (3) encounters an obstacle.
       In the first two cases, the Balance vector is further
       modified by the equation:
-        Balance_x_t += ((Speed_y_t - Speed_y_[t-1]) * Speed_x_t) * turn_factor
+        Balance_x_t += sign of inst_y * 
+                       (1 - dot(normalize(inst_v), 
+                                normalize(Speed_[i - 1]))) * turn_factor
         with:
           turn_factor = a number in (0, 1)
         and the same for Balance_y_t with x and y switched
@@ -86,26 +89,12 @@ Dangerous Deliveries:
         * height
         * +/- x y direction (normal vectors)
         * moving onto the rail "grinds" the rail,
-          * sets: 
-              Balance_i_t += (Speed_i_t - grind_direction_i) * onrail_balance_factor
-            with:
-              grind_direction = either the positive or negative direction of the rail,
-                                depending on which direction the player moved onto the rail
-              onrail_balance_factor in (0, 1)
-          * after setting Balance, sets: 
-              Speed_t = direction * magnitude(Speed_[t-1])
-          * i.e. moves the Player along the rail, disregarding the other
-            axes of their Speed and imbalances them proportionally to the
-            amount of Speed that was negated
+          * moves the Player along the rail, dampening the other
+            axes of their Speed
         * while grinding the rail
           * if the Player grinded the rail upwards, i.e. the player's height has increased
             since grinding the rail, then the player falls over to whichever side their Balance
             vector is most aligned with
-          * sets Balance += (proportional random select between the two perpendicular
-            vectors to the rail with respect to which is closer to
-            Balance) * grind_factor
-          * moving forwards in the parellel direction of a rail does nothing
-          * moving backwards in the parallel direction of a rail reduces speed
           * if a player's speed reaches (0, 0) they fall off the rail
         Pit:
           * x y position
@@ -113,3 +102,13 @@ Dangerous Deliveries:
 
     Score
       A function that maps the amount of time the delivery took to a number
+
+    Goals
+      Objectives for the player to reach (a fixed position)
+      When all the goals have been reached, the game ends
+
+    Opponents
+      Platformers
+        they only move when on Platforms
+        otherwise they let the Rails move them
+        always move towards a fixed objective until it is reached

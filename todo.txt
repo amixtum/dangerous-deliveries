@@ -27,10 +27,9 @@ Menus
           very large
             256, 128 
         
-    difficulty levels
+    difficulty levels -
       chooses which model file to load 
       options
         easy
         medium
         hard
-

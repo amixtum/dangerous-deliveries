@@ -326,7 +326,7 @@ impl Game {
                     }
 
                     match self.player.recent_event {
-                        PlayerEvent::Wait => {},
+                        PlayerEvent::Wait | PlayerEvent::OnRail | PlayerEvent::OffRail => {},
                         _ => {
                             self.applied_automata = false;
                         },

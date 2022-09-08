@@ -467,7 +467,8 @@ impl PlayerController {
             Obstacle::Rail(last_height, _) => {
                 match obs_at_next {
                     Obstacle::Rail(height, _)=> {
-                        if (height - last_height).abs() > 1 {
+                        if (height - last_height).abs() > 1 ||
+                           vec_ops::magnitude(player.speed).abs() < 0.01 {
                             clone = PlayerController::fallover(table, player);
                         }
                         else {
@@ -484,7 +485,13 @@ impl PlayerController {
             Obstacle::Platform(_) => {
                 match obs_at_next {
                     Obstacle::Rail(_, (x_dir, y_dir)) => {
-                        let result = PlayerController::compute_onrail(table, player, (inst_x, inst_y), (x_dir, y_dir), onrail_balance_fact);
+                        let result = PlayerController::compute_onrail(
+                            table, 
+                            player, 
+                            (inst_x, inst_y), 
+                            (x_dir, y_dir), 
+                            onrail_balance_fact
+                        );
                         clone = result.0;
                         next_pos = result.1;
                         clone.recent_event = PlayerEvent::OnRail;
