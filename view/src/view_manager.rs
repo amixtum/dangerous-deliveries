@@ -1,4 +1,7 @@
-use console_engine::screen::Screen;
+use console_engine::{
+screen::Screen,
+Color,
+};
 
 use util::files;
 
@@ -78,7 +81,7 @@ impl ViewManager {
                                                   window_height);
             },
             GameState::LookMode => {
-                self.main_view.add_string(String::from("Look Where?"));
+                self.main_view.add_string(String::from("Look Where?"), Color::Yellow);
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
@@ -89,7 +92,7 @@ impl ViewManager {
                                                   window_height);
             },
             GameState::LookedAt(s) => {
-                self.main_view.add_string(String::from(s));
+                self.main_view.add_string(String::from(s), Color::Green);
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
@@ -100,7 +103,7 @@ impl ViewManager {
                                                   window_height);
             },
             GameState::DeliveredPackage => {
-                self.main_view.add_string(String::from("Delivered"));
+                self.main_view.add_string(String::from("Delivered"), Color::Blue);
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 

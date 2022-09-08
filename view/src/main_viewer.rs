@@ -19,7 +19,7 @@ use model::player_event::PlayerEvent;
 pub struct MainViewer {
     color_map: HashMap<Traversability, (Color, Color)>,
     symbol_map: HashMap<ObstacleType, char>,
-    message_log: Vec<String>,
+    message_log: Vec<(String, Color)>,
     log_length: usize,
     max_message_length: u32,
 }
@@ -253,10 +253,10 @@ impl MainViewer {
         
         while scr_y > 0 && l_index >= 0 {
             if scr_y == height as i32 - 2 {
-                screen.print(1, scr_y, &self.message_log[l_index as usize]);
+                screen.print_fbg(1, scr_y, &self.message_log[l_index as usize].0, self.message_log[l_index as usize].1, Color::Black);
             }
             else {
-                screen.print_fbg(1, scr_y, &self.message_log[l_index as usize], Color::DarkGrey, Color::Black);
+                screen.print_fbg(1, scr_y, &self.message_log[l_index as usize].0, Color::DarkGrey, Color::Black);
             }
             scr_y -= 1;
             l_index -= 1; 
@@ -265,8 +265,8 @@ impl MainViewer {
         screen
     }
 
-    pub fn add_string(&mut self, s: String) {
-        self.message_log.push(s);
+    pub fn add_string(&mut self, s: String, c: Color) {
+        self.message_log.push((s, c));
         if self.message_log.len() > self.log_length {
             self.message_log.remove(0);
         }
@@ -274,6 +274,7 @@ impl MainViewer {
 
     pub fn add_message(&mut self, table: &ObstacleTable, player: &Player, event: &PlayerEvent) {
         let mut message = String::new();
+        let mut color = Color::White;
         match event {
             PlayerEvent::Move => {
                 match table.get_obstacle_type(player.x(), player.y()) {
@@ -281,7 +282,8 @@ impl MainViewer {
                     ObstacleType::Pit => {},
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                        color = Color::Cyan;
                     },
                 }
             },
@@ -291,15 +293,22 @@ impl MainViewer {
                     ObstacleType::Pit => {},
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Stalled ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                        color = Color::Magenta;
                     },
                 }
             },
             PlayerEvent::FallOver => {
                 match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => message.push_str("Fell over"),
+                    Obstacle::Platform(_) => {
+                        message.push_str("Fell over");
+                        color = Color::Red;
+                    },
                     Obstacle::Pit => {},
-                    Obstacle::Rail(_, _) => message.push_str("Fell over"),
+                    Obstacle::Rail(_, _) => {
+                        message.push_str("Fell over");
+                        color = Color::Red;
+                    },
                 }
             },
             PlayerEvent::OffRail => {
@@ -308,7 +317,8 @@ impl MainViewer {
                     ObstacleType::Pit => {},
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                        color = Color::Cyan;
                     },
                 }
                 //Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
@@ -319,7 +329,8 @@ impl MainViewer {
                     ObstacleType::Pit => {},
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)))
+                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                        color = Color::Cyan;
                     },
                 }
             }
@@ -327,7 +338,7 @@ impl MainViewer {
             PlayerEvent::GameOver(_) => {}
         }
 
-        self.message_log.push(message);
+        self.message_log.push((message, color));
 
         if self.message_log.len() >= self.log_length {
             self.message_log.remove(0);
@@ -345,7 +356,7 @@ impl MainViewer {
         message.push_str(", ");
         message.push_str(&player.balance.1.to_string());
 
-        self.message_log.push(message);
+        self.message_log.push((message, Color::White));
 
         if self.message_log.len() >= self.log_length {
             self.message_log.remove(0);
@@ -357,7 +368,7 @@ impl MainViewer {
         message.push_str(", ");
         message.push_str(&player.speed_y().to_string());
 
-        self.message_log.push(message);
+        self.message_log.push((message, Color::White));
 
         let mut message = String::new();
         message.push_str("P: ");
@@ -365,7 +376,7 @@ impl MainViewer {
         message.push_str(", ");
         message.push_str(&player.y().to_string());
 
-        self.message_log.push(message);
+        self.message_log.push((message, Color::White));
     }
 
 }

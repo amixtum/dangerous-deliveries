@@ -1,17 +1,17 @@
 # dampening for the player's speed
 # (0, 1)
 # 0 for discrete movement
-speed_damp 0.66
+speed_damp 0.5
 
 # dampening for the player's balance
 # (0, 1)
 balance_damp 0.5
 
 # how much turning around affects your balance 
-turn_factor 0.66
+turn_factor 0.4
 
 # how much being on a rail affects your balance
-onrail_balance_factor 0.5
+onrail_balance_factor 0.4
 
 # amount speed is mutliplied by when going up
 up_speed_factor 0.66
@@ -20,7 +20,7 @@ up_speed_factor 0.66
 down_speed_factor 1.33
 
 # the player's speed will not exceed this value
-max_speed 4
+max_speed 3
 
 # if any component of the player's balance vector
 # is above this value, they fall over
