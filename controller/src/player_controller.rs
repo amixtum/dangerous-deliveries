@@ -8,7 +8,7 @@ use std::fs;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 use model::obstacle_table::ObstacleTable;
-use model::obstacle::Obstacle;
+use model::obstacle::{Obstacle, ObstacleType};
 
 use util::vec_ops;
 
@@ -215,7 +215,7 @@ impl PlayerController {
         clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
-        clone.recent_event = PlayerEvent::GameOver(clone.time as i32);
+        clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
         clone.time = 0.0;
         clone.n_falls = 0;
         clone
@@ -524,6 +524,7 @@ impl PlayerController {
     fn try_traverse(table: &ObstacleTable, player: &Player, next_pos: (i32, i32, i32), up_speed_fact: f32, down_speed_fact: f32) -> Player {
         // check if next_pos is adjacent to current position
         let mut clone = Player::clone(player);
+        let last_obstacle = table.get_obstacle_type(clone.x(), clone.y());
 
         if table.can_traverse(player.xy(), 
                               (next_pos.0, next_pos.1)) {
@@ -542,6 +543,18 @@ impl PlayerController {
                 clone.position.0 = next_pos.0.clamp(0, table.width() as i32 - 1);
                 clone.position.1 = next_pos.1.clamp(0, table.height() as i32 - 1);
                 clone.position.2 = table.get_height(clone.x(), clone.y());
+
+                match table.get_obstacle_type(clone.x(), clone.y()) {
+                    ObstacleType::Platform => {
+                        match last_obstacle {
+                            ObstacleType::Platform => {clone.recent_event = PlayerEvent::Move;},
+                            ObstacleType::Pit => {},
+                            ObstacleType::Rail(_, _) => {clone.recent_event = PlayerEvent::OffRail;},
+                        }
+                    },
+                    ObstacleType::Pit => {clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);},
+                    ObstacleType::Rail(_, _) => {clone.recent_event = PlayerEvent::OnRail;},
+                }
             } 
 
         // fallover if we cannot traverse to next_pos

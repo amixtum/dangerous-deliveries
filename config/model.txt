@@ -24,7 +24,7 @@ max_speed 4
 
 # if any component of the player's balance vector
 # is above this value, they fall over
-fallover_threshold 1.2
+fallover_threshold 1.3
 
 
 # no longer used 

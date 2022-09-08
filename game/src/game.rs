@@ -302,7 +302,7 @@ impl Game {
                     // check if the player has reached all the goals
                     if self.goal_table.count() <= 0 {
                         self.set_state(GameState::YouWin);
-                        self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
+                        self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
                     }
 
                     // check if move player returned a player with a GameOver event
@@ -312,7 +312,7 @@ impl Game {
 
                     // check if the player's hp has reached 0
                     else if self.player.n_falls >= self.max_falls as i32 {
-                        self.player.recent_event = PlayerEvent::GameOver(self.player.time as i32);
+                        self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
                         self.set_state(GameState::GameOver);
                     }
 

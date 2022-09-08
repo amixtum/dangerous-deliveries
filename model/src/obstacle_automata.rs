@@ -1,4 +1,4 @@
-//use std::f32::consts::PI;
+use std::f32::consts::PI;
 //use std::collections::HashSet;
 use std::collections::HashMap;
 
@@ -43,41 +43,42 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
             return Obstacle::Pit;
         },
         ObstacleType::Platform => {
-            if count_rail > count_platform && count_platform > 1 {
+            if count_rail > count_platform + 1 {
                 return Obstacle::Platform(obs_table.get_height(x, y));
             } 
             else {
-                let dirs: Vec<Direction>= neighbors.iter().map(|p| {
+                let dirs: Vec<(Direction, (i32, i32))>= neighbors.iter().map(|p| {
                     match obs_table.get_obstacle_type(p.0, p.1) {
-                        ObstacleType::Rail(_, _) => {
+                        ObstacleType::Rail(xdir, ydir) => {
                             let dir = (p.0 - x, p.1 - y);
                             if let Some(dir) = dir_map.get(&(dir.0, dir.1)) {
-                                return *dir;
+                                return (*dir, (xdir, ydir));
                             }
-                            return Direction::Center;
+                            return (Direction::Center, (0, 0));
                         },
-                        _ => Direction::Center,
+                        _ => (Direction::Center, (0, 0)),
                     }
                 }).filter(|d| {
-                    match d {
+                    match d.0 {
                         Direction::Center => false,
                         _ => true,
                     }
                 }).collect();
                 let mut rng = rand::thread_rng();
                 if let Some(choice) = dirs.choose(&mut rng) {
-                    match *choice {
+                    let fchoice = (choice.1.0 as f32, choice.1.1 as f32);
+                    match choice.0 {
                         Direction::NorthEast => {
-                            return Obstacle::Rail(obs_table.get_height(x, y), (1.0, -1.0));
+                            return Obstacle::Rail(obs_table.get_height(x, y), fchoice);
                         },
                         Direction::NorthWest => {
-                            return Obstacle::Rail(obs_table.get_height(x, y), (-1.0, -1.0));
+                            return Obstacle::Rail(obs_table.get_height(x, y), fchoice);
                         },
                         Direction::SouthEast => {
-                            return Obstacle::Rail(obs_table.get_height(x, y), (1.0, 1.0));
+                            return Obstacle::Rail(obs_table.get_height(x, y), fchoice);
                         },
                         Direction::SouthWest => {
-                            return Obstacle::Rail(obs_table.get_height(x, y), (-1.0, 1.0));
+                            return Obstacle::Rail(obs_table.get_height(x, y), fchoice);
                         },
                         _ => {},
                     }
@@ -87,7 +88,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
             }
         },
         ObstacleType::Rail(xdir, ydir) => {
-            if count_rail < 3 {
+            if count_rail == 3 {
                 let dirs: Vec<Direction>= neighbors.iter().map(|p| {
                     match obs_table.get_obstacle_type(p.0, p.1) {
                         ObstacleType::Rail(_, _) => {
@@ -111,19 +112,17 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                         Direction::NorthEast |
                         Direction::NorthWest |
                         Direction::SouthEast |
-                        Direction::SouthWest |
-                        Direction::Left |
-                        Direction::Right => {
-                            return Obstacle::Rail(obs_table.get_height(x, y), (xdir as f32, ydir as f32));
+                        Direction::SouthWest => {
+                            let dir = vec_ops::rotate((xdir, ydir), PI / 4.0);
+                            return Obstacle::Rail(obs_table.get_height(x, y), (dir.0 as f32, dir.1 as f32));
                         },
-
                         _ => {},
                     }
                     return Obstacle::Platform(obs_table.get_height(x, y));
                 }
                 return Obstacle::Platform(obs_table.get_height(x, y));
             }
-            else if count_rail == 3 {
+            else if count_rail < 3 || count_rail == 6 {
                 let dir = (xdir, ydir);
                 return Obstacle::Rail(obs_table.get_height(x, y), (dir.0 as f32, dir.1 as f32));
             }

@@ -2,4 +2,4 @@
 pit_gen_p 0.05
 
 # probability the turtle generates a rail
-rail_gen_p 1.0
+rail_gen_p 0.5
