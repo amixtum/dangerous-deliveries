@@ -252,8 +252,8 @@ impl Game {
             GameState::PostMove => {
                 return self.process_post_move();
             },
-            GameState::DeliveredPackage => {
-                return self.process_delivered();
+            GameState::DeliveredPackage(x, y) => {
+                return self.process_delivered(x, y);
             },
             GameState::LookMode => {
                 return self.process_lookmode();
@@ -382,6 +382,12 @@ impl Game {
 
         if self.goal_table.remove_goal_if_reached(self.opponents[index].player.xy()) {
             self.opponents[index].choose_goal(&self.goal_table);
+            for other in 0..self.opponents.len() {
+                if self.opponents[other].goal.0 == self.opponents[index].player.x() && 
+                   self.opponents[other].goal.1 == self.opponents[index].player.y() {
+                    self.opponents[other].choose_goal(&self.goal_table);
+                }
+            }
         }
 
         if self.goal_table.count() <= 0 {
@@ -409,7 +415,7 @@ impl Game {
 
         // check if we reached a goal
         if self.goal_table.remove_goal_if_reached(self.player.xy()) {
-            self.set_state(GameState::DeliveredPackage);
+            self.set_state(GameState::DeliveredPackage(self.player.x(), self.player.y()));
         }
 
         // check if the player has reached all the goals
@@ -432,7 +438,7 @@ impl Game {
         // after computing the result of the turn
         else {
             self.set_state(match self.state {
-                GameState::DeliveredPackage => GameState::DeliveredPackage,
+                GameState::DeliveredPackage(x, y) => GameState::DeliveredPackage(x, y),
                 _ => GameState::PostMove,
             });
         }
@@ -476,8 +482,15 @@ impl Game {
         return true;
     }
 
-    fn process_delivered(&mut self) -> bool {
+    fn process_delivered(&mut self, x: i32, y: i32) -> bool {
         self.player.n_delivered += 1;
+
+        for index in 0..self.opponents.len() {
+            if self.opponents[index].goal.0 == x && self.opponents[index].goal.1 == y {
+                self.opponents[index].choose_goal(&self.goal_table);
+            }
+        }
+
         self.set_state(GameState::Playing);
         return true;
     }

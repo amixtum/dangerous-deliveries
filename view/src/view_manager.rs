@@ -105,7 +105,7 @@ impl ViewManager {
                                                   window_width, 
                                                   window_height);
             },
-            GameState::DeliveredPackage => {
+            GameState::DeliveredPackage(_, _) => {
                 self.main_view.add_string(String::from("Delivered"), Color::Blue);
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,

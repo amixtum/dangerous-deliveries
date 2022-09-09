@@ -13,7 +13,7 @@ pub fn game_over_screen(player: &Player, width: u32, height: u32) -> Screen {
 
     let mut info = String::new();
     if let PlayerEvent::GameOver(time) = player.recent_event {
-        info.push_str(&format!("Score: {}", ((1.0 / time as f32) * player.n_delivered as f32).round() as i32));
+        info.push_str(&format!("Score: {}", ((100.0 / time as f32) * player.n_delivered as f32).round() as i32));
     }
     else {
         info.push_str(&format!("You delivered {} packages", player.n_delivered));

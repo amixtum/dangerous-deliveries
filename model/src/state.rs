@@ -11,7 +11,7 @@ pub enum GameState {
     Playing,
     PostMove,
     Restart,
-    DeliveredPackage,
+    DeliveredPackage(i32, i32),
     LookMode,
     LookedAt(String),
 }
