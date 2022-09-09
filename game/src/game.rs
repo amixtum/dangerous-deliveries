@@ -111,23 +111,24 @@ impl Game {
 impl Game {
     // regen opponent 
     fn add_opponent(&mut self) {
-        let mut x = rand::thread_rng().gen_range(
-            (self.obs_table.width() as i32 / 2 - self.obs_table.width() as i32 / 8)..
-            (self.obs_table.width() as i32 / 2 + self.obs_table.width() as i32 / 8)
+        let mut rng = rand::thread_rng();
+        let mut x = (self.obs_table.width() as i32 / 2) + rng.gen_range(
+            -(self.obs_table.width() as i32) / 8..
+            self.obs_table.width() as i32 / 8
         );
-        let mut y = rand::thread_rng().gen_range(
-            (self.obs_table.height() as i32 / 2 - self.obs_table.height() as i32 / 8)..
-            (self.obs_table.height() as i32 / 2 + self.obs_table.height() as i32 / 8)
+        let mut y = (self.obs_table.height() as i32 / 2) + rng.gen_range(
+            -(self.obs_table.height() as i32) / 8..
+            self.obs_table.height() as i32 / 8
         );
 
         while x == self.player.x() && y == self.player.y() {
-            x = rand::thread_rng().gen_range(
-                (self.obs_table.width() as i32 / 2 - self.obs_table.width() as i32 / 8)..
-                (self.obs_table.width() as i32 / 2 + self.obs_table.width() as i32 / 8)
+            x = (self.obs_table.width() as i32 / 2) + rng.gen_range(
+                -(self.obs_table.width() as i32) / 8..
+                self.obs_table.width() as i32 / 8
             );
-            y = rand::thread_rng().gen_range(
-                (self.obs_table.height() as i32 / 2 - self.obs_table.height() as i32 / 8)..
-                (self.obs_table.height() as i32 / 2 + self.obs_table.height() as i32 / 8)
+            y = (self.obs_table.height() as i32 / 2) + rng.gen_range(
+                -(self.obs_table.height() as i32) / 8..
+                self.obs_table.height() as i32 / 8
             );
         }
 
@@ -504,6 +505,10 @@ impl Game {
                         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
                         self.clear_obstacles_at_goals();
                         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
+                        self.opponents.clear();
+                        for _ in 0..self.n_opponents {
+                            self.add_opponent();
+                        }
                         self.set_state(GameState::Playing);
                         self.applied_automata = true;
                         break;

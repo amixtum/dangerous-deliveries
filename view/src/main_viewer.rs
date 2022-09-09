@@ -310,7 +310,10 @@ impl MainViewer {
             PlayerEvent::Move => {
                 match table.get_obstacle_type(player.x(), player.y()) {
                     ObstacleType::Platform => message.push_str("On Platform"),
-                    ObstacleType::Pit => {},
+                    ObstacleType::Pit => {
+                        message.push_str("Restart");
+                        color = Color::Red;
+                    },
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
@@ -321,7 +324,10 @@ impl MainViewer {
             PlayerEvent::Wait => {
                 match table.get_obstacle_type(player.x(), player.y()) {
                     ObstacleType::Platform => message.push_str("Waiting"),
-                    ObstacleType::Pit => {},
+                    ObstacleType::Pit => {
+                        message.push_str("Restart");
+                        color = Color::Red;
+                    },
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Stalled ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
@@ -335,7 +341,10 @@ impl MainViewer {
                         message.push_str("Fell over");
                         color = Color::Red;
                     },
-                    Obstacle::Pit => {},
+                    Obstacle::Pit => {
+                        message.push_str("Restart");
+                        color = Color::Red;
+                    },
                     Obstacle::Rail(_, _) => {
                         message.push_str("Fell over");
                         color = Color::Red;
@@ -345,7 +354,10 @@ impl MainViewer {
             PlayerEvent::OffRail => {
                 match table.get_obstacle_type(player.x(), player.y()) {
                     ObstacleType::Platform => message.push_str("On Platform"),
-                    ObstacleType::Pit => {},
+                    ObstacleType::Pit => {
+                        message.push_str("Restart");
+                        color = Color::Red;
+                    },
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
@@ -357,7 +369,10 @@ impl MainViewer {
             PlayerEvent::OnRail => {
                 match table.get_obstacle_type(player.x(), player.y()) {
                     ObstacleType::Platform => message.push_str("On Platform"),
-                    ObstacleType::Pit => {},
+                    ObstacleType::Pit => {
+                        message.push_str("Restart");
+                        color = Color::Red;
+                    },
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
