@@ -188,6 +188,13 @@ impl Game {
             self.redraw = true;
         }
 
+        /*
+        for index in 0..self.opponents.len() {
+            self.process_ai(index);
+            self.redraw = true;
+        }
+        */
+
         if self.redraw {
             //self.engine.clear_screen();
             self.print_screen();

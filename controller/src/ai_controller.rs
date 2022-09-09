@@ -1,3 +1,4 @@
+use rand::Rng;
 use rand::prelude::SliceRandom;
 
 use super::player_controller::PlayerController;
@@ -62,20 +63,18 @@ impl AIController {
         // try again, this time including rails
         // dont' exclude the possibility of staying in place indefinitely
         if try_platform.x() == self.player.x() && try_platform.y() == self.player.y() {
-            let moves = AIController::get_moves(&self.player, obs_table, player_control);
+            let mut moves = AIController::get_moves(&self.player, obs_table, player_control);
+            moves.sort_by(|l, r| {
+                self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0))
+            });
 
             if moves.len() > 0 {
-                if let Ok(choice) = moves.choose_weighted(&mut rand::thread_rng(), |pt| {
-                    match pt.0.recent_event {
-                        PlayerEvent::FallOver => {
-                            return 0.000000001; // choose these last
-                        },
-                        _ => {
-                            return 1.0 / (self.dist_to_goal(&pt.0) + 1) as f32;
-                        },
-                    }
-                }) {
-                    return choice.0;
+                if rand::thread_rng().gen_bool(0.77) || moves.len() == 1 {
+                    return moves[0].0;
+                }
+
+                else if moves.len() > 1 {
+                    return moves[1].0;
                 }
             }
         }
@@ -84,20 +83,19 @@ impl AIController {
     }
 
     fn next_platform(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) -> Player {
-        let moves = AIController::get_moves_platform(&self.player, obs_table, player_control);
+        let mut moves = AIController::get_moves_platform(&self.player, obs_table, player_control);
 
         if moves.len() > 0 {
-            if let Ok(choice) = moves.choose_weighted(&mut rand::thread_rng(), |pt| {
-                match pt.0.recent_event {
-                    PlayerEvent::FallOver => {
-                        return 0.000000001;
-                    },
-                    _ => {
-                        return 1.0 / (self.dist_to_goal(&pt.0) + 1) as f32;
-                    },
-                }
-            }) {
-                return choice.0;
+            moves.sort_by(|l, r| {
+                self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0))
+            });
+
+            if rand::thread_rng().gen_bool(0.77) || moves.len() == 1 {
+                return moves[0].0;
+            }
+
+            else if moves.len() > 1 {
+                return moves[1].0;
             }
         }
 
