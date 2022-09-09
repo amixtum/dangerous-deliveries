@@ -96,6 +96,20 @@ impl ObstacleTable {
         self.table[x as usize][y as usize] = obs;
     }
 
+    // assumes an obstacle already exists at x, y and 
+    // and copies its height to the platform
+    // if it is a pit, it gets height 0
+    pub fn set_platform(&mut self, (x, y): (i32, i32)) {
+        match self.table[x as usize][y as usize] {
+            Obstacle::Pit => {
+                self.table[x as usize][y as usize] = Obstacle::Platform(0);
+            },
+            _ => {
+                self.table[x as usize][y as usize] = Obstacle::Platform(self.get_height(x, y));
+            }
+        }
+    }
+
     pub fn resize(&mut self, width: u32, height: u32) {
         self.width = width; 
         self.height = height;
@@ -209,11 +223,11 @@ impl ObstacleTable {
     }
 
     pub fn get_obstacle(&self, x: i32, y: i32) -> Obstacle {
-        Obstacle::clone(&self.table[x as usize][y as usize])
+        self.table[x as usize][y as usize]
     }
 
     pub fn get_obstacle_type(&self, x: i32, y: i32) -> ObstacleType {
-        match self.get_obstacle(x, y) {
+        match self.table[x as usize][y as usize] {
             Obstacle::Platform(_) => ObstacleType::Platform,
             Obstacle::Pit => ObstacleType::Pit,
             Obstacle::Rail(_, dir) => {

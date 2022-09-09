@@ -1,4 +1,6 @@
 use console_engine::{ConsoleEngine, KeyCode, KeyModifiers};
+use rand::Rng;
+use util::heap::Heap;
 
 
 use std::fs;
@@ -9,12 +11,13 @@ use model::obstacle::Obstacle;
 use model::state::GameState;
 use model::obstacle_table::ObstacleTable;
 use model::goal_table::GoalTable;
-use model::player::Player;
+use model::player::{Player, PlayerType};
 use model::player_event::PlayerEvent;
 
 use view::view_manager::ViewManager;
 
 use controller::player_controller::PlayerController;
+use controller::ai_controller::AIController;
 use controller::look_mode::LookMode;
 
 pub struct Game {
@@ -24,6 +27,7 @@ pub struct Game {
     viewer: ViewManager,
 
     player_control: PlayerController,
+    opponents: Vec<AIController>,
     lookmode: LookMode,
 
     player: Player,
@@ -32,6 +36,7 @@ pub struct Game {
 
     max_falls: u32,
     n_goals: u32,
+    n_opponents: u32,
 
     state: GameState,
     last_state: GameState,
@@ -62,6 +67,7 @@ impl Game {
                 viewer: ViewManager::new(),
 
                 player_control: PlayerController::new(model_file),
+                opponents: Vec::new(),
                 lookmode: LookMode::new(),
 
                 player: Player::new(table_width as i32 / 2, table_height as i32 / 2, 0),
@@ -70,6 +76,7 @@ impl Game {
 
                 max_falls: 4,
                 n_goals: 4,
+                n_opponents: 2,
 
                 state: GameState::MainMenu,
                 last_state: GameState::MainMenu,
@@ -91,6 +98,10 @@ impl Game {
             g.goal_table.regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
             g.clear_obstacles_at_goals();
 
+            for _ in 0..g.n_opponents {
+                g.add_opponent();
+            }
+
             return Ok(g);
         }
         Err(format!("Could not create window of width {}, height {}, at target_fps {}", window_width, window_height, target_fps))
@@ -98,6 +109,32 @@ impl Game {
 }
 
 impl Game {
+    // regen opponent 
+    fn add_opponent(&mut self) {
+        let mut x = rand::thread_rng().gen_range(
+            (self.obs_table.width() as i32 / 2 - self.obs_table.width() as i32 / 8)..
+            (self.obs_table.width() as i32 / 2 + self.obs_table.width() as i32 / 8)
+        );
+        let mut y = rand::thread_rng().gen_range(
+            (self.obs_table.height() as i32 / 2 - self.obs_table.height() as i32 / 8)..
+            (self.obs_table.height() as i32 / 2 + self.obs_table.height() as i32 / 8)
+        );
+
+        while x == self.player.x() && y == self.player.y() {
+            x = rand::thread_rng().gen_range(
+                (self.obs_table.width() as i32 / 2 - self.obs_table.width() as i32 / 8)..
+                (self.obs_table.width() as i32 / 2 + self.obs_table.width() as i32 / 8)
+            );
+            y = rand::thread_rng().gen_range(
+                (self.obs_table.height() as i32 / 2 - self.obs_table.height() as i32 / 8)..
+                (self.obs_table.height() as i32 / 2 + self.obs_table.height() as i32 / 8)
+            );
+        }
+
+        self.opponents.push(AIController::new(&self.goal_table, x, y, self.obs_table.get_height(x, y)));
+        self.obs_table.set_obstacle((x, y), Obstacle::Platform(self.obs_table.get_height(x, y)));
+    }
+
     pub fn properties_from_file(&mut self, path: &str) {
         if let Ok(contents) = fs::read_to_string(path) {
             for line in contents.lines() {
@@ -118,6 +155,11 @@ impl Game {
                 else if words[0] == "max_falls" {
                      if let Ok(num) = words[1].parse::<u32>() {
                         self.max_falls = num;
+                    }                   
+                }
+                else if words[0] == "opponents" {
+                     if let Ok(num) = words[1].parse::<u32>() {
+                        self.n_opponents = num;
                     }                   
                 }
             }
@@ -159,13 +201,23 @@ impl Game {
         self.process()
     }
 
+    fn ai_vec(&self) -> Vec<Player> {
+        self.opponents
+            .iter()
+            .map(|item| {
+                item.player
+            }).collect()
+    }
+
     pub fn print_screen(&mut self) {
+
+
         let screen = self.viewer.get_screen(
             &self.state,
             &self.obs_table,
             &self.goal_table,
             &self.player,
-            self.n_goals,
+            &self.ai_vec(),
             self.max_falls,
             self.player_control.max_speed,
             self.player_control.fallover_threshold,
@@ -290,59 +342,109 @@ impl Game {
             }
         }
         else {
-            for keycode in self.player_control.get_keys() {
-                if self.engine.is_key_pressed(*keycode) {
-                    // move player according to the key pressed
-                    let result = self.player_control.move_player(&self.obs_table, &self.player, *keycode);
-                    self.player = result;
+            let keysv = self.player_control.get_keys();
+            for keycode in keysv {
+                if self.engine.is_key_pressed(keycode) {
+                    // compute turn order
+                    let mut heap = Heap::new();
 
-                    // check if we reached a goal
-                    if self.goal_table.remove_goal_if_reached(self.player.xy()) {
-                        self.set_state(GameState::DeliveredPackage);
+                    // insert the human player
+                    heap.insert(self.player.time.round() as u32, (999, PlayerType::Human));
+                    
+                    // insert the ai opponents
+                    for index in 0..self.opponents.len() {
+                        heap.insert(self.opponents[index].player.time.round() as u32, (index, PlayerType::AI));
                     }
 
-                    // check if the player has reached all the goals
-                    if self.goal_table.count() <= 0 {
-                        self.set_state(GameState::YouWin);
-                        self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
+                    while !heap.empty()
+                    {
+                        let goes_next = heap.extract_min();
+                        match goes_next.1 {
+                            PlayerType::Human => {
+                                self.process_move_human(keycode);
+                            }
+                            PlayerType::AI => {
+                                self.process_ai(goes_next.0);
+                            },
+                        }
                     }
-
-                    // check if move player returned a player with a GameOver event
-                    else if let PlayerEvent::GameOver(_) = self.player.recent_event {
-                        self.set_state(GameState::GameOver);
-                    }
-
-                    // check if the player's hp has reached 0
-                    else if self.player.n_falls >= self.max_falls as i32 {
-                        self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
-                        self.set_state(GameState::GameOver);
-                    }
-
-                    // otherwise go to the state where we update the message log
-                    // after computing the result of the turn
-                    else {
-                        self.set_state(match self.state {
-                            GameState::DeliveredPackage => GameState::DeliveredPackage,
-                            _ => GameState::PostMove,
-                        });
-                    }
-
-                    match self.player.recent_event {
-                        PlayerEvent::OnRail | PlayerEvent::OffRail => {
-                            self.applied_automata = true;
-                        },
-                        PlayerEvent::Wait => { },
-                        _ => {
-                            self.applied_automata = false;
-                        },
-                    }
-
                     break;
                 }
             }
         }
 
         return true;
+    }
+
+    fn process_ai(&mut self, index: usize) {
+        self.opponents[index].move_player(&self.obs_table, &self.player_control);
+
+        if self.goal_table.remove_goal_if_reached(self.opponents[index].player.xy()) {
+            self.opponents[index].choose_goal(&self.goal_table);
+        }
+
+        if self.goal_table.count() <= 0 {
+            self.set_state(GameState::GameOver);
+            self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
+        }
+
+        else if let PlayerEvent::GameOver(_) = self.opponents[index].player.recent_event {
+            self.opponents[index].player = PlayerController::reset_ai_continue(&self.obs_table, &self.opponents[index].player);
+        }
+
+        else if self.opponents[index].player.n_falls >= self.max_falls as i32 {
+            self.opponents[index].player = PlayerController::reset_ai_continue(&self.obs_table, &self.opponents[index].player);
+        }
+
+        //self.opponents[index].choose_goal(&self.goal_table);
+
+        self.redraw = true;
+    }
+
+    fn process_move_human(&mut self, keycode: KeyCode) {
+        // move player according to the key pressed
+        let result = self.player_control.move_player(&self.obs_table, &self.player, keycode);
+        self.player = result;
+
+        // check if we reached a goal
+        if self.goal_table.remove_goal_if_reached(self.player.xy()) {
+            self.set_state(GameState::DeliveredPackage);
+        }
+
+        // check if the player has reached all the goals
+        if self.goal_table.count() <= 0 {
+            self.set_state(GameState::GameOver);
+            self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
+        }
+
+        // check if move player returned a player with a GameOver event
+        else if let PlayerEvent::GameOver(_) = self.player.recent_event {
+            self.reset_player_continue();
+        }
+
+        // check if the player's hp has reached 0
+        else if self.player.n_falls >= self.max_falls as i32 {
+            self.reset_player_continue();
+        }
+
+        // otherwise go to the state where we update the message log
+        // after computing the result of the turn
+        else {
+            self.set_state(match self.state {
+                GameState::DeliveredPackage => GameState::DeliveredPackage,
+                _ => GameState::PostMove,
+            });
+        }
+
+        match self.player.recent_event {
+            PlayerEvent::OnRail | PlayerEvent::OffRail => {
+                self.applied_automata = true;
+            },
+            PlayerEvent::Wait => { },
+            _ => {
+                self.applied_automata = false;
+            },
+        }
     }
 
     // dummy state for the purposes of updating the view after process_move
@@ -374,6 +476,7 @@ impl Game {
     }
 
     fn process_delivered(&mut self) -> bool {
+        self.player.n_delivered += 1;
         self.set_state(GameState::Playing);
         return true;
     }
@@ -400,7 +503,7 @@ impl Game {
 
                         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
                         self.clear_obstacles_at_goals();
-                        self.player = PlayerController::reset_player(&self.obs_table, &self.player);
+                        self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
                         self.set_state(GameState::Playing);
                         self.applied_automata = true;
                         break;
@@ -417,8 +520,20 @@ impl Game {
         self.obs_table.regen_table();
         self.goal_table.regen_goals(self.obs_table.width(), self.obs_table.height(), self.n_goals);
         self.clear_obstacles_at_goals();
+
+        self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
         self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())));
-        self.player = PlayerController::reset_player(&self.obs_table, &self.player);
+
+        self.opponents.clear();
+        for _ in 0..self.n_opponents {
+            self.add_opponent();
+        }
+    }
+
+    fn reset_player_continue(&mut self) {
+        self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player);
+        self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())));
+        self.redraw = true;
     }
 
     fn clear_obstacles_at_goals(&mut self) {

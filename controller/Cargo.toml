@@ -10,3 +10,4 @@ util = { path = "../util" }
 model = { path = "../model" }
 
 console_engine = "2.5.0"
+rand = "0.8.5"

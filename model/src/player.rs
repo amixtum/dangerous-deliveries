@@ -9,6 +9,13 @@ pub struct Player {
     pub recent_event: PlayerEvent,
 
     pub n_falls: i32,
+    pub n_delivered: u32,
+}
+
+#[derive(Clone, Copy)]
+pub enum PlayerType {
+    Human,
+    AI,
 }
 
 impl Player {
@@ -20,6 +27,7 @@ impl Player {
             time: 0.0,
             recent_event: PlayerEvent::Wait,
             n_falls: 0,
+            n_delivered: 0,
         } 
     }
 

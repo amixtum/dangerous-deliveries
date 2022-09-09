@@ -13,3 +13,4 @@ controller = { path = "../controller" }
 
 console_engine = "2.5.0"
 project-root = "0.2.2"
+rand = "0.8.5"

@@ -92,7 +92,7 @@ impl MainViewer {
 }
 
 impl MainViewer {
-    pub fn draw_layout(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, max_falls: u32, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
+    pub fn draw_layout(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, ai: &Vec<Player>, max_falls: u32, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
         let balance_size = 5;
         let speed_x = width as i32 - (balance_size * 2) - 1;
         let balance_x = speed_x - (balance_size * 2) - 1;
@@ -103,7 +103,7 @@ impl MainViewer {
         let table_view_width = balance_x - 1;
         let table_view_height = height as i32 - 1;
 
-        let table_view = self.draw_table(table, goals, player, table_view_width as u32, table_view_height as u32);
+        let table_view = self.draw_table(table, goals, player, ai, table_view_width as u32, table_view_height as u32);
         let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
         let speed_view = self.draw_speed(player, max_speed, balance_size as u32);
         let msg_log_view = self.draw_msg_log(msg_log_height as u32);
@@ -131,7 +131,7 @@ impl MainViewer {
     // return a Screen of dimensions width x height that maps a width x height section
     // of the ObstacleTable centered on the player (any ObstacleTable coordinates that are out of bounds
     // are clamped out and the screen doesn't draw anything there)
-    pub fn draw_table(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, width: u32, height: u32) -> Screen {
+    pub fn draw_table(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, ai: &Vec<Player>, width: u32, height: u32) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
         // compute ObstacleTable coordinates
@@ -175,14 +175,16 @@ impl MainViewer {
                     },
                 };
 
+                let neighbors = vec_ops::neighbors_set(player.xy(), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+
                 let t = table.traversability((player.x(), player.y()), (x, y));
                 let symbol = self.symbol_map[&obstacle_type];
                 let colors = self.color_map[&t];
 
                 match t {
                     Traversability::No => {
-                        if symbol == '.' {
-                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::DarkGrey, colors.1));
+                        if symbol == '.' && neighbors.contains(&(x, y)) {
+                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Black, Color::Black));
                         }
                         else {
                             screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
@@ -203,6 +205,22 @@ impl MainViewer {
                 match obstacle_type {
                     ObstacleType::Pit => {},
                     _ => {
+                            for p in ai {
+                                if x == p.x() && y == p.y() {
+                                    match p.recent_event {
+                                        PlayerEvent::FallOver => {
+                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::Yellow));
+                                        }
+                                        _ => {
+                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fg(
+                                                '@', 
+                                                Color::Rgb { r: 255, g: 127, b: 0 }));
+                                        }
+                                    }
+                                }
+                            }
+
+                            // draw player last so it is on top
                             if x == player.x() && y == player.y() {
                                 match player.recent_event {
                                     PlayerEvent::FallOver =>  {
@@ -246,8 +264,8 @@ impl MainViewer {
         screen.rect(0, 0, size as i32 * 2, (size as i32) - 1, pixel::pxl_fg('#', color));
 
         // compute position of vector inside the rect
-        let p_x = (((v.0 / max) * (size as f32 * 2.0)) as i32 + (size as i32)).clamp(0, size as i32 * 2);
-        let p_y = (((v.1 / max) * (size as f32)) as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
+        let p_x = (((v.0 / max) * (size as f32 * 2.0)).round() as i32 + (size as i32)).clamp(0, size as i32 * 2);
+        let p_y = (((v.1 / max) * (size as f32)).round() as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
         screen.set_pxl(p_x, p_y, pixel::pxl('*'));

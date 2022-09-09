@@ -2,11 +2,14 @@ pub mod game;
 
 use std::fs;
 
+use std::env;
+
 use project_root;
 
 use game::Game;
 
 fn main() -> Result<(), String> {
+    env::set_var("RUST_BACKTRACE", "1");
     if let Ok(mut game) = load_game() {
         while game.run() {
         }

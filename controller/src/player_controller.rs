@@ -1,7 +1,8 @@
 use console_engine::KeyCode;
 
+use rand::Rng;
+
 use std::collections::HashMap;
-use std::collections::hash_map;
 use std::fs;
 //use std::f32::consts::PI;
 
@@ -187,8 +188,10 @@ impl PlayerController {
         self.fallover_threshold = fallover_threshold;
      }
 
-    pub fn get_keys(&self) -> hash_map::Keys<KeyCode, (f32, f32)> {
-        self.key_map.keys()
+    pub fn get_keys(&self) -> Vec<KeyCode> {
+        self.key_map.keys().map(|k| {
+            k.clone()
+        }).collect()
     }
 
     pub fn get_inst_velocity(&self, key: KeyCode) -> Option<&(f32, f32)> {
@@ -204,7 +207,6 @@ impl PlayerController {
                 self.speed_damp,
                 self.balance_damp,
                 self.turn_factor,
-                self.onrail_balance_factor,
                 self.up_speed_factor,
                 self.down_speed_factor,
                 self.max_speed,
@@ -220,7 +222,6 @@ impl PlayerController {
             self.speed_damp,
             self.balance_damp,
             self.turn_factor,
-            self.onrail_balance_factor,
             self.up_speed_factor,
             self.down_speed_factor,
             self.max_speed,
@@ -230,7 +231,7 @@ impl PlayerController {
         );
     }
 
-    pub fn reset_player(table: &ObstacleTable, player: &Player) -> Player {
+    pub fn reset_player_gameover(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
         clone.speed = (0.0, 0.0);
@@ -241,13 +242,54 @@ impl PlayerController {
         clone
     }
 
+    pub fn reset_player_continue(table: &ObstacleTable, player: &Player) -> Player {
+        let mut clone = Player::clone(player);
+        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
+        clone.speed = (0.0, 0.0);
+        clone.balance = (0.0, 0.0);
+        clone.n_falls = 0;
+        clone.time += 2.0;
+        clone
+    }
+
+    pub fn reset_ai_continue(table: &ObstacleTable, player: &Player) -> Player {
+        let mut clone = Player::clone(player);
+        let mut x = rand::thread_rng().gen_range(
+            (table.width() as i32 / 2 - table.width() as i32 / 8)..
+            (table.width() as i32 / 2 + table.width() as i32 / 8)
+        );
+        let mut y = rand::thread_rng().gen_range(
+            (table.height() as i32 / 2 - table.height() as i32 / 8)..
+            (table.height() as i32 / 2 + table.height() as i32 / 8)
+        );
+
+        while x == table.width() as i32 / 2 && y == table.height() as i32 / 2 {
+            x = rand::thread_rng().gen_range(
+                (table.width() as i32 / 2 - table.width() as i32 / 8)..
+                (table.width() as i32 / 2 + table.width() as i32 / 8)
+            );
+            y = rand::thread_rng().gen_range(
+                (table.height() as i32 / 2 - table.height() as i32 / 8)..
+                (table.height() as i32 / 2 + table.height() as i32 / 8)
+            );
+        }
+        clone.position = (
+            x,
+            y,
+            table.get_height(x, y),
+        );
+        clone.speed = (0.0, 0.0);
+        clone.balance = (0.0, 0.0);
+        clone.n_falls = 0;
+        clone
+    }
+
     pub fn compute_move(table: &ObstacleTable, 
                         player: &Player,
                         (inst_x, inst_y): (f32, f32),
                         speed_damp: f32, 
                         balance_damp: f32, 
                         turn_fact: f32,
-                        onrail_balance_fact: f32,
                         up_speed_fact: f32,
                         down_speed_fact: f32,
                         max_speed: f32,
@@ -272,8 +314,6 @@ impl PlayerController {
             table, 
             &player, 
             (inst_x, inst_y), 
-            onrail_balance_fact,
-            rail_boost,
         );
 
         player = result.0;
@@ -297,7 +337,7 @@ impl PlayerController {
         // fall into a pit. Game Over
         if let Obstacle::Pit = table.get_obstacle(next_pos.0, next_pos.1) {
             // reset the player
-            return PlayerController::reset_player(table, &player);
+            return PlayerController::reset_player_continue(table, &player);
         }
 
         // try to move player to next_pos
@@ -338,7 +378,7 @@ impl PlayerController {
                     }
                 }
                 if !found {
-                    clone = PlayerController::reset_player(table, player);
+                    clone = PlayerController::reset_player_continue(table, player);
                 }
             },
             _ => { } 
@@ -453,6 +493,7 @@ impl PlayerController {
         clone
     }
 
+    /*
     // updated a player's balance so it must return a new player as well
     fn compute_onrail(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32), (x_dir, y_dir): (f32, f32), onrail_balance_fact: f32, rail_boost: f32) -> (Player, (i32, i32, i32)) {
         let (unit_x, unit_y) = vec_ops::discrete_jmp((inst_x, inst_y));
@@ -480,6 +521,7 @@ impl PlayerController {
 
         (clone, next_pos)
     }
+    */
 
     fn compute_continue(table: &ObstacleTable, player: &Player) -> (i32, i32, i32) {
         let mut next_pos = player.position;
@@ -498,7 +540,7 @@ impl PlayerController {
     // Note: Must call compute_intitial_speed_balance first in order to update speed and balance
     // values, otherwise, this will compute the next position without taking into account user
     // input
-    fn compute_next_position(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32), onrail_balance_fact: f32, rail_boost: f32) -> (Player, (i32, i32, i32)) {
+    fn compute_next_position(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32)) -> (Player, (i32, i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = table.get_obstacle(player.x(), player.y());
         let units = vec_ops::discrete_jmp((inst_x, inst_y));

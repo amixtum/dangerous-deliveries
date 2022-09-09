@@ -37,7 +37,7 @@ impl ViewManager {
                       obs_table: &ObstacleTable,
                       goal_table: &GoalTable,
                       player: &Player,
-                      n_goals: u32,
+                      ai: &Vec<Player>,
                       max_falls: u32,
                       max_speed: f32,
                       fallover_threshold: f32,
@@ -63,7 +63,7 @@ impl ViewManager {
             },
             GameState::GameOver => {
                 self.main_view.clear_log();
-                return gameover_viewer::game_over_screen(&goal_table, &player, n_goals, window_width, window_height);
+                return gameover_viewer::game_over_screen(&player, window_width, window_height);
             },
             GameState::YouWin => {
                 self.main_view.clear_log();
@@ -74,6 +74,7 @@ impl ViewManager {
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
+                                                  ai,
                                                   max_falls,
                                                   max_speed, 
                                                   fallover_threshold, 
@@ -85,6 +86,7 @@ impl ViewManager {
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
+                                                  ai,
                                                   max_falls,
                                                   max_speed, 
                                                   fallover_threshold, 
@@ -96,6 +98,7 @@ impl ViewManager {
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
+                                                  ai,
                                                   max_falls,
                                                   max_speed, 
                                                   fallover_threshold, 
@@ -107,6 +110,7 @@ impl ViewManager {
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
+                                                  ai,
                                                   max_falls,
                                                   max_speed, 
                                                   fallover_threshold, 
@@ -119,6 +123,7 @@ impl ViewManager {
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
+                                                  ai,
                                                   max_falls,
                                                   max_speed, 
                                                   fallover_threshold, 
@@ -129,6 +134,7 @@ impl ViewManager {
                 return self.main_view.draw_layout(&obs_table, 
                                                   &goal_table,
                                                   &player, 
+                                                  ai,
                                                   max_falls,
                                                   max_speed, 
                                                   fallover_threshold, 
