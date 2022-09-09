@@ -239,16 +239,18 @@ impl PlayerController {
         clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
         clone.time = 0.0;
         clone.n_falls = 0;
+        clone.n_delivered = 0;
         clone
     }
 
     pub fn reset_player_continue(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
+        let last_pos = clone.position;
         clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.n_falls = 0;
-        clone.time += 2.0;
+        clone.time += vec_ops::magnitude((clone.x() as f32 - last_pos.0 as f32, clone.y() as f32 - last_pos.1 as f32)) / 2.0;
         clone
     }
 

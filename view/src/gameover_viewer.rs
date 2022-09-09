@@ -14,7 +14,7 @@ pub fn game_over_screen(obs_table: &ObstacleTable, player: &Player, width: u32, 
 
     let mut info = String::new();
     if let PlayerEvent::GameOver(time) = player.recent_event {
-        info.push_str(&format!("Score: {}", (((obs_table.width() as f32 * obs_table.height() as f32 * 10.0) / time as f32) * player.n_delivered as f32).round() as i32));
+        info.push_str(&format!("Score: {}", (((obs_table.width() as f32 * obs_table.height() as f32) / time as f32) * player.n_delivered as f32).round() as i32));
     }
     else {
         info.push_str(&format!("You delivered {} packages", player.n_delivered));
