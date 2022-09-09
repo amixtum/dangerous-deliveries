@@ -63,7 +63,7 @@ impl ViewManager {
             },
             GameState::GameOver => {
                 self.main_view.clear_log();
-                return gameover_viewer::game_over_screen(&player, window_width, window_height);
+                return gameover_viewer::game_over_screen(obs_table, &player, window_width, window_height);
             },
             GameState::YouWin => {
                 self.main_view.clear_log();
