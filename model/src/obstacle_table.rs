@@ -136,7 +136,7 @@ impl ObstacleTable {
             c_idx += 1;
         }
 
-        for _ in 0..8 {
+        for _ in 0..1 {
             self.apply_automata();
         }
     }

@@ -8,10 +8,7 @@ speed_damp 0.66
 balance_damp 0.5
 
 # how much turning around affects your balance 
-turn_factor 0.5
-
-# how much being on a rail affects your balance
-onrail_balance_factor 0.15
+turn_factor 0.33
 
 # amount speed is mutliplied by when going up
 up_speed_factor 0.66
@@ -20,20 +17,23 @@ up_speed_factor 0.66
 down_speed_factor 1.33
 
 # the player's speed will not exceed this value
-max_speed 3
+max_speed 2.0
 
 # if any component of the player's balance vector
 # is above this value, they fall over
 fallover_threshold 1.33
 
 # magnitude of the instantaneous velocity applied when a key is pressed
-inst_length 1.1
+inst_length 0.9
 
 # rails add a vector of this length to your speed in their direction
 # while letting you add an instantaneous velocity of half this length
-rail_boost 1
+rail_boost 2
 
 # no longer used 
 offrail_balance_factor 0.1
 
+# no longer used
+# how much being on a rail affects your balance
+onrail_balance_factor 0.15
 

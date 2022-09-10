@@ -457,8 +457,8 @@ impl PlayerController {
                 }
 
                 if !f32::is_nan(norm_inst.0) {
-                    clone.speed.0 += norm_inst.0 * (rail_boost / 1.5);
-                    clone.speed.1 += norm_inst.1 * (rail_boost / 1.5);
+                    clone.speed.0 += norm_inst.0 * inst_length;
+                    clone.speed.1 += norm_inst.1 * inst_length;
                 }
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);

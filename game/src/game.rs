@@ -275,11 +275,10 @@ impl Game {
             }
             GameState::Restart => {
                 return self.process_restart();
-            }
-            /*
-            _  => {
-                return false;
-            },*/
+            } /*
+              _  => {
+                  return false;
+              },*/
         }
     }
 
