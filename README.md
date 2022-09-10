@@ -1,14 +1,20 @@
 ![alt text](https://github.com/amixtum/dangerous-deliveries/blob/couch/dd.png?raw=true)
 
+<h1>Dangerous Deliveries</h1>
+
+It is your first day on the job as a delivery skater in the Grind Zone. Grind, skate, and reshape the world around you to deliver all the packages, no matter what.
+
+<h3>How to play:</h3>
+
 If you have Rust installed already just type:
 
     cargo run
 
 Otherwise install Rust first
 
-<h3>How to play:</h3>
+<h4>Controls</h4>
 
-* Display/Hide Menu = Esc 
+* Display/Hide Menu = Esc
 
 * Apply Cellular Automata = G
 
@@ -44,8 +50,10 @@ Otherwise install Rust first
 
 The config directory contains all data files necessary to compute the game
 
-If you would like to add an [lsystem](https://en.wikipedia.org/wiki/L-system), or use a different one, create a new file (adhering to the format described in lsystem0.txt) in the config directory and set:
+If you would like to add an [lsystem](https://en.wikipedia.org/wiki/L-system), or use a different one, create a new file in the config directory, adhering to the format described in lsystem_example.txt, and prefix it with `small_` or `medium_` to make it visible to the level selector for 40x20 or 80x40 maps respectively 
 
-    lsystem <filename>
+e.g. `small_my_lsystem.txt` will be visible when selecting small maps and viewable as `my_lsystem.txt`.
 
-in config/window.txt
+For other map sizes, edit `window.txt` and change `game_width` and `game_height` to a reasonable number. WARNING: Large maps will be slow.
+
+To use an lsystem without the level selector, change `lsystem` in `window.txt` to the name of your lsystem file in the `config` directory.

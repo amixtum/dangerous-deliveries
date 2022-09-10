@@ -1,6 +1,7 @@
 Dangerous Deliveries:
-  A traditional roguelike where you make deliveries 
-  by running through a parkour obstacle course.
+  It is your first day on the job as a delivery skater in the Grind Zone
+  Grind, skate, and reshape the world around you to deliver all the packages
+, no matter what.
 
   Mechanics:
     The Player can move from one point to another, where each point
