@@ -6,17 +6,17 @@ use std::collections::HashMap;
 use std::fs;
 //use std::f32::consts::PI;
 
+use model::obstacle::{Obstacle, ObstacleType};
+use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
-use model::obstacle_table::ObstacleTable;
-use model::obstacle::{Obstacle, ObstacleType};
 
 use util::vec_ops;
 
 pub struct PlayerController {
     key_map: HashMap<KeyCode, (f32, f32)>,
-    pub speed_damp: f32, 
-    pub balance_damp: f32, 
+    pub speed_damp: f32,
+    pub balance_damp: f32,
     pub turn_factor: f32,
     pub onrail_balance_factor: f32,
     pub offrail_balance_factor: f32,
@@ -49,62 +49,54 @@ impl PlayerController {
                 if words.len() == 2 {
                     if words[0] == "rail_boost" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            rail_boost = num; 
+                            rail_boost = num;
                         }
                     }
                     if words[0] == "inst_length" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            inst_length = num; 
+                            inst_length = num;
                         }
                     }
                     if words[0] == "speed_damp" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            speed_damp = num; 
+                            speed_damp = num;
                         }
-                    }
-                    else if words[0] == "balance_damp" {
+                    } else if words[0] == "balance_damp" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            balance_damp = num; 
+                            balance_damp = num;
                         }
-                    }
-                    else if words[0] == "turn_factor" {
+                    } else if words[0] == "turn_factor" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            turn_factor = num; 
+                            turn_factor = num;
                         }
-                    }
-                    else if words[0] == "offrail_balance_factor" {
+                    } else if words[0] == "offrail_balance_factor" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            offrail_balance_factor = num; 
+                            offrail_balance_factor = num;
                         }
                     }
                     if words[0] == "turn_factor" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            turn_factor = num; 
+                            turn_factor = num;
                         }
-                    }
-                    else if words[0] == "onrail_balance_factor" {
+                    } else if words[0] == "onrail_balance_factor" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            onrail_balance_factor = num; 
+                            onrail_balance_factor = num;
                         }
-                    }
-                    else if words[0] == "up_speed_factor" {
+                    } else if words[0] == "up_speed_factor" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            up_speed_factor = num; 
+                            up_speed_factor = num;
                         }
-                    }
-                    else if words[0] == "down_speed_factor" {
+                    } else if words[0] == "down_speed_factor" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            down_speed_factor = num; 
+                            down_speed_factor = num;
                         }
-                    }
-                    else if words[0] == "max_speed" {
+                    } else if words[0] == "max_speed" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            max_speed = num; 
+                            max_speed = num;
                         }
-                    }
-                    else if words[0] == "fallover_threshold" {
+                    } else if words[0] == "fallover_threshold" {
                         if let Ok(num) = words[1].parse::<f32>() {
-                            fallover_threshold = num; 
+                            fallover_threshold = num;
                         }
                     }
                 }
@@ -167,16 +159,18 @@ impl PlayerController {
 }
 
 impl PlayerController {
-     pub fn set_model(&mut self,     
-                      speed_damp: f32, 
-                      balance_damp: f32, 
-                      turn_factor: f32,
-                      onrail_balance_factor: f32,
-                      offrail_balance_factor: f32,
-                      up_speed_factor: f32,
-                      down_speed_factor: f32,
-                      max_speed: f32,
-                      fallover_threshold: f32,) {
+    pub fn set_model(
+        &mut self,
+        speed_damp: f32,
+        balance_damp: f32,
+        turn_factor: f32,
+        onrail_balance_factor: f32,
+        offrail_balance_factor: f32,
+        up_speed_factor: f32,
+        down_speed_factor: f32,
+        max_speed: f32,
+        fallover_threshold: f32,
+    ) {
         self.speed_damp = speed_damp;
         self.balance_damp = balance_damp;
         self.turn_factor = turn_factor;
@@ -186,12 +180,10 @@ impl PlayerController {
         self.down_speed_factor = down_speed_factor;
         self.max_speed = max_speed;
         self.fallover_threshold = fallover_threshold;
-     }
+    }
 
     pub fn get_keys(&self) -> Vec<KeyCode> {
-        self.key_map.keys().map(|k| {
-            k.clone()
-        }).collect()
+        self.key_map.keys().map(|k| k.clone()).collect()
     }
 
     pub fn get_inst_velocity(&self, key: KeyCode) -> Option<&(f32, f32)> {
@@ -233,7 +225,11 @@ impl PlayerController {
 
     pub fn reset_player_gameover(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
-        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
+        clone.position = (
+            table.width() as i32 / 2,
+            table.height() as i32 / 2,
+            table.get_height(table.width() as i32 / 2, table.height() as i32 / 2),
+        );
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
@@ -246,77 +242,78 @@ impl PlayerController {
     pub fn reset_player_continue(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         let last_pos = clone.position;
-        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2, table.get_height(table.width() as i32 / 2, table.height() as i32 / 2));
+        clone.position = (
+            table.width() as i32 / 2,
+            table.height() as i32 / 2,
+            table.get_height(table.width() as i32 / 2, table.height() as i32 / 2),
+        );
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.n_falls = 0;
-        clone.time += vec_ops::magnitude((clone.x() as f32 - last_pos.0 as f32, clone.y() as f32 - last_pos.1 as f32)) / 2.0;
+        clone.time += vec_ops::magnitude((
+            clone.x() as f32 - last_pos.0 as f32,
+            clone.y() as f32 - last_pos.1 as f32,
+        )) / 2.0;
         clone
     }
 
     pub fn reset_ai_continue(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         let mut x = rand::thread_rng().gen_range(
-            (table.width() as i32 / 2 - table.width() as i32 / 8)..
-            (table.width() as i32 / 2 + table.width() as i32 / 8)
+            (table.width() as i32 / 2 - table.width() as i32 / 8)
+                ..(table.width() as i32 / 2 + table.width() as i32 / 8),
         );
         let mut y = rand::thread_rng().gen_range(
-            (table.height() as i32 / 2 - table.height() as i32 / 8)..
-            (table.height() as i32 / 2 + table.height() as i32 / 8)
+            (table.height() as i32 / 2 - table.height() as i32 / 8)
+                ..(table.height() as i32 / 2 + table.height() as i32 / 8),
         );
 
         while x == table.width() as i32 / 2 && y == table.height() as i32 / 2 {
             x = rand::thread_rng().gen_range(
-                (table.width() as i32 / 2 - table.width() as i32 / 8)..
-                (table.width() as i32 / 2 + table.width() as i32 / 8)
+                (table.width() as i32 / 2 - table.width() as i32 / 8)
+                    ..(table.width() as i32 / 2 + table.width() as i32 / 8),
             );
             y = rand::thread_rng().gen_range(
-                (table.height() as i32 / 2 - table.height() as i32 / 8)..
-                (table.height() as i32 / 2 + table.height() as i32 / 8)
+                (table.height() as i32 / 2 - table.height() as i32 / 8)
+                    ..(table.height() as i32 / 2 + table.height() as i32 / 8),
             );
         }
-        clone.position = (
-            x,
-            y,
-            table.get_height(x, y),
-        );
+        clone.position = (x, y, table.get_height(x, y));
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.n_falls = 0;
         clone
     }
 
-    pub fn compute_move(table: &ObstacleTable, 
-                        player: &Player,
-                        (inst_x, inst_y): (f32, f32),
-                        speed_damp: f32, 
-                        balance_damp: f32, 
-                        turn_fact: f32,
-                        up_speed_fact: f32,
-                        down_speed_fact: f32,
-                        max_speed: f32,
-                        fallover_threshold: f32,
-                        inst_length: f32,
-                        rail_boost: f32,) -> Player {
+    pub fn compute_move(
+        table: &ObstacleTable,
+        player: &Player,
+        (inst_x, inst_y): (f32, f32),
+        speed_damp: f32,
+        balance_damp: f32,
+        turn_fact: f32,
+        up_speed_fact: f32,
+        down_speed_fact: f32,
+        max_speed: f32,
+        fallover_threshold: f32,
+        inst_length: f32,
+        rail_boost: f32,
+    ) -> Player {
         // compute initial speed and balance values
         let mut player = PlayerController::compute_initial_speed_balance(
             table,
-            player, 
-            (inst_x, inst_y), 
-            max_speed, 
-            speed_damp, 
-            balance_damp, 
+            player,
+            (inst_x, inst_y),
+            max_speed,
+            speed_damp,
+            balance_damp,
             turn_fact,
             inst_length,
             rail_boost,
         );
 
         // compute position and updated player fields
-        let result = PlayerController::compute_next_position(
-            table, 
-            &player, 
-            (inst_x, inst_y), 
-        );
+        let result = PlayerController::compute_next_position(table, &player, (inst_x, inst_y));
 
         player = result.0;
         let next_pos = result.1;
@@ -327,12 +324,13 @@ impl PlayerController {
             PlayerEvent::FallOver => {
                 return player;
             }
-            _ => {
-            },
+            _ => {}
         }
 
         // fallover if the player is off balance
-        if player.balance.0.abs() >= fallover_threshold || player.balance.1.abs() >= fallover_threshold {
+        if player.balance.0.abs() >= fallover_threshold
+            || player.balance.1.abs() >= fallover_threshold
+        {
             return PlayerController::fallover(table, &player);
         }
 
@@ -346,7 +344,13 @@ impl PlayerController {
         // updating speed values depending on the change
         // in height after the move
         // and return the updated Player
-        return PlayerController::try_traverse(table, &player, next_pos, up_speed_fact, down_speed_fact);
+        return PlayerController::try_traverse(
+            table,
+            &player,
+            next_pos,
+            up_speed_fact,
+            down_speed_fact,
+        );
     }
 
     fn fallover(table: &ObstacleTable, player: &Player) -> Player {
@@ -358,9 +362,11 @@ impl PlayerController {
 
         match table.get_obstacle(player.x(), player.y()) {
             Obstacle::Rail(height, _) => {
-                let neighbors = vec_ops::neighbors(player.xy(), 
-                                                   (0, 0), 
-                                                   (table.width() as i32 - 1, table.height() as i32 - 1));
+                let neighbors = vec_ops::neighbors(
+                    player.xy(),
+                    (0, 0),
+                    (table.width() as i32 - 1, table.height() as i32 - 1),
+                );
                 let mut found = false;
 
                 for neighbor in neighbors {
@@ -370,7 +376,7 @@ impl PlayerController {
                                 clone.position = (neighbor.0, neighbor.1, neighbor_height);
                                 found = true;
                                 break;
-                            } 
+                            }
 
                             continue;
                         }
@@ -382,26 +388,27 @@ impl PlayerController {
                 if !found {
                     clone = PlayerController::reset_player_continue(table, player);
                 }
-            },
-            _ => { } 
+            }
+            _ => {}
         }
 
         clone
     }
 
-    fn compute_initial_speed_balance(table: &ObstacleTable, 
-                                     player: &Player, 
-                                     (inst_x, inst_y): (f32, f32), 
-                                     max_speed: f32, 
-                                     speed_damp: f32, 
-                                     balance_damp: f32, 
-                                     turn_fact: f32,
-                                     inst_length: f32,
-                                     rail_boost: f32,) -> Player {
+    fn compute_initial_speed_balance(
+        table: &ObstacleTable,
+        player: &Player,
+        (inst_x, inst_y): (f32, f32),
+        max_speed: f32,
+        speed_damp: f32,
+        balance_damp: f32,
+        turn_fact: f32,
+        inst_length: f32,
+        rail_boost: f32,
+    ) -> Player {
         let norm_inst = vec_ops::normalize((inst_x, inst_y));
         let last_speed = player.speed;
-        let last_obstacle = table.get_obstacle(player.position.0, 
-                                               player.position.1);
+        let last_obstacle = table.get_obstacle(player.position.0, player.position.1);
 
         let mut clone = Player::clone(player);
 
@@ -416,18 +423,15 @@ impl PlayerController {
                         if units.0 == 1 && units.1 == 1 {
                             clone.speed.0 += norm_inst.0 * inst_length.sqrt();
                             clone.speed.1 += norm_inst.1 * inst_length.sqrt();
-                        }
-                        else {
+                        } else {
                             clone.speed.0 += norm_inst.0 * inst_length;
                             clone.speed.1 += norm_inst.1 * inst_length;
                         }
-                    }
-                    else {
+                    } else {
                         if units.0 == 1 && units.1 == 1 {
                             clone.speed.0 += norm_inst.0 * inst_length;
                             clone.speed.1 += norm_inst.1 * inst_length;
-                        }
-                        else {
+                        } else {
                             clone.speed.0 += norm_inst.0 * inst_length.sqrt();
                             clone.speed.1 += norm_inst.1 * inst_length.sqrt();
                         }
@@ -436,10 +440,10 @@ impl PlayerController {
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
-            },
+            }
             Obstacle::Rail(_, (x_dir, y_dir)) => {
                 // compute speed
-               
+
                 // this will not be NaN, if it is it's a bug
                 // found two on the borders
                 let norm_dir = vec_ops::normalize((x_dir, y_dir));
@@ -460,29 +464,28 @@ impl PlayerController {
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
             }
-            _ => { }
+            _ => {}
         }
 
         let norm_last_speed = vec_ops::normalize(last_speed);
 
-        if !f32::is_nan(norm_inst.0) && !f32::is_nan(norm_last_speed.0) { 
-            let inst_v = (norm_inst.0 * inst_length.sqrt(), norm_inst.1 * inst_length.sqrt());
+        if !f32::is_nan(norm_inst.0) && !f32::is_nan(norm_last_speed.0) {
+            let inst_v = (
+                norm_inst.0 * inst_length.sqrt(),
+                norm_inst.1 * inst_length.sqrt(),
+            );
             let units = vec_ops::discrete_jmp(inst_v);
-            let turn = vec_ops::magnitude(inst_v)*vec_ops::magnitude(last_speed) - vec_ops::dot(inst_v, last_speed);
-            clone.balance.0 = clone.balance.0 * balance_damp - 
-                              units.1.signum() as f32 *
-                              turn * 
-                              turn_fact;
+            let turn = vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed)
+                - vec_ops::dot(inst_v, last_speed);
+            clone.balance.0 =
+                clone.balance.0 * balance_damp - units.1.signum() as f32 * turn * turn_fact;
 
-            clone.balance.1 = clone.balance.1 * balance_damp + 
-                              units.0.signum() as f32 *
-                              turn *
-                              turn_fact;
+            clone.balance.1 =
+                clone.balance.1 * balance_damp + units.0.signum() as f32 * turn * turn_fact;
 
             clone.balance.0 += norm_inst.0 * turn_fact;
             clone.balance.1 += norm_inst.1 * turn_fact;
-        }
-        else {
+        } else {
             if !f32::is_nan(norm_inst.0) {
                 clone.balance.0 += norm_inst.0 * turn_fact;
                 clone.balance.1 += norm_inst.1 * turn_fact;
@@ -512,12 +515,12 @@ impl PlayerController {
         if !f32::is_nan(norm_speed.0) && !f32::is_nan(norm_dir.0) {
             let scaled_dir = (x_dir * rail_boost, y_dir * rail_boost);
             let turn = vec_ops::magnitude(scaled_dir)*vec_ops::magnitude(clone.speed) - vec_ops::dot(clone.speed, scaled_dir);
-            clone.balance.0 += norm_dir.1.signum() * 
+            clone.balance.0 += norm_dir.1.signum() *
                                turn *
                                onrail_balance_fact;
 
             clone.balance.1 += norm_dir.0.signum() *
-                               turn * 
+                               turn *
                                onrail_balance_fact;
         }
 
@@ -528,10 +531,12 @@ impl PlayerController {
     fn compute_continue(table: &ObstacleTable, player: &Player) -> (i32, i32, i32) {
         let mut next_pos = player.position;
 
-        next_pos.0 = ((next_pos.0 as f32 + player.speed.0).round() as i32).clamp(next_pos.0 - 1, next_pos.0 + 1);
+        next_pos.0 = ((next_pos.0 as f32 + player.speed.0).round() as i32)
+            .clamp(next_pos.0 - 1, next_pos.0 + 1);
         next_pos.0 = next_pos.0.clamp(0, table.width() as i32 - 1);
 
-        next_pos.1 = ((next_pos.1 as f32 + player.speed.1).round() as i32).clamp(next_pos.1 - 1, next_pos.1 + 1);
+        next_pos.1 = ((next_pos.1 as f32 + player.speed.1).round() as i32)
+            .clamp(next_pos.1 - 1, next_pos.1 + 1);
         next_pos.1 = next_pos.1.clamp(0, table.height() as i32 - 1);
 
         next_pos.2 = table.get_height(next_pos.0, next_pos.1);
@@ -542,7 +547,11 @@ impl PlayerController {
     // Note: Must call compute_intitial_speed_balance first in order to update speed and balance
     // values, otherwise, this will compute the next position without taking into account user
     // input
-    fn compute_next_position(table: &ObstacleTable, player: &Player, (inst_x, inst_y): (f32, f32)) -> (Player, (i32, i32, i32)) {
+    fn compute_next_position(
+        table: &ObstacleTable,
+        player: &Player,
+        (inst_x, inst_y): (f32, f32),
+    ) -> (Player, (i32, i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = table.get_obstacle(player.x(), player.y());
         let units = vec_ops::discrete_jmp((inst_x, inst_y));
@@ -553,33 +562,32 @@ impl PlayerController {
         clone.recent_event = PlayerEvent::Move;
 
         // bump into border
-        if player.x() + unit_x >= table.width() as i32 ||
-           player.x() + unit_x < 0 ||
-           player.y() + unit_y >= table.height() as i32 ||
-           player.y() + unit_y < 0 {
+        if player.x() + unit_x >= table.width() as i32
+            || player.x() + unit_x < 0
+            || player.y() + unit_y >= table.height() as i32
+            || player.y() + unit_y < 0
+        {
             clone = PlayerController::fallover(table, player);
-            return (clone, clone.position)
+            return (clone, clone.position);
         }
 
         // compute position
         let obs_at_next = table.get_obstacle(player.x() + unit_x, player.y() + unit_y);
         match last_obstacle {
-            Obstacle::Rail(last_height, _) => {
-                match obs_at_next {
-                    Obstacle::Rail(height, _)=> {
-                        if (height - last_height).abs() > 1 ||
-                           vec_ops::magnitude(player.speed).abs() < 0.1 {
-                            clone = PlayerController::fallover(table, player);
-                        }
-                        else {
-                            next_pos = PlayerController::compute_continue(table, player);
-                            clone.recent_event = PlayerEvent::OffRail;
-                        }
-                    },
-                    _ => {
+            Obstacle::Rail(last_height, _) => match obs_at_next {
+                Obstacle::Rail(height, _) => {
+                    if (height - last_height).abs() > 1
+                        || vec_ops::magnitude(player.speed).abs() < 0.1
+                    {
+                        clone = PlayerController::fallover(table, player);
+                    } else {
                         next_pos = PlayerController::compute_continue(table, player);
-                        clone.recent_event = PlayerEvent::OnRail;
-                    },
+                        clone.recent_event = PlayerEvent::OffRail;
+                    }
+                }
+                _ => {
+                    next_pos = PlayerController::compute_continue(table, player);
+                    clone.recent_event = PlayerEvent::OnRail;
                 }
             },
             Obstacle::Platform(_) => {
@@ -587,10 +595,10 @@ impl PlayerController {
                     Obstacle::Rail(_, (_x_dir, _y_dir)) => {
                         /*
                         let result = PlayerController::compute_onrail(
-                            table, 
-                            player, 
-                            (inst_x, inst_y), 
-                            (x_dir, y_dir), 
+                            table,
+                            player,
+                            (inst_x, inst_y),
+                            (x_dir, y_dir),
                             onrail_balance_fact,
                             rail_boost,
                         );
@@ -599,14 +607,14 @@ impl PlayerController {
                         clone.recent_event = PlayerEvent::OnRail;
                         */
                         next_pos = PlayerController::compute_continue(table, player);
-                    },
+                    }
                     _ => {
                         next_pos = PlayerController::compute_continue(table, player);
-                    },
+                    }
                 }
-            },
+            }
 
-            _ => {},
+            _ => {}
         }
 
         if next_pos.0 == player.x() && next_pos.1 == player.y() {
@@ -614,30 +622,35 @@ impl PlayerController {
             return (clone, next_pos);
         }
 
-        if next_pos.0 >= table.width() as i32 ||
-           next_pos.0 < 0 ||
-           next_pos.1 >= table.height() as i32 ||
-           next_pos.1 < 0 {
+        if next_pos.0 >= table.width() as i32
+            || next_pos.0 < 0
+            || next_pos.1 >= table.height() as i32
+            || next_pos.1 < 0
+        {
             clone = PlayerController::fallover(table, &clone);
-            return (clone, clone.position)
+            return (clone, clone.position);
         }
 
         (clone, next_pos)
     }
 
-    fn try_traverse(table: &ObstacleTable, player: &Player, next_pos: (i32, i32, i32), up_speed_fact: f32, down_speed_fact: f32) -> Player {
+    fn try_traverse(
+        table: &ObstacleTable,
+        player: &Player,
+        next_pos: (i32, i32, i32),
+        up_speed_fact: f32,
+        down_speed_fact: f32,
+    ) -> Player {
         // check if next_pos is adjacent to current position
         let mut clone = Player::clone(player);
         let last_obstacle = table.get_obstacle_type(clone.x(), clone.y());
 
-        if table.can_traverse(player.xy(), 
-                              (next_pos.0, next_pos.1)) {
+        if table.can_traverse(player.xy(), (next_pos.0, next_pos.1)) {
             // change speed when height changes
             if next_pos.2 < player.position.2 {
                 clone.speed.0 *= down_speed_fact;
                 clone.speed.1 *= down_speed_fact;
-            }
-            else if next_pos.2 > player.position.2 {
+            } else if next_pos.2 > player.position.2 {
                 clone.speed.0 *= up_speed_fact;
                 clone.speed.1 *= up_speed_fact;
             }
@@ -649,17 +662,23 @@ impl PlayerController {
                 clone.position.2 = table.get_height(clone.x(), clone.y());
 
                 match table.get_obstacle_type(clone.x(), clone.y()) {
-                    ObstacleType::Platform => {
-                        match last_obstacle {
-                            ObstacleType::Platform => {clone.recent_event = PlayerEvent::Move;},
-                            ObstacleType::Pit => {},
-                            ObstacleType::Rail(_, _) => {clone.recent_event = PlayerEvent::OffRail;},
+                    ObstacleType::Platform => match last_obstacle {
+                        ObstacleType::Platform => {
+                            clone.recent_event = PlayerEvent::Move;
+                        }
+                        ObstacleType::Pit => {}
+                        ObstacleType::Rail(_, _) => {
+                            clone.recent_event = PlayerEvent::OffRail;
                         }
                     },
-                    ObstacleType::Pit => {clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);},
-                    ObstacleType::Rail(_, _) => {clone.recent_event = PlayerEvent::OnRail;},
+                    ObstacleType::Pit => {
+                        clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
+                    }
+                    ObstacleType::Rail(_, _) => {
+                        clone.recent_event = PlayerEvent::OnRail;
+                    }
                 }
-            } 
+            }
 
         // fallover if we cannot traverse to next_pos
         // and do not update the player's position

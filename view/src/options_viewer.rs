@@ -1,12 +1,8 @@
-use console_engine::{
-    pixel,
-    screen::Screen,
-    Color,
-};
+use console_engine::{pixel, screen::Screen, Color};
 
 pub fn size_chooser_viewer(width: u32, height: u32) -> Screen {
     let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-    
+
     let mut left_col = Vec::new();
     let mut right_col = Vec::new();
 
@@ -24,7 +20,13 @@ pub fn size_chooser_viewer(width: u32, height: u32) -> Screen {
 
     while index < left_col.len() {
         screen.print_fbg(1, sc_y, &left_col[index].0, left_col[index].1, Color::Black);
-        screen.print_fbg(width as i32 / 2, sc_y, &right_col[index], left_col[index].1, Color::Black);
+        screen.print_fbg(
+            width as i32 / 2,
+            sc_y,
+            &right_col[index],
+            left_col[index].1,
+            Color::Black,
+        );
 
         index += 1;
         sc_y += height as i32 / left_col.len() as i32;

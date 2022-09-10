@@ -1,14 +1,14 @@
 # dampening for the player's speed
 # (0, 1)
 # 0 for discrete movement
-speed_damp 0.5
+speed_damp 0.66
 
 # dampening for the player's balance
 # (0, 1)
 balance_damp 0.5
 
 # how much turning around affects your balance 
-turn_factor 0.55
+turn_factor 0.5
 
 # how much being on a rail affects your balance
 onrail_balance_factor 0.15

@@ -2,9 +2,9 @@ use console_engine::KeyCode;
 
 use std::collections::{hash_map, HashMap};
 
+use model::obstacle::Obstacle;
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
-use model::obstacle::Obstacle;
 
 pub struct LookMode {
     key_map: HashMap<KeyCode, (i32, i32)>,
@@ -15,7 +15,7 @@ impl LookMode {
         let mut lm = LookMode {
             key_map: HashMap::new(),
         };
-        
+
         // left
         lm.key_map.insert(KeyCode::Char('h'), (-1, 0));
         lm.key_map.insert(KeyCode::Char('a'), (-1, 0));
@@ -65,48 +65,46 @@ impl LookMode {
         self.key_map.get(&key)
     }
 
-    pub fn describe_direction(&self, table: &ObstacleTable, player: &Player, key: KeyCode) -> String {
+    pub fn describe_direction(
+        &self,
+        table: &ObstacleTable,
+        player: &Player,
+        key: KeyCode,
+    ) -> String {
         let mut s = String::new();
 
         if let Some(direction) = self.get_direction(key) {
-            let x = player.x() + direction.0; 
+            let x = player.x() + direction.0;
             let y = player.y() + direction.1;
             match table.get_obstacle(x, y) {
                 Obstacle::Platform(_) => {
                     s.push_str("Platform ");
-                },
+                }
                 Obstacle::Pit => {
                     s.push_str("Bottomless Pit ");
-                },
+                }
                 Obstacle::Rail(_, dir) => {
                     let x_dir = dir.0.round() as i32;
                     let y_dir = dir.1.round() as i32;
 
                     if x_dir == 0 && y_dir == -1 {
                         s.push_str("Up Rail");
-                    }
-                    else if x_dir == 0 && y_dir == 1 {
+                    } else if x_dir == 0 && y_dir == 1 {
                         s.push_str("Down Rail");
-                    }
-                    else if x_dir == 1 && y_dir == -1 {
+                    } else if x_dir == 1 && y_dir == -1 {
                         s.push_str("UpRight Rail");
-                    }
-                    else if x_dir == 1 && y_dir == 0 {
+                    } else if x_dir == 1 && y_dir == 0 {
                         s.push_str("Right Rail");
-                    }
-                    else if x_dir == 1 && y_dir == 1 {
+                    } else if x_dir == 1 && y_dir == 1 {
                         s.push_str("DownRight Rail");
-                    }
-                    else if x_dir == -1 && y_dir == -1 {
+                    } else if x_dir == -1 && y_dir == -1 {
                         s.push_str("UpLeft Rail");
-                    }
-                    else if x_dir == -1 && y_dir == 0 {
+                    } else if x_dir == -1 && y_dir == 0 {
                         s.push_str("Left Rail");
-                    }
-                    else if x_dir == -1 && y_dir == 1 {
+                    } else if x_dir == -1 && y_dir == 1 {
                         s.push_str("DownLeft Rail");
                     }
-                },
+                }
             }
         }
 

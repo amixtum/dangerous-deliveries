@@ -2,7 +2,6 @@ use super::lsystem::LSystem;
 
 use project_root;
 
-
 pub fn get_lsystems(size: &str) -> Vec<LSystem> {
     let mut lsystems = Vec::new();
 
@@ -11,8 +10,11 @@ pub fn get_lsystems(size: &str) -> Vec<LSystem> {
     if let Ok(root) = project_root::get_project_root() {
         if let Some(path_str) = root.as_path().to_str() {
             for fname in filenames {
-                lsystems.push(LSystem::from_file(&format!("{}/config/{}", path_str, fname)));
-            } 
+                lsystems.push(LSystem::from_file(&format!(
+                    "{}/config/{}",
+                    path_str, fname
+                )));
+            }
         }
     }
 
@@ -23,7 +25,7 @@ pub fn get_config_filenames(starts_with: &str) -> Vec<String> {
     let mut config_filenames = Vec::new();
     if let Ok(path) = project_root::get_project_root() {
         if let Ok(mut reader) = path.read_dir() {
-            if let Some(config_dir) = reader.find(|dir|{
+            if let Some(config_dir) = reader.find(|dir| {
                 if let Ok(dir) = dir {
                     if let Some(s) = dir.file_name().to_str() {
                         if s == "config" {
@@ -55,7 +57,6 @@ pub fn get_config_filenames(starts_with: &str) -> Vec<String> {
 
     config_filenames
 }
-
 
 pub fn get_file_chooser_string(index: u32) -> String {
     match index {

@@ -1,23 +1,23 @@
-use rand::Rng;
 use rand::prelude::SliceRandom;
+use rand::Rng;
 
 use super::player_controller::PlayerController;
 
+use model::goal_table::GoalTable;
+use model::obstacle::ObstacleType;
+use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
-use model::obstacle_table::ObstacleTable;
-use model::obstacle::ObstacleType;
-use model::goal_table::GoalTable;
 
 use util::vec_ops;
 
 pub struct AIController {
     pub player: Player,
-    pub goal: (i32, i32)
+    pub goal: (i32, i32),
 }
 
 impl AIController {
-    pub fn new(goal_table: &GoalTable, start_x: i32, start_y: i32, height: i32,) -> Self {
+    pub fn new(goal_table: &GoalTable, start_x: i32, start_y: i32, height: i32) -> Self {
         let mut ac = AIController {
             player: Player::new(start_x, start_y, height),
             goal: (-1, -1),
@@ -42,7 +42,11 @@ impl AIController {
         let mut rng = rand::thread_rng();
         let v: Vec<&(i32, i32)> = goal_table.goals().iter().collect();
         if let Ok(choice) = v.choose_weighted(&mut rng, |item| {
-            return 1.0 / vec_ops::magnitude((item.0 as f32 - self.player.x() as f32, item.1 as f32 - self.player.y() as f32));
+            return 1.0
+                / vec_ops::magnitude((
+                    item.0 as f32 - self.player.x() as f32,
+                    item.1 as f32 - self.player.y() as f32,
+                ));
         }) {
             self.goal = **choice;
         }
@@ -56,7 +60,11 @@ impl AIController {
         self.player.x() == self.goal.0 && self.player.y() == self.goal.1
     }
 
-    pub fn next_move(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) -> Player {
+    pub fn next_move(
+        &mut self,
+        obs_table: &ObstacleTable,
+        player_control: &PlayerController,
+    ) -> Player {
         let try_platform = self.next_platform(obs_table, player_control);
 
         // if the only platform is the one the player is standing on,
@@ -64,16 +72,12 @@ impl AIController {
         // dont' exclude the possibility of staying in place indefinitely
         if try_platform.x() == self.player.x() && try_platform.y() == self.player.y() {
             let mut moves = AIController::get_moves(&self.player, obs_table, player_control);
-            moves.sort_by(|l, r| {
-                self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0))
-            });
+            moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
 
             if moves.len() > 0 {
                 if rand::thread_rng().gen_bool(0.77) || moves.len() == 1 {
                     return moves[0].0;
-                }
-
-                else if moves.len() > 1 {
+                } else if moves.len() > 1 {
                     return moves[1].0;
                 }
             }
@@ -82,19 +86,19 @@ impl AIController {
         return try_platform;
     }
 
-    fn next_platform(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) -> Player {
+    fn next_platform(
+        &mut self,
+        obs_table: &ObstacleTable,
+        player_control: &PlayerController,
+    ) -> Player {
         let mut moves = AIController::get_moves_platform(&self.player, obs_table, player_control);
 
         if moves.len() > 0 {
-            moves.sort_by(|l, r| {
-                self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0))
-            });
+            moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
 
             if rand::thread_rng().gen_bool(0.77) || moves.len() == 1 {
                 return moves[0].0;
-            }
-
-            else if moves.len() > 1 {
+            } else if moves.len() > 1 {
                 return moves[1].0;
             }
         }
@@ -104,7 +108,11 @@ impl AIController {
         return self.player;
     }
 
-    fn get_moves(player: &Player, obs_table: &ObstacleTable, player_control: &PlayerController) -> Vec<(Player, u32)> {
+    fn get_moves(
+        player: &Player,
+        obs_table: &ObstacleTable,
+        player_control: &PlayerController,
+    ) -> Vec<(Player, u32)> {
         let mut moves = Vec::new();
         let mut falls: Vec<(Player, u32)> = Vec::new();
 
@@ -114,18 +122,16 @@ impl AIController {
             let mov = player_control.move_player(&obs_table, &player, key);
 
             match mov.recent_event {
-                PlayerEvent::GameOver(_) => {},
+                PlayerEvent::GameOver(_) => {}
                 PlayerEvent::FallOver => {
                     falls.push((mov, (mov.time - player.time).round() as u32));
-                },
-                _ => {
-                    match obs_table.get_obstacle_type(mov.x(), mov.y()) {
-                        ObstacleType::Pit => {},
-                        _ => {
-                            moves.push((mov, (mov.time - player.time).round() as u32));
-                        },
-                    }
                 }
+                _ => match obs_table.get_obstacle_type(mov.x(), mov.y()) {
+                    ObstacleType::Pit => {}
+                    _ => {
+                        moves.push((mov, (mov.time - player.time).round() as u32));
+                    }
+                },
             }
         }
 
@@ -139,7 +145,11 @@ impl AIController {
         moves
     }
 
-    fn get_moves_platform(player: &Player, obs_table: &ObstacleTable, player_control: &PlayerController) -> Vec<(Player, u32)> {
+    fn get_moves_platform(
+        player: &Player,
+        obs_table: &ObstacleTable,
+        player_control: &PlayerController,
+    ) -> Vec<(Player, u32)> {
         let mut moves = Vec::new();
         let mut falls = Vec::new();
 
@@ -148,18 +158,16 @@ impl AIController {
         for key in player_control.get_keys() {
             let mov = player_control.move_player(&obs_table, &player, key);
             match mov.recent_event {
-                PlayerEvent::GameOver(_) => {},
+                PlayerEvent::GameOver(_) => {}
                 PlayerEvent::FallOver => {
                     falls.push((mov, (mov.time - player.time).round() as u32));
-                },
-                _ => {
-                    match obs_table.get_obstacle_type(mov.x(), mov.y()) {
-                        ObstacleType::Platform => {
-                            moves.push((mov, (mov.time - player.time).round() as u32));
-                        },
-                        _ => {},
-                    }
                 }
+                _ => match obs_table.get_obstacle_type(mov.x(), mov.y()) {
+                    ObstacleType::Platform => {
+                        moves.push((mov, (mov.time - player.time).round() as u32));
+                    }
+                    _ => {}
+                },
             }
         }
 
@@ -174,7 +182,10 @@ impl AIController {
     }
 
     fn dist_to_goal(&self, player: &Player) -> u32 {
-        let diff = ((self.goal.0 - player.x()) as f32, (self.goal.1 - player.y()) as f32);
+        let diff = (
+            (self.goal.0 - player.x()) as f32,
+            (self.goal.1 - player.y()) as f32,
+        );
         return vec_ops::magnitude(diff).round() as u32;
     }
 }

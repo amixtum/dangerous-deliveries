@@ -15,5 +15,3 @@ pub enum GameState {
     LookMode,
     LookedAt(String),
 }
-
-

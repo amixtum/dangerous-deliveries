@@ -1,20 +1,16 @@
-use console_engine::{
-    pixel,
-    screen::Screen,
-    Color,
-};
+use console_engine::{pixel, screen::Screen, Color};
 
 use std::collections::HashMap;
 
 use util::vec_ops;
 
-use model::obstacle_table::ObstacleTable;
 use model::goal_table::GoalTable;
 use model::obstacle::Obstacle;
 use model::obstacle::ObstacleType;
-use model::traversability::Traversability;
+use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
+use model::traversability::Traversability;
 
 pub struct MainViewer {
     color_map: HashMap<Traversability, (Color, Color)>,
@@ -34,13 +30,17 @@ impl MainViewer {
             max_message_length: 16,
         };
 
-        gv.color_map.insert(Traversability::Flat, (Color::Blue, Color::Black));
-        gv.color_map.insert(Traversability::Up, (Color::Magenta, Color::Black));
-        gv.color_map.insert(Traversability::Down, (Color::Cyan, Color::Black));
-        gv.color_map.insert(Traversability::No, (Color::Green, Color::Black));
+        gv.color_map
+            .insert(Traversability::Flat, (Color::Blue, Color::Black));
+        gv.color_map
+            .insert(Traversability::Up, (Color::Magenta, Color::Black));
+        gv.color_map
+            .insert(Traversability::Down, (Color::Cyan, Color::Black));
+        gv.color_map
+            .insert(Traversability::No, (Color::Green, Color::Black));
 
         gv.symbol_map.insert(ObstacleType::Pit, 'x');
-        gv.symbol_map.insert(ObstacleType::Platform,  '.');
+        gv.symbol_map.insert(ObstacleType::Platform, '.');
 
         // bug (havent' found it yet)
         gv.symbol_map.insert(ObstacleType::Rail(0, 0), '_');
@@ -76,14 +76,12 @@ impl MainViewer {
         let mut s = String::new();
         if ydir == 1 {
             s.push_str("Down");
-        }
-        else if ydir == -1 {
+        } else if ydir == -1 {
             s.push_str("Up");
         }
         if xdir == 1 {
             s.push_str("Right");
-        }
-        else if xdir == -1 {
+        } else if xdir == -1 {
             s.push_str("Left");
         }
 
@@ -92,7 +90,18 @@ impl MainViewer {
 }
 
 impl MainViewer {
-    pub fn draw_layout(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, ai: &Vec<Player>, max_falls: u32, max_speed: f32, fallover_threshold: f32, width: u32, height: u32) -> Screen {
+    pub fn draw_layout(
+        &self,
+        table: &ObstacleTable,
+        goals: &GoalTable,
+        player: &Player,
+        ai: &Vec<Player>,
+        max_falls: u32,
+        max_speed: f32,
+        fallover_threshold: f32,
+        width: u32,
+        height: u32,
+    ) -> Screen {
         let balance_size = 5;
         let speed_x = width as i32 - (balance_size * 2) - 1;
         let balance_x = speed_x - (balance_size * 2) - 1;
@@ -103,7 +112,14 @@ impl MainViewer {
         let table_view_width = balance_x - 1;
         let table_view_height = height as i32 - 1;
 
-        let table_view = self.draw_table(table, goals, player, ai, table_view_width as u32, table_view_height as u32);
+        let table_view = self.draw_table(
+            table,
+            goals,
+            player,
+            ai,
+            table_view_width as u32,
+            table_view_height as u32,
+        );
         let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
         let speed_view = self.draw_speed(player, max_speed, balance_size as u32);
         let msg_log_view = self.draw_msg_log(msg_log_height as u32);
@@ -122,7 +138,7 @@ impl MainViewer {
         s.push_str(&format!(", Deliveries Left: {}, ", goals.count()));
         s.push_str(&format!("HP: {}, ", max_falls as i32 - player.n_falls));
         s.push_str("Help: press Esc");
-        
+
         screen.print(0, height as i32 - 1, &s);
 
         screen
@@ -131,7 +147,15 @@ impl MainViewer {
     // return a Screen of dimensions width x height that maps a width x height section
     // of the ObstacleTable centered on the player (any ObstacleTable coordinates that are out of bounds
     // are clamped out and the screen doesn't draw anything there)
-    pub fn draw_table(&self, table: &ObstacleTable, goals: &GoalTable, player: &Player, ai: &Vec<Player>, width: u32, height: u32) -> Screen {
+    pub fn draw_table(
+        &self,
+        table: &ObstacleTable,
+        goals: &GoalTable,
+        player: &Player,
+        ai: &Vec<Player>,
+        width: u32,
+        height: u32,
+    ) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
         // compute ObstacleTable coordinates
@@ -142,20 +166,18 @@ impl MainViewer {
         let mut br_x = (middle.0 + (width as i32 / 2)).clamp(0, table.width() as i32 - 1);
         let mut br_y = (middle.1 + (height as i32 / 2)).clamp(0, table.height() as i32 - 1);
 
-        if br_x ==  table.width() as i32 - 1 {
+        if br_x == table.width() as i32 - 1 {
             tl_x -= (middle.0 + width as i32 / 2) - br_x;
             tl_x = tl_x.clamp(0, table.width() as i32 - 2);
-        }
-        else if tl_x == 0 {
+        } else if tl_x == 0 {
             br_x += (middle.0 + width as i32 / 2) - tl_x;
             br_x = br_x.clamp(0, table.width() as i32 - 2);
         }
-        
+
         if br_y == table.height() as i32 - 1 {
             tl_y -= (middle.1 + height as i32 / 2) - br_y;
             tl_y = tl_y.clamp(0, table.height() as i32 - 2)
-        }
-        else if tl_y == 0 {
+        } else if tl_y == 0 {
             br_y += (middle.1 + height as i32 / 2) - tl_y;
             br_y = br_y.clamp(0, table.height() as i32 - 2);
         }
@@ -172,10 +194,14 @@ impl MainViewer {
                     Obstacle::Rail(_, dir) => {
                         let i_dir = vec_ops::discrete_jmp(dir);
                         ObstacleType::Rail(i_dir.0, i_dir.1)
-                    },
+                    }
                 };
 
-                let neighbors = vec_ops::neighbors_set(player.xy(), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+                let neighbors = vec_ops::neighbors_set(
+                    player.xy(),
+                    (0, 0),
+                    (table.width() as i32 - 1, table.height() as i32 - 1),
+                );
 
                 let t = table.traversability((player.x(), player.y()), (x, y));
                 let symbol = self.symbol_map[&obstacle_type];
@@ -184,12 +210,15 @@ impl MainViewer {
                 match t {
                     Traversability::No => {
                         if symbol == '.' && neighbors.contains(&(x, y)) {
-                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Black, Color::Black));
-                        }
-                        else {
+                            screen.set_pxl(
+                                sc_x,
+                                sc_y,
+                                pixel::pxl_fbg(symbol, Color::Black, Color::Black),
+                            );
+                        } else {
                             screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
                         }
-                    },
+                    }
                     _ => {
                         screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
                     }
@@ -203,45 +232,56 @@ impl MainViewer {
                 }
 
                 match obstacle_type {
-                    ObstacleType::Pit => {},
+                    ObstacleType::Pit => {}
                     _ => {
-                            for p in ai {
-                                if x == p.x() && y == p.y() {
-                                    match p.recent_event {
-                                        PlayerEvent::FallOver => {
-                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::Yellow));
-                                        }
-                                        _ => {
-                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fg(
-                                                '@', 
-                                                Color::Rgb { r: 255, g: 127, b: 0 }));
-                                        }
+                        for p in ai {
+                            if x == p.x() && y == p.y() {
+                                match p.recent_event {
+                                    PlayerEvent::FallOver => {
+                                        screen.set_pxl(
+                                            sc_x,
+                                            sc_y,
+                                            pixel::pxl_fg('!', Color::Yellow),
+                                        );
                                     }
-                                }
-                            }
-
-                            // draw player last so it is on top
-                            if x == player.x() && y == player.y() {
-                                match player.recent_event {
-                                    PlayerEvent::FallOver =>  {
-                                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::Red));
-                                    },
                                     _ => {
-                                        screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
+                                        screen.set_pxl(
+                                            sc_x,
+                                            sc_y,
+                                            pixel::pxl_fg(
+                                                '@',
+                                                Color::Rgb {
+                                                    r: 255,
+                                                    g: 127,
+                                                    b: 0,
+                                                },
+                                            ),
+                                        );
                                     }
                                 }
                             }
+                        }
+
+                        // draw player last so it is on top
+                        if x == player.x() && y == player.y() {
+                            match player.recent_event {
+                                PlayerEvent::FallOver => {
+                                    screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::Red));
+                                }
+                                _ => {
+                                    screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
+                                }
+                            }
+                        }
                     }
                 }
 
-                
                 sc_y += 1;
             }
 
             sc_y = 0;
             sc_x += 1;
         }
-
 
         screen
     }
@@ -261,11 +301,19 @@ impl MainViewer {
         let mut screen = Screen::new_fill(size * 2 + 1, size, pixel::pxl(' '));
 
         // draw border
-        screen.rect(0, 0, size as i32 * 2, (size as i32) - 1, pixel::pxl_fg('#', color));
+        screen.rect(
+            0,
+            0,
+            size as i32 * 2,
+            (size as i32) - 1,
+            pixel::pxl_fg('#', color),
+        );
 
         // compute position of vector inside the rect
-        let p_x = (((v.0 / max) * (size as f32 * 2.0)).round() as i32 + (size as i32)).clamp(0, size as i32 * 2);
-        let p_y = (((v.1 / max) * (size as f32)).round() as i32 + (size as i32 / 2)).clamp(0, size as i32 - 1);
+        let p_x = (((v.0 / max) * (size as f32 * 2.0)).round() as i32 + (size as i32))
+            .clamp(0, size as i32 * 2);
+        let p_y = (((v.1 / max) * (size as f32)).round() as i32 + (size as i32 / 2))
+            .clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
         screen.set_pxl(p_x, p_y, pixel::pxl('*'));
@@ -277,20 +325,37 @@ impl MainViewer {
     pub fn draw_msg_log(&self, height: u32) -> Screen {
         let mut screen = Screen::new(self.max_message_length + 2, height);
 
-        screen.rect(0, 0, self.max_message_length as i32 + 1, (height as i32) - 1, pixel::pxl('#'));
+        screen.rect(
+            0,
+            0,
+            self.max_message_length as i32 + 1,
+            (height as i32) - 1,
+            pixel::pxl('#'),
+        );
 
         let mut l_index = (self.message_log.len() as i32 - 1) as i32;
         let mut scr_y = height as i32 - 2;
-        
+
         while scr_y > 0 && l_index >= 0 {
             if scr_y == height as i32 - 2 {
-                screen.print_fbg(1, scr_y, &self.message_log[l_index as usize].0, self.message_log[l_index as usize].1, Color::Black);
-            }
-            else {
-                screen.print_fbg(1, scr_y, &self.message_log[l_index as usize].0, Color::DarkGrey, Color::Black);
+                screen.print_fbg(
+                    1,
+                    scr_y,
+                    &self.message_log[l_index as usize].0,
+                    self.message_log[l_index as usize].1,
+                    Color::Black,
+                );
+            } else {
+                screen.print_fbg(
+                    1,
+                    scr_y,
+                    &self.message_log[l_index as usize].0,
+                    Color::DarkGrey,
+                    Color::Black,
+                );
             }
             scr_y -= 1;
-            l_index -= 1; 
+            l_index -= 1;
         }
 
         screen
@@ -307,48 +372,42 @@ impl MainViewer {
         let mut message = String::new();
         let mut color = Color::White;
         match event {
-            PlayerEvent::Move => {
-                match table.get_obstacle_type(player.x(), player.y()) {
-                    ObstacleType::Platform => message.push_str("On Platform"),
-                    ObstacleType::Pit => {
-                        message.push_str("Restart");
-                        color = Color::Red;
-                    },
-                    ObstacleType::Rail(xdir, ydir) => {
-                        message.push_str("Grinding ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                        color = Color::Cyan;
-                    },
+            PlayerEvent::Move => match table.get_obstacle_type(player.x(), player.y()) {
+                ObstacleType::Platform => message.push_str("On Platform"),
+                ObstacleType::Pit => {
+                    message.push_str("Restart");
+                    color = Color::Red;
+                }
+                ObstacleType::Rail(xdir, ydir) => {
+                    message.push_str("Grinding ");
+                    message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                    color = Color::Cyan;
                 }
             },
-            PlayerEvent::Wait => {
-                match table.get_obstacle_type(player.x(), player.y()) {
-                    ObstacleType::Platform => message.push_str("Waiting"),
-                    ObstacleType::Pit => {
-                        message.push_str("Restart");
-                        color = Color::Red;
-                    },
-                    ObstacleType::Rail(xdir, ydir) => {
-                        message.push_str("Stalled ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                        color = Color::Magenta;
-                    },
+            PlayerEvent::Wait => match table.get_obstacle_type(player.x(), player.y()) {
+                ObstacleType::Platform => message.push_str("Waiting"),
+                ObstacleType::Pit => {
+                    message.push_str("Restart");
+                    color = Color::Red;
+                }
+                ObstacleType::Rail(xdir, ydir) => {
+                    message.push_str("Stalled ");
+                    message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                    color = Color::Magenta;
                 }
             },
-            PlayerEvent::FallOver => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform(_) => {
-                        message.push_str("Fell over");
-                        color = Color::Red;
-                    },
-                    Obstacle::Pit => {
-                        message.push_str("Restart");
-                        color = Color::Red;
-                    },
-                    Obstacle::Rail(_, _) => {
-                        message.push_str("Fell over");
-                        color = Color::Red;
-                    },
+            PlayerEvent::FallOver => match table.get_obstacle(player.x(), player.y()) {
+                Obstacle::Platform(_) => {
+                    message.push_str("Fell over");
+                    color = Color::Red;
+                }
+                Obstacle::Pit => {
+                    message.push_str("Restart");
+                    color = Color::Red;
+                }
+                Obstacle::Rail(_, _) => {
+                    message.push_str("Fell over");
+                    color = Color::Red;
                 }
             },
             PlayerEvent::OffRail => {
@@ -357,29 +416,27 @@ impl MainViewer {
                     ObstacleType::Pit => {
                         message.push_str("Restart");
                         color = Color::Red;
-                    },
+                    }
                     ObstacleType::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
                         color = Color::Cyan;
-                    },
+                    }
                 }
                 //Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
-            },
-            PlayerEvent::OnRail => {
-                match table.get_obstacle_type(player.x(), player.y()) {
-                    ObstacleType::Platform => message.push_str("On Platform"),
-                    ObstacleType::Pit => {
-                        message.push_str("Restart");
-                        color = Color::Red;
-                    },
-                    ObstacleType::Rail(xdir, ydir) => {
-                        message.push_str("Grinding ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                        color = Color::Cyan;
-                    },
-                }
             }
+            PlayerEvent::OnRail => match table.get_obstacle_type(player.x(), player.y()) {
+                ObstacleType::Platform => message.push_str("On Platform"),
+                ObstacleType::Pit => {
+                    message.push_str("Restart");
+                    color = Color::Red;
+                }
+                ObstacleType::Rail(xdir, ydir) => {
+                    message.push_str("Grinding ");
+                    message.push_str(&MainViewer::direction_string((xdir, ydir)));
+                    color = Color::Cyan;
+                }
+            },
 
             PlayerEvent::GameOver(_) => {}
         }
@@ -424,5 +481,4 @@ impl MainViewer {
 
         self.message_log.push((message, Color::White));
     }
-
 }

@@ -5,7 +5,7 @@ pub struct Player {
     pub position: (i32, i32, i32),
     pub speed: (f32, f32),
     pub balance: (f32, f32),
-    pub time: f32, 
+    pub time: f32,
     pub recent_event: PlayerEvent,
 
     pub n_falls: i32,
@@ -28,14 +28,13 @@ impl Player {
             recent_event: PlayerEvent::Wait,
             n_falls: 0,
             n_delivered: 0,
-        } 
+        }
     }
-
 }
 
-impl Player { 
+impl Player {
     pub fn x(&self) -> i32 {
-        self.position.0     
+        self.position.0
     }
     pub fn y(&self) -> i32 {
         self.position.1
@@ -62,4 +61,3 @@ impl Player {
         self.balance.1
     }
 }
-

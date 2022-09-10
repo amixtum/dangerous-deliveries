@@ -1,8 +1,4 @@
-use console_engine::{
-    pixel,
-    Color,
-    screen::Screen
-};
+use console_engine::{pixel, screen::Screen, Color};
 
 pub fn help_screen(width: u32, height: u32) -> Screen {
     let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
@@ -77,7 +73,7 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
     screen.print_fbg(1, sc_y, "Down one level", Color::Cyan, Color::Black);
 
     sc_y += 1;
-    
+
     screen.print_fbg(1, sc_y, "Up one level", Color::Magenta, Color::Black);
 
     screen

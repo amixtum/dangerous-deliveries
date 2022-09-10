@@ -3,14 +3,14 @@ use std::fs;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Alphabet {
-    Fwd, // f
-    Left, // l
-    Right, // r
-    Up, // u
-    Down, // d
-    Save, // [
+    Fwd,    // f
+    Left,   // l
+    Right,  // r
+    Up,     // u
+    Down,   // d
+    Save,   // [
     Return, // ]
-    Place, // p
+    Place,  // p
     None,
 }
 
@@ -26,35 +26,27 @@ impl Alphabet {
             Alphabet::Return => ']',
             Alphabet::Place => 'p',
             Alphabet::None => '0',
-        } 
+        }
     }
 
     pub fn from_char(c: char) -> Option<Alphabet> {
         if c == 'f' {
             return Some(Alphabet::Fwd);
-        }
-        else if c == 'l' {
+        } else if c == 'l' {
             return Some(Alphabet::Left);
-        }
-        else if c == 'r' {
+        } else if c == 'r' {
             return Some(Alphabet::Right);
-        }
-        else if c == 'u' {
+        } else if c == 'u' {
             return Some(Alphabet::Up);
-        }
-        else if c == 'd' {
+        } else if c == 'd' {
             return Some(Alphabet::Down);
-        }
-        else if c == '[' {
+        } else if c == '[' {
             return Some(Alphabet::Save);
-        }
-        else if c == ']' {
+        } else if c == ']' {
             return Some(Alphabet::Return);
-        }
-        else if c == 'p' {
+        } else if c == 'p' {
             return Some(Alphabet::Place);
-        }
-        else if c == '0' {
+        } else if c == '0' {
             return Some(Alphabet::None);
         }
 
@@ -114,15 +106,12 @@ impl LSystem {
                         lsystem.iterations = num;
                     }
                     continue;
-                }
-                else if words[0] == "turtles" {
-                     if let Ok(num) = words[1].parse::<u32>() {
+                } else if words[0] == "turtles" {
+                    if let Ok(num) = words[1].parse::<u32>() {
                         lsystem.turtles = num;
                     }
-                    continue;                   
-                }
-
-                else if first_line {
+                    continue;
+                } else if first_line {
                     for s in line.split_ascii_whitespace() {
                         if let Some(c) = s.chars().nth(0) {
                             if let Some(letter) = Alphabet::from_char(c) {
@@ -131,9 +120,8 @@ impl LSystem {
                         }
                     }
                     first_line = false;
-                }
-                else {
-                    let mut pred = Alphabet::None;        
+                } else {
+                    let mut pred = Alphabet::None;
                     let mut target = Alphabet::None;
                     let mut succ = Alphabet::None;
                     let mut exp = Vec::new();
@@ -148,8 +136,7 @@ impl LSystem {
                             }
 
                             counter += 1;
-                        } 
-                        else if counter == 1 {
+                        } else if counter == 1 {
                             if let Some(c) = s.chars().nth(0) {
                                 if let Some(letter) = Alphabet::from_char(c) {
                                     target = letter;
@@ -157,8 +144,7 @@ impl LSystem {
                             }
 
                             counter += 1;
-                        }
-                        else if counter == 2 {
+                        } else if counter == 2 {
                             if let Some(c) = s.chars().nth(0) {
                                 if let Some(letter) = Alphabet::from_char(c) {
                                     succ = letter;
@@ -166,8 +152,7 @@ impl LSystem {
                             }
 
                             counter += 1;
-                        }
-                        else {
+                        } else {
                             if let Some(c) = s.chars().nth(0) {
                                 if let Some(letter) = Alphabet::from_char(c) {
                                     exp.push(letter);
@@ -182,18 +167,24 @@ impl LSystem {
 
             lsystem.set_current(axiom);
         }
-        
 
         lsystem
     }
 }
 
 impl LSystem {
-    pub fn add_rule(&mut self, (pred, target, succ): (Alphabet, Alphabet, Alphabet),  exp: Vec<Alphabet>) {
+    pub fn add_rule(
+        &mut self,
+        (pred, target, succ): (Alphabet, Alphabet, Alphabet),
+        exp: Vec<Alphabet>,
+    ) {
         self.rules.insert((pred, target, succ), exp);
     }
 
-    pub fn get_exp(&self, (pred, target, succ): (Alphabet, Alphabet, Alphabet)) -> Option<&Vec<Alphabet>> {
+    pub fn get_exp(
+        &self,
+        (pred, target, succ): (Alphabet, Alphabet, Alphabet),
+    ) -> Option<&Vec<Alphabet>> {
         self.rules.get(&(pred, target, succ))
     }
 
@@ -234,30 +225,25 @@ impl LSystem {
                     updated.push(exp[exp_index]);
                     exp_index += 1;
                 }
-            } 
-            else if let Some(exp) = self.get_exp((Alphabet::None, target, succ)) {
+            } else if let Some(exp) = self.get_exp((Alphabet::None, target, succ)) {
                 let mut exp_index = 0;
                 while exp_index < exp.len() {
                     updated.push(exp[exp_index]);
                     exp_index += 1;
                 }
-            }
-            else if let Some(exp) = self.get_exp((pred, target, Alphabet::None)) {
+            } else if let Some(exp) = self.get_exp((pred, target, Alphabet::None)) {
                 let mut exp_index = 0;
                 while exp_index < exp.len() {
                     updated.push(exp[exp_index]);
                     exp_index += 1;
                 }
-            }
-            else if let Some(exp) = self.get_exp((Alphabet::None, target, Alphabet::None)) {
+            } else if let Some(exp) = self.get_exp((Alphabet::None, target, Alphabet::None)) {
                 let mut exp_index = 0;
                 while exp_index < exp.len() {
                     updated.push(exp[exp_index]);
                     exp_index += 1;
                 }
-            }
-
-            else {
+            } else {
                 updated.push(self.current[index]);
             }
             index += 1;

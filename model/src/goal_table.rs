@@ -24,7 +24,7 @@ impl GoalTable {
     }
 
     pub fn count(&self) -> usize {
-        self.goals.len() 
+        self.goals.len()
     }
 
     pub fn at_goal(&self, (x, y): (i32, i32)) -> bool {
@@ -43,11 +43,9 @@ impl GoalTable {
 
         let mut region: (i32, i32) = (1, 0);
         for _ in 0..count {
-            let p_x = (width as i32 / 2) + 
-                  (region.0 * (width as i32 / 2)) - 2 * region.0;
+            let p_x = (width as i32 / 2) + (region.0 * (width as i32 / 2)) - 2 * region.0;
 
-            let p_y = (height as i32 / 2) + 
-                  (region.1 * (height as i32 / 2)) - 2 * region.1;
+            let p_y = (height as i32 / 2) + (region.1 * (height as i32 / 2)) - 2 * region.1;
 
             self.goals.insert((p_x, p_y));
             region = vec_ops::rotate_left(region);

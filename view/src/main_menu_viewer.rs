@@ -1,8 +1,4 @@
-use console_engine::{
-    pixel,
-    Color,
-    screen::Screen
-};
+use console_engine::{pixel, screen::Screen, Color};
 
 pub fn main_menu_screen(width: u32, height: u32) -> Screen {
     let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
@@ -30,16 +26,27 @@ pub fn main_menu_screen(width: u32, height: u32) -> Screen {
 
     while index < left_col.len() {
         if index == 0 {
-            screen.print_fbg(width as i32 / 4, sc_y + 1, &left_col[index].0, left_col[index].1, Color::Black);
-        }
-        else {
+            screen.print_fbg(
+                width as i32 / 4,
+                sc_y + 1,
+                &left_col[index].0,
+                left_col[index].1,
+                Color::Black,
+            );
+        } else {
             screen.print_fbg(1, sc_y, &left_col[index].0, left_col[index].1, Color::Black);
-            screen.print_fbg(width as i32 / 2, sc_y, &right_col[index], left_col[index].1, Color::Black);
+            screen.print_fbg(
+                width as i32 / 2,
+                sc_y,
+                &right_col[index],
+                left_col[index].1,
+                Color::Black,
+            );
         }
 
         index += 1;
         sc_y += height as i32 / left_col.len() as i32;
-    } 
+    }
 
     screen
 }

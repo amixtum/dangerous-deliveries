@@ -1,11 +1,13 @@
-use console_engine::{
-    pixel,
-    screen::Screen
-};
+use console_engine::{pixel, screen::Screen};
 
 use util::files;
 
-pub fn file_chooser_screen(width: u32, height: u32, starts_with: &str, current_lsystem: &str) -> Screen {
+pub fn file_chooser_screen(
+    width: u32,
+    height: u32,
+    starts_with: &str,
+    current_lsystem: &str,
+) -> Screen {
     let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
     let files = files::get_config_filenames(starts_with);
