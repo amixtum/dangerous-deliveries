@@ -395,6 +395,30 @@ impl PlayerController {
         clone
     }
 
+    fn get_scaled((inst_x, inst_y): (f32, f32), inst_length: f32) -> (f32, f32) {
+        let norm_inst = vec_ops::normalize((inst_x, inst_y));
+        if !f32::is_nan(norm_inst.0) {
+            let units = vec_ops::discrete_jmp(norm_inst);
+            if inst_length.abs() < 1.0 {
+                if units.0 == 1 && units.1 == 1 {
+                    return (norm_inst.0 * inst_length.sqrt(),
+                            norm_inst.1 * inst_length.sqrt());
+                } else {
+                    return (norm_inst.0 * inst_length,
+                            norm_inst.1 * inst_length);
+                }
+            } else {
+                if units.0 == 1 && units.1 == 1 {
+                    return (norm_inst.0 * inst_length,
+                            norm_inst.1 * inst_length);
+                } else {
+                    return (norm_inst.0 * inst_length.sqrt(),
+                            norm_inst.1 * inst_length.sqrt());
+                }
+            }
+        }
+        (0.0, 0.0)
+    }
     fn compute_initial_speed_balance(
         table: &ObstacleTable,
         player: &Player,
@@ -417,26 +441,10 @@ impl PlayerController {
                 // compute speed
                 clone.speed.0 = clone.speed.0 * speed_damp;
                 clone.speed.1 = clone.speed.1 * speed_damp;
-                if !f32::is_nan(norm_inst.0) {
-                    let units = vec_ops::discrete_jmp(norm_inst);
-                    if inst_length.abs() < 1.0 {
-                        if units.0 == 1 && units.1 == 1 {
-                            clone.speed.0 += norm_inst.0 * inst_length.sqrt();
-                            clone.speed.1 += norm_inst.1 * inst_length.sqrt();
-                        } else {
-                            clone.speed.0 += norm_inst.0 * inst_length;
-                            clone.speed.1 += norm_inst.1 * inst_length;
-                        }
-                    } else {
-                        if units.0 == 1 && units.1 == 1 {
-                            clone.speed.0 += norm_inst.0 * inst_length;
-                            clone.speed.1 += norm_inst.1 * inst_length;
-                        } else {
-                            clone.speed.0 += norm_inst.0 * inst_length.sqrt();
-                            clone.speed.1 += norm_inst.1 * inst_length.sqrt();
-                        }
-                    }
-                }
+
+                let add = PlayerController::get_scaled((inst_x, inst_y), inst_length);
+                clone.speed.0 += add.0; 
+                clone.speed.1 += add.1;
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
@@ -456,10 +464,10 @@ impl PlayerController {
                     clone.speed.1 += norm_dir.1 * rail_boost;
                 }
 
-                if !f32::is_nan(norm_inst.0) {
-                    clone.speed.0 += norm_inst.0 * inst_length;
-                    clone.speed.1 += norm_inst.1 * inst_length;
-                }
+                let inst_add = PlayerController::get_scaled((inst_x, inst_y), inst_length);
+
+                clone.speed.0 += inst_add.0;
+                clone.speed.1 += inst_add.1;
 
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
@@ -470,29 +478,33 @@ impl PlayerController {
         let norm_last_speed = vec_ops::normalize(last_speed);
 
         if !f32::is_nan(norm_inst.0) && !f32::is_nan(norm_last_speed.0) {
-            let inst_v = (
-                norm_inst.0 * inst_length.sqrt(),
-                norm_inst.1 * inst_length.sqrt(),
-            );
-            let units = vec_ops::discrete_jmp(inst_v);
-            let turn = vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed)
-                - vec_ops::dot(inst_v, last_speed);
+            let inst_v = PlayerController::get_scaled((inst_x, inst_y), inst_length);
+
+            let diff = (last_speed.0 - inst_v.0, last_speed.1 - inst_v.1);
+
+            let dotp = vec_ops::dot(inst_v, last_speed);
+
+            let mut turn = (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed)
+                - dotp) / (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
+            
             clone.balance.0 =
-                clone.balance.0 * balance_damp - units.1.signum() as f32 * turn * turn_fact;
+                clone.balance.0 * balance_damp + 
+                diff.1.signum() as f32 * turn * turn_fact;
 
             clone.balance.1 =
-                clone.balance.1 * balance_damp + units.0.signum() as f32 * turn * turn_fact;
+                clone.balance.1 * balance_damp - 
+                diff.0.signum() as f32 * turn * turn_fact;
 
-            clone.balance.0 += norm_inst.0 * turn_fact;
-            clone.balance.1 += norm_inst.1 * turn_fact;
+            //clone.balance.0 += norm_inst.0 * turn_fact;
+            //clone.balance.1 += norm_inst.1 * turn_fact;
         } else {
+            clone.balance.0 = clone.balance.0 * balance_damp;
+            clone.balance.1 = clone.balance.1 * balance_damp;
+
             if !f32::is_nan(norm_inst.0) {
                 clone.balance.0 += norm_inst.0 * turn_fact;
                 clone.balance.1 += norm_inst.1 * turn_fact;
             }
-
-            clone.balance.0 = clone.balance.0 * balance_damp;
-            clone.balance.1 = clone.balance.1 * balance_damp;
         }
 
         clone
