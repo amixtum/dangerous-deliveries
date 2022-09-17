@@ -77,6 +77,9 @@ impl LookMode {
             let x = player.x() + direction.0;
             let y = player.y() + direction.1;
             match table.get_obstacle(x, y) {
+                Obstacle::Wall => {
+                    s.push_str("Wall ");
+                }
                 Obstacle::Platform(_) => {
                     s.push_str("Platform ");
                 }

@@ -1,4 +1,4 @@
-use console_engine::{ConsoleEngine, KeyCode, KeyModifiers};
+use console_engine::{ConsoleEngine, KeyCode, KeyModifiers, Color};
 use rand::Rng;
 use util::heap::Heap;
 
@@ -100,6 +100,11 @@ impl Game {
                 .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
             g.clear_obstacles_at_goals();
 
+            g.obs_table.set_obstacle(
+                g.player.xy(),
+                Obstacle::Platform(0),
+            );
+
             for _ in 0..g.n_opponents {
                 g.add_opponent();
             }
@@ -143,7 +148,7 @@ impl Game {
             self.obs_table.get_height(x, y),
         ));
         self.obs_table
-            .set_obstacle((x, y), Obstacle::Platform(self.obs_table.get_height(x, y)));
+            .set_obstacle((x, y), Obstacle::Platform(0));
     }
 
     pub fn properties_from_file(&mut self, path: &str) {
@@ -196,6 +201,12 @@ impl Game {
 
         if let Some(resize) = self.engine.get_resize() {
             self.engine.resize(resize.0 as u32, resize.1 as u32);
+            self.redraw = true;
+        }
+
+        if self.engine.is_key_pressed(KeyCode::Char('0')) {
+            self.obs_table.apply_automata();
+            self.clear_obstacles_at_goals();
             self.redraw = true;
         }
 
@@ -256,7 +267,7 @@ impl Game {
             GameState::Help => {
                 return self.process_help();
             }
-            GameState::GameOver | GameState::YouWin => {
+            GameState::GameOver => {
                 return self.process_gameover();
             }
             GameState::Playing => {
@@ -330,6 +341,7 @@ impl Game {
         self.reset_game();
         self.set_state(GameState::Playing);
         self.applied_automata = true;
+        self.viewer.main_view.clear_log();
         return true;
     }
 
@@ -337,6 +349,8 @@ impl Game {
         if self.engine.is_key_pressed(KeyCode::Esc) {
             self.set_state(GameState::MainMenu);
         } else if self.engine.is_key_pressed(KeyCode::Char(';')) {
+            self.viewer.main_view
+                .add_string(String::from("Look Where?"), Color::Yellow);
             self.set_state(GameState::LookMode);
         } else if self.engine.is_key_pressed(KeyCode::Enter) {
             self.set_state(GameState::Restart);
@@ -345,8 +359,9 @@ impl Game {
                 self.obs_table.apply_automata();
                 self.obs_table.set_obstacle(
                     self.player.xy(),
-                    Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())),
+                    Obstacle::Platform(0),
                 );
+                self.clear_obstacles_at_goals();
                 self.applied_automata = true;
                 self.redraw = true;
             }
@@ -471,6 +486,7 @@ impl Game {
     // dummy state for the purposes of updating the view after process_move
     fn process_post_move(&mut self) -> bool {
         self.set_state(GameState::Playing);
+        self.viewer.main_view.add_message(&self.obs_table, &self.player, &self.player.recent_event);
         return true;
     }
 
@@ -493,6 +509,10 @@ impl Game {
     }
 
     fn process_looked_at(&mut self) -> bool {
+        if let GameState::LookedAt(s) = &self.state {
+            self.viewer.main_view
+                .add_string(String::from(s), Color::Green);
+        }
         self.set_state(GameState::Playing);
         return true;
     }
@@ -506,6 +526,9 @@ impl Game {
             }
         }
 
+        self.viewer.main_view
+            .add_string(String::from("Delivered"), Color::Blue);
+
         self.set_state(GameState::Playing);
         return true;
     }
@@ -518,14 +541,14 @@ impl Game {
 
     fn process_lsystem_chooser(&mut self) -> bool {
         if let GameState::LSystemChooser(size_index) = self.state {
-            let mut lsystems =
-                files::get_lsystems(&files::get_file_chooser_string(size_index as u32));
             let filenames =
                 files::get_config_filenames(&files::get_file_chooser_string(size_index as u32));
             let mut index = 0;
-            while index < lsystems.len() {
+            while index < filenames.len() {
                 if let Some(c) = index.to_string().chars().nth(0) {
                     if self.engine.is_key_pressed(KeyCode::Char(c)) {
+                        let mut lsystems =
+                            files::get_lsystems(&files::get_file_chooser_string(size_index as u32));
                         self.current_lsystem.clear();
                         self.current_lsystem.push_str(&filenames[index]);
 
@@ -540,6 +563,7 @@ impl Game {
                         self.clear_obstacles_at_goals();
                         self.player =
                             PlayerController::reset_player_gameover(&self.obs_table, &self.player);
+                        self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform(0));
                         self.opponents.clear();
                         for _ in 0..self.n_opponents {
                             self.add_opponent();
@@ -568,7 +592,7 @@ impl Game {
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
         self.obs_table.set_obstacle(
             self.player.xy(),
-            Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())),
+            Obstacle::Platform(0),
         );
 
         self.opponents.clear();
@@ -581,7 +605,7 @@ impl Game {
         self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player);
         self.obs_table.set_obstacle(
             self.player.xy(),
-            Obstacle::Platform(self.obs_table.get_height(self.player.x(), self.player.y())),
+            Obstacle::Platform(0),
         );
         self.redraw = true;
     }

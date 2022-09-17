@@ -9,7 +9,6 @@ use super::help_viewer;
 use super::main_menu_viewer;
 use super::main_viewer::MainViewer;
 use super::options_viewer;
-use super::youwin_viewer;
 
 use model::goal_table::GoalTable;
 use model::obstacle_table::ObstacleTable;
@@ -17,7 +16,7 @@ use model::player::Player;
 use model::state::GameState;
 
 pub struct ViewManager {
-    main_view: MainViewer,
+    pub main_view: MainViewer,
 }
 
 impl ViewManager {
@@ -71,90 +70,14 @@ impl ViewManager {
                     window_height,
                 );
             }
-            GameState::YouWin => {
-                self.main_view.clear_log();
-                return youwin_viewer::win_screen(&player, window_width, window_height);
-            }
+            GameState::Playing |
+            GameState::PostMove |
+            GameState::DeliveredPackage( .. ) |
+            GameState::LookedAt(_) |
+            GameState::LookMode |
             GameState::Restart => {
-                self.main_view.clear_log();
-                return self.main_view.draw_layout(
-                    &obs_table,
-                    &goal_table,
-                    &player,
-                    &ai,
-                    &controller,
-                    max_falls,
-                    max_speed,
-                    fallover_threshold,
-                    window_width,
-                    window_height,
-                );
-            }
-            GameState::LookMode => {
-                self.main_view
-                    .add_string(String::from("Look Where?"), Color::Yellow);
-                return self.main_view.draw_layout(
-                    &obs_table,
-                    &goal_table,
-                    &player,
-                    ai,
-                    controller,
-                    max_falls,
-                    max_speed,
-                    fallover_threshold,
-                    window_width,
-                    window_height,
-                );
-            }
-            GameState::LookedAt(s) => {
-                self.main_view.add_string(String::from(s), Color::Green);
-                return self.main_view.draw_layout(
-                    &obs_table,
-                    &goal_table,
-                    &player,
-                    ai,
-                    controller,
-                    max_falls,
-                    max_speed,
-                    fallover_threshold,
-                    window_width,
-                    window_height,
-                );
-            }
-            GameState::DeliveredPackage(_, _) => {
-                self.main_view
-                    .add_string(String::from("Delivered"), Color::Blue);
-                return self.main_view.draw_layout(
-                    &obs_table,
-                    &goal_table,
-                    &player,
-                    ai,
-                    controller,
-                    max_falls,
-                    max_speed,
-                    fallover_threshold,
-                    window_width,
-                    window_height,
-                );
-            }
-            GameState::PostMove => {
-                self.main_view
-                    .add_message(&obs_table, &player, &player.recent_event);
-                //self.main_view.debug(&player);
-                return self.main_view.draw_layout(
-                    &obs_table,
-                    &goal_table,
-                    &player,
-                    ai,
-                    controller,
-                    max_falls,
-                    max_speed,
-                    fallover_threshold,
-                    window_width,
-                    window_height,
-                );
-            }
-            GameState::Playing => {
+                //self.main_view.clear_log();
+
                 return self.main_view.draw_layout(
                     &obs_table,
                     &goal_table,

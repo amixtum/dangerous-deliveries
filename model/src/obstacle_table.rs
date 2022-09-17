@@ -50,9 +50,7 @@ impl ObstacleTable {
         ct.lsystem.update_n(ct.lsystem.iterations);
         ct.regen_table();
 
-        for _ in 0..8 {
-            ct.apply_automata();
-        }
+        ct.apply_automata();
 
         ct
     }
@@ -136,7 +134,7 @@ impl ObstacleTable {
             c_idx += 1;
         }
 
-        for _ in 0..1 {
+        for _ in 0..8 {
             self.apply_automata();
         }
     }
@@ -229,6 +227,7 @@ impl ObstacleTable {
                 let i_dir = vec_ops::discrete_jmp(dir);
                 ObstacleType::Rail(i_dir.0, i_dir.1)
             }
+            Obstacle::Wall => ObstacleType::Wall,
         }
     }
 
@@ -237,6 +236,7 @@ impl ObstacleTable {
             Obstacle::Platform(height) => height,
             Obstacle::Pit => -999,
             Obstacle::Rail(height, ..) => height,
+            Obstacle::Wall => 999,
         }
     }
 
@@ -245,6 +245,7 @@ impl ObstacleTable {
             Obstacle::Platform(_) => None,
             Obstacle::Pit => None,
             Obstacle::Rail(_, pair) => Some(pair),
+            Obstacle::Wall => None,
         }
     }
 
@@ -333,7 +334,7 @@ impl ObstacleTable {
     fn fwd_turtle(&mut self, turtle_index: usize) {
         self.turtles[turtle_index].position.0 += self.turtles[turtle_index].direction.0;
         self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
-        self.turtles[turtle_index].position.2 += self.turtles[turtle_index].direction.2;
+        self.turtles[turtle_index].position.2 = 0;
 
         if self.turtles[turtle_index].position.0 <= 0 {
             self.turtles[turtle_index].direction.0 = 1;
@@ -355,7 +356,7 @@ impl ObstacleTable {
             .position
             .1
             .clamp(0, self.height as i32 - 1);
-        self.turtles[turtle_index].position.2 = self.turtles[turtle_index].position.2.clamp(-1, 1);
+        self.turtles[turtle_index].position.2 = 0;
     }
 
     fn place_turtle(&mut self, turtle_index: usize) {
@@ -365,7 +366,7 @@ impl ObstacleTable {
                 && self.turtles[turtle_index].position.1 == self.height as i32 / 2)
             {
                 self.table[self.turtles[turtle_index].position.0 as usize]
-                    [self.turtles[turtle_index].position.1 as usize] = Obstacle::Pit;
+                    [self.turtles[turtle_index].position.1 as usize] = Obstacle::Wall;
             }
         } else if self.continue_rail {
             self.table[self.turtles[turtle_index].position.0 as usize]

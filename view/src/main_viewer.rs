@@ -42,6 +42,7 @@ impl MainViewer {
 
         gv.symbol_map.insert(ObstacleType::Pit, 'x');
         gv.symbol_map.insert(ObstacleType::Platform, '.');
+        gv.symbol_map.insert(ObstacleType::Wall, '#');
 
         // bug (havent' found it yet)
         gv.symbol_map.insert(ObstacleType::Rail(0, 0), '_');
@@ -194,20 +195,16 @@ impl MainViewer {
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                let obstacle_type = match table.get_obstacle(x, y) {
-                    Obstacle::Platform(_) => ObstacleType::Platform,
-                    Obstacle::Pit => ObstacleType::Pit,
-                    Obstacle::Rail(_, dir) => {
-                        let i_dir = vec_ops::discrete_jmp(dir);
-                        ObstacleType::Rail(i_dir.0, i_dir.1)
-                    }
-                };
+                let obstacle_type = table.get_obstacle_type(x, y);
 
+
+                /*
                 let neighbors = vec_ops::neighbors_set(
                     player.xy(),
                     (0, 0),
                     (table.width() as i32 - 1, table.height() as i32 - 1),
                 );
+                */
 
                 let t = table.traversability((player.x(), player.y()), (x, y));
                 let symbol = self.symbol_map[&obstacle_type];
@@ -228,7 +225,14 @@ impl MainViewer {
 
                 for goal in goals.goals() {
                     if x == goal.0 && y == goal.1 {
-                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Red));
+                        match t {
+                            Traversability::No => {
+                                screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::White));
+                            },
+                            _ => {
+                                screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg('$', Color::Red, Color::White));
+                            }
+                        }
                         break;
                     }
                 }
@@ -384,7 +388,8 @@ impl MainViewer {
                     message.push_str("Grinding ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Cyan;
-                }
+                },
+                _ => {}
             },
             PlayerEvent::Wait => match table.get_obstacle_type(player.x(), player.y()) {
                 ObstacleType::Platform => message.push_str("Waiting"),
@@ -397,6 +402,7 @@ impl MainViewer {
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Magenta;
                 }
+                _ => {}
             },
             PlayerEvent::FallOver => match table.get_obstacle(player.x(), player.y()) {
                 Obstacle::Platform(_) => {
@@ -411,6 +417,7 @@ impl MainViewer {
                     message.push_str("Fell over");
                     color = Color::Red;
                 }
+                _ => {}
             },
             PlayerEvent::OffRail => {
                 match table.get_obstacle_type(player.x(), player.y()) {
@@ -424,6 +431,7 @@ impl MainViewer {
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
                         color = Color::Cyan;
                     }
+                    _ => {}
                 }
                 //Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
             }
@@ -438,9 +446,13 @@ impl MainViewer {
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Cyan;
                 }
+                _ => {}
             },
 
-            PlayerEvent::GameOver(_) => {}
+            PlayerEvent::GameOver(_) => {
+                message.push_str("Restart");
+                color = Color::Red;
+            }
         }
 
         self.message_log.push((message, color));

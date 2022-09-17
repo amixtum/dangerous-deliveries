@@ -7,7 +7,6 @@ pub enum GameState {
     //ModelChooser,
     Help,
     GameOver,
-    YouWin,
     Playing,
     PostMove,
     Restart,
