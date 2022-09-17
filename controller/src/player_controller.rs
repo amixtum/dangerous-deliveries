@@ -190,6 +190,23 @@ impl PlayerController {
         self.key_map.get(&key)
     }
 
+    pub fn move_player_vel(&self, table: &ObstacleTable, player: &Player, inst_v: (f32, f32)) -> Player {
+        return PlayerController::compute_move(
+            table,
+            player,
+            inst_v,
+            self.speed_damp,
+            self.balance_damp,
+            self.turn_factor,
+            self.up_speed_factor,
+            self.down_speed_factor,
+            self.max_speed,
+            self.fallover_threshold,
+            self.inst_length,
+            self.rail_boost,
+        );
+    }
+
     pub fn move_player(&self, table: &ObstacleTable, player: &Player, key: KeyCode) -> Player {
         if let Some(inst_v) = self.get_inst_velocity(key) {
             return PlayerController::compute_move(
@@ -328,8 +345,7 @@ impl PlayerController {
         }
 
         // fallover if the player is off balance
-        if player.balance.0.abs() >= fallover_threshold
-            || player.balance.1.abs() >= fallover_threshold
+        if vec_ops::magnitude(player.balance) >= fallover_threshold
         {
             return PlayerController::fallover(table, &player);
         }
@@ -469,10 +485,16 @@ impl PlayerController {
                 clone.speed.0 += inst_add.0;
                 clone.speed.1 += inst_add.1;
 
+
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
             }
             _ => {}
+        }
+
+        if vec_ops::magnitude(clone.speed) <= 0.25 {
+            clone.speed.0 = 0.0;
+            clone.speed.1 = 0.0;
         }
 
         let norm_last_speed = vec_ops::normalize(last_speed);
@@ -505,6 +527,10 @@ impl PlayerController {
                 clone.balance.0 += norm_inst.0 * turn_fact;
                 clone.balance.1 += norm_inst.1 * turn_fact;
             }
+        }
+
+        if vec_ops::magnitude(clone.balance) <= 0.1 {
+            clone.balance = (0.0, 0.0);
         }
 
         clone

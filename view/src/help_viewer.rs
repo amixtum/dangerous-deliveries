@@ -62,19 +62,23 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
 
     sc_y += 1;
 
-    screen.print_fbg(1, sc_y, "Not Traversable", Color::Green, Color::Black);
+    screen.print_fbg(1, sc_y, "Fall Over or Game Over", Color::Green, Color::Black);
 
     sc_y += 1;
 
-    screen.print_fbg(1, sc_y, "Same level", Color::Blue, Color::Black);
+    let title = "Speed Gradient: ";
+    let ds = "Decrease Speed, ";
+    let is = "Increase Speed";
 
+    screen.print_fbg(1, sc_y, title, Color::Rgb { r: 255, g: 0, b: 255 }, Color::Black);
+
+    screen.print_fbg(title.chars().count() as i32 + 1, sc_y, ds, Color::Rgb { r: 0, g: 0, b: 255 }, Color::Black);
+
+    screen.print_fbg(title.chars().count() as i32 + ds.chars().count() as i32 + 2, sc_y, is, Color::Rgb { r: 255, g: 0, b: 0 }, Color::Black);
+    
     sc_y += 1;
 
-    screen.print_fbg(1, sc_y, "Down one level", Color::Cyan, Color::Black);
-
-    sc_y += 1;
-
-    screen.print_fbg(1, sc_y, "Up one level", Color::Magenta, Color::Black);
+    screen.print_fbg(1, sc_y, "Esc to Return", Color::White, Color::Black);
 
     screen
 }

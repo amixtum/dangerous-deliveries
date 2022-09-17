@@ -231,6 +231,7 @@ impl Game {
             &self.goal_table,
             &self.player,
             &self.ai_vec(),
+            &self.player_control,
             self.max_falls,
             self.player_control.max_speed,
             self.player_control.fallover_threshold,

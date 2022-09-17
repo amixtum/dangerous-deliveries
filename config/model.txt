@@ -1,7 +1,7 @@
 # dampening for the player's speed
 # (0, 1)
 # 0 for discrete movement
-speed_damp 0.66
+speed_damp 0.5
 
 # dampening for the player's balance
 # (0, 1)
@@ -17,7 +17,7 @@ up_speed_factor 0.66
 down_speed_factor 1.33
 
 # the player's speed will not exceed this value
-max_speed 3.0
+max_speed 2.5
 
 # if any component of the player's balance vector
 # is above this value, they fall over
@@ -28,7 +28,7 @@ inst_length 0.5
 
 # rails add a vector of this length to your speed in their direction
 # while letting you add an instantaneous velocity of half this length
-rail_boost 1.1
+rail_boost 1.0
 
 # no longer used 
 offrail_balance_factor 0.1

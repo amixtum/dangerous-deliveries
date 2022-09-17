@@ -1,5 +1,6 @@
 use console_engine::{screen::Screen, Color};
 
+use controller::player_controller::PlayerController;
 use util::files;
 
 use super::file_chooser_viewer;
@@ -35,6 +36,7 @@ impl ViewManager {
         goal_table: &GoalTable,
         player: &Player,
         ai: &Vec<Player>,
+        controller: &PlayerController,
         max_falls: u32,
         max_speed: f32,
         fallover_threshold: f32,
@@ -79,7 +81,8 @@ impl ViewManager {
                     &obs_table,
                     &goal_table,
                     &player,
-                    ai,
+                    &ai,
+                    &controller,
                     max_falls,
                     max_speed,
                     fallover_threshold,
@@ -95,6 +98,7 @@ impl ViewManager {
                     &goal_table,
                     &player,
                     ai,
+                    controller,
                     max_falls,
                     max_speed,
                     fallover_threshold,
@@ -109,6 +113,7 @@ impl ViewManager {
                     &goal_table,
                     &player,
                     ai,
+                    controller,
                     max_falls,
                     max_speed,
                     fallover_threshold,
@@ -124,6 +129,7 @@ impl ViewManager {
                     &goal_table,
                     &player,
                     ai,
+                    controller,
                     max_falls,
                     max_speed,
                     fallover_threshold,
@@ -140,6 +146,7 @@ impl ViewManager {
                     &goal_table,
                     &player,
                     ai,
+                    controller,
                     max_falls,
                     max_speed,
                     fallover_threshold,
@@ -153,6 +160,7 @@ impl ViewManager {
                     &goal_table,
                     &player,
                     ai,
+                    controller,
                     max_falls,
                     max_speed,
                     fallover_threshold,

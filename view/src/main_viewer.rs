@@ -1,4 +1,5 @@
 use console_engine::{pixel, screen::Screen, Color};
+use controller::player_controller::PlayerController;
 
 use std::collections::HashMap;
 
@@ -96,6 +97,7 @@ impl MainViewer {
         goals: &GoalTable,
         player: &Player,
         ai: &Vec<Player>,
+        controller: &PlayerController,
         max_falls: u32,
         max_speed: f32,
         fallover_threshold: f32,
@@ -117,8 +119,10 @@ impl MainViewer {
             goals,
             player,
             ai,
+            controller,
             table_view_width as u32,
             table_view_height as u32,
+            fallover_threshold,
         );
         let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
         let speed_view = self.draw_speed(player, max_speed, balance_size as u32);
@@ -153,8 +157,10 @@ impl MainViewer {
         goals: &GoalTable,
         player: &Player,
         ai: &Vec<Player>,
+        controller: &PlayerController,
         width: u32,
         height: u32,
+        fallover_threshold: f32,
     ) -> Screen {
         let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
@@ -205,22 +211,18 @@ impl MainViewer {
 
                 let t = table.traversability((player.x(), player.y()), (x, y));
                 let symbol = self.symbol_map[&obstacle_type];
-                let colors = self.color_map[&t];
 
-                match t {
-                    Traversability::No => {
-                        if symbol == '.' && neighbors.contains(&(x, y)) {
-                            screen.set_pxl(
-                                sc_x,
-                                sc_y,
-                                pixel::pxl_fbg(symbol, Color::Black, Color::Black),
-                            );
-                        } else {
-                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
-                        }
+
+                let mov = controller.move_player_vel(table, player, (x as f32 - player.x() as f32, y as f32 - player.y() as f32));
+                let balance_amount = vec_ops::magnitude(mov.balance) / fallover_threshold;
+                match mov.recent_event {
+                    PlayerEvent::FallOver |
+                    PlayerEvent::GameOver(_) => {
+                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: 255, b: 0 }, Color::Black));
                     }
                     _ => {
-                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, colors.0, colors.1));
+                        let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount)) as u8, g: 0, b: (255 as f32 * balance_amount) as u8 };
+                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, color, Color::Black));
                     }
                 }
 
