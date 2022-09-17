@@ -5,7 +5,7 @@ window_width 80
 window_height 20
 
 # width of the game world
-game_width 40
+game_width 60
 
 # height of the game world
 game_height 20

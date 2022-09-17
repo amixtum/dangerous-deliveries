@@ -11,3 +11,5 @@ pub mod direction;
 pub mod traversability;
 
 pub mod state;
+
+pub mod map_gen;

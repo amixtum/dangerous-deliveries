@@ -37,7 +37,7 @@ fn load_game() -> Result<Game, String> {
             }
             None => {}
         }
-        if let Ok(contents) = fs::read_to_string(format!("{}/config/{}", path, "window.txt")) {
+        if let Ok(contents) = fs::read_to_string(format!("{}/config/{}", path, "main.txt")) {
             for line in contents.lines() {
                 if let Some(c) = line.chars().nth(0) {
                     if c == '#' {

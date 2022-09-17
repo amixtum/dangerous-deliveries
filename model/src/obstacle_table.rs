@@ -47,166 +47,15 @@ impl ObstacleTable {
 
         ct.properties_from_file(table_file);
 
-        ct.lsystem.update_n(ct.lsystem.iterations);
-        ct.regen_table();
+        //ct.lsystem.update_n(ct.lsystem.iterations);
 
-        ct.apply_automata();
+        ct.regen_table();
 
         ct
     }
 }
 
 impl ObstacleTable {
-    pub fn properties_from_file(&mut self, path: &str) {
-        if let Ok(contents) = fs::read_to_string(path) {
-            for line in contents.lines() {
-                if let Some(c) = line.chars().nth(0) {
-                    if c == '#' {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-
-                let words: Vec<&str> = line.split_ascii_whitespace().collect();
-                if words[0] == "pit_gen_p" {
-                    if let Ok(num) = words[1].parse::<f32>() {
-                        self.pit_gen_p = num;
-                    }
-                } else if words[0] == "rail_gen_p" {
-                    if let Ok(num) = words[1].parse::<f32>() {
-                        self.rail_gen_p = num;
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn set_lsystem(&mut self, lsystem: LSystem) {
-        self.lsystem = lsystem;
-        self.lsystem.update_n(self.lsystem.iterations);
-        self.regen_table();
-    }
-
-    pub fn set_obstacle(&mut self, (x, y): (i32, i32), obs: Obstacle) {
-        self.table[x as usize][y as usize] = obs;
-    }
-
-    // assumes an obstacle already exists at x, y and
-    // and copies its height to the platform
-    // if it is a pit, it gets height 0
-    pub fn set_platform(&mut self, (x, y): (i32, i32)) {
-        match self.table[x as usize][y as usize] {
-            Obstacle::Pit => {
-                self.table[x as usize][y as usize] = Obstacle::Platform(0);
-            }
-            _ => {
-                self.table[x as usize][y as usize] = Obstacle::Platform(self.get_height(x, y));
-            }
-        }
-    }
-
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.width = width;
-        self.height = height;
-        self.table.clear();
-        for x in 0..width {
-            self.table.push(Vec::new());
-            for _ in 0..height {
-                self.table[x as usize].push(Obstacle::Platform(0));
-            }
-        }
-        self.regen_table();
-    }
-
-    pub fn regen_table(&mut self) {
-        for x in 0..self.width {
-            for y in 0..self.height {
-                self.table[x as usize][y as usize] = Obstacle::Platform(0);
-            }
-        }
-
-        self.regen_turtles();
-
-        let mut c_idx = 0;
-        while c_idx < self.lsystem.get_current().len() {
-            self.compute_turtles(self.lsystem.get_current()[c_idx]);
-            c_idx += 1;
-        }
-
-        for _ in 0..8 {
-            self.apply_automata();
-        }
-    }
-
-    pub fn apply_automata(&mut self) {
-        let mut next = HashMap::new();
-        for x in 0..self.width {
-            for y in 0..self.height {
-                next.insert(
-                    (x as i32, y as i32),
-                    obstacle_automata::compute_next(&self, x as i32, y as i32),
-                );
-            }
-        }
-
-        for x in 0..self.width {
-            for y in 0..self.height {
-                if let Some(obstacle) = next.remove(&(x as i32, y as i32)) {
-                    self.set_obstacle((x as i32, y as i32), obstacle);
-                }
-            }
-        }
-    }
-
-    fn regen_turtles(&mut self) {
-        self.turtles.clear();
-        self.saved_positions.clear();
-
-        let x_skip = (self.width as i32 - self.width as i32 / 4) / self.lsystem.turtles as i32;
-        let y_skip = (self.height as i32 - self.height as i32 / 4) / self.lsystem.turtles as i32;
-
-        let mut p_x = self.width as i32 / 8;
-        let mut p_y = self.height as i32 / 8;
-        for _ in 0..self.lsystem.turtles {
-            let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
-
-            let mut d_x: i32;
-            let mut d_y: i32;
-
-            let xdiff = p_x - self.width as i32 / 2;
-            let ydiff = p_y - self.height as i32 / 2;
-
-            if xdiff > 0 {
-                d_x = -1;
-            } else if xdiff == 0 {
-                d_x = 0;
-            } else {
-                d_x = 1;
-            }
-
-            if ydiff > 0 {
-                d_y = 1;
-            } else if xdiff == 0 {
-                d_y = 0;
-            } else {
-                d_y = -1;
-            }
-
-            while d_x == 0 && d_y == 0 {
-                d_x = rand::thread_rng().gen_range(-1..=1);
-                d_y = rand::thread_rng().gen_range(-1..=1);
-            }
-
-            self.turtles
-                .push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
-            self.saved_positions.push(Vec::new());
-
-            p_x += x_skip as i32;
-            p_y += y_skip as i32;
-        }
-    }
-
     pub fn width(&self) -> u32 {
         self.width
     }
@@ -282,6 +131,137 @@ impl ObstacleTable {
         }
 
         return Traversability::No;
+    }
+
+    pub fn properties_from_file(&mut self, path: &str) {
+        if let Ok(contents) = fs::read_to_string(path) {
+            for line in contents.lines() {
+                if let Some(c) = line.chars().nth(0) {
+                    if c == '#' {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+
+                let words: Vec<&str> = line.split_ascii_whitespace().collect();
+                if words[0] == "pit_gen_p" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        self.pit_gen_p = num;
+                    }
+                } else if words[0] == "rail_gen_p" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        self.rail_gen_p = num;
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    pub fn set_obstacle(&mut self, (x, y): (i32, i32), obs: Obstacle) {
+        self.table[x as usize][y as usize] = obs;
+    }
+
+    // assumes an obstacle already exists at x, y and
+    // and copies its height to the platform
+    // if it is a pit, it gets height 0
+    pub fn set_platform(&mut self, (x, y): (i32, i32)) {
+        match self.table[x as usize][y as usize] {
+            Obstacle::Pit => {
+                self.table[x as usize][y as usize] = Obstacle::Platform(0);
+            }
+            _ => {
+                self.table[x as usize][y as usize] = Obstacle::Platform(self.get_height(x, y));
+            }
+        }
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+        self.table.clear();
+        for x in 0..width {
+            self.table.push(Vec::new());
+            for _ in 0..height {
+                self.table[x as usize].push(Obstacle::Platform(0));
+            }
+        }
+        self.regen_table();
+    }
+
+    pub fn regen_table(&mut self) {
+        for x in 0..self.width {
+            for y in 0..self.height {
+                self.table[x as usize][y as usize] = Obstacle::Platform(0);
+            }
+        }
+
+        /*
+        self.regen_turtles();
+
+        
+        let mut c_idx = 0;
+        while c_idx < self.lsystem.get_current().len() {
+            self.compute_turtles(self.lsystem.get_current()[c_idx]);
+            c_idx += 1;
+        }
+        */
+    }
+
+    pub fn set_lsystem(&mut self, lsystem: LSystem) {
+        self.lsystem = lsystem;
+        self.lsystem.update_n(self.lsystem.iterations);
+        self.regen_table();
+    }
+
+    fn regen_turtles(&mut self) {
+        self.turtles.clear();
+        self.saved_positions.clear();
+
+        let x_skip = (self.width as i32 - self.width as i32 / 4) / self.lsystem.turtles as i32;
+        let y_skip = (self.height as i32 - self.height as i32 / 4) / self.lsystem.turtles as i32;
+
+        let mut p_x = self.width as i32 / 8;
+        let mut p_y = self.height as i32 / 8;
+        for _ in 0..self.lsystem.turtles {
+            let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
+
+            let mut d_x: i32;
+            let mut d_y: i32;
+
+            let xdiff = p_x - self.width as i32 / 2;
+            let ydiff = p_y - self.height as i32 / 2;
+
+            if xdiff > 0 {
+                d_x = -1;
+            } else if xdiff == 0 {
+                d_x = 0;
+            } else {
+                d_x = 1;
+            }
+
+            if ydiff > 0 {
+                d_y = 1;
+            } else if xdiff == 0 {
+                d_y = 0;
+            } else {
+                d_y = -1;
+            }
+
+            while d_x == 0 && d_y == 0 {
+                d_x = rand::thread_rng().gen_range(-1..=1);
+                d_y = rand::thread_rng().gen_range(-1..=1);
+            }
+
+            self.turtles
+                .push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
+            self.saved_positions.push(Vec::new());
+
+            p_x += x_skip as i32;
+            p_y += y_skip as i32;
+        }
     }
 
     fn compute_turtles(&mut self, letter: Alphabet) {

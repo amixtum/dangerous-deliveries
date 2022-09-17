@@ -66,9 +66,9 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
 
     sc_y += 1;
 
-    let title = "Speed Gradient: ";
-    let ds = "Decrease Speed, ";
-    let is = "Increase Speed";
+    let title = "Balance Gradient: ";
+    let ds = "Decrease Balance, ";
+    let is = "Increase Balance";
 
     screen.print_fbg(1, sc_y, title, Color::Rgb { r: 255, g: 0, b: 255 }, Color::Black);
 

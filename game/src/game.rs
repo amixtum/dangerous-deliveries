@@ -1,4 +1,6 @@
 use console_engine::{ConsoleEngine, KeyCode, KeyModifiers, Color};
+use model::map_gen::{apply_voronoi, self};
+use model::obstacle_automata::{apply_automata, self};
 use rand::Rng;
 use util::heap::Heap;
 
@@ -98,6 +100,21 @@ impl Game {
 
             g.goal_table
                 .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
+
+
+
+            let a = g.obs_table.width() / 4;
+            let b = g.obs_table.height() / 4;
+            map_gen::apply_voronoi_inv(&mut g.obs_table, (a * b) as usize);
+            obstacle_automata::apply_automata(&mut g.obs_table);
+            for _ in 0..2 {
+                let a = g.obs_table.width() / 4;
+                let b = g.obs_table.height() / 4;
+                map_gen::apply_voronoi_inv(&mut g.obs_table, (a * b) as usize);
+                //map_gen::apply_voronoi(&mut g.obs_table, (a * b) as usize);
+                map_gen::apply_voronoi_v2(&mut g.obs_table, (a * b) as usize);
+            }
+
             g.clear_obstacles_at_goals();
 
             g.obs_table.set_obstacle(
@@ -205,9 +222,7 @@ impl Game {
         }
 
         if self.engine.is_key_pressed(KeyCode::Char('0')) {
-            self.obs_table.apply_automata();
-            self.clear_obstacles_at_goals();
-            self.redraw = true;
+
         }
 
         /*
@@ -306,9 +321,10 @@ impl Game {
                 GameState::LookMode => GameState::LookMode,
                 _ => GameState::Playing,
             });
-        } else if self.engine.is_key_pressed(KeyCode::Char('2')) {
+        } /* else if self.engine.is_key_pressed(KeyCode::Char('2')) {
+            
             self.set_state(GameState::SizeChooser);
-        }
+        }*/
 
         return true;
     }
@@ -354,9 +370,12 @@ impl Game {
             self.set_state(GameState::LookMode);
         } else if self.engine.is_key_pressed(KeyCode::Enter) {
             self.set_state(GameState::Restart);
-        } else if self.engine.is_key_pressed(KeyCode::Char('g')) {
+        } /*else if self.engine.is_key_pressed(KeyCode::Char('g')) {
             if !self.applied_automata {
                 self.obs_table.apply_automata();
+                let w = self.obs_table.width() / 4;
+                let h = self.obs_table.height() / 4;
+                //apply_voronoi(&mut self.obs_table, w as usize * h as usize);
                 self.obs_table.set_obstacle(
                     self.player.xy(),
                     Obstacle::Platform(0),
@@ -365,7 +384,7 @@ impl Game {
                 self.applied_automata = true;
                 self.redraw = true;
             }
-        } else {
+        }*/ else {
             let keysv = self.player_control.get_keys();
             for keycode in keysv {
                 if self.engine.is_key_pressed(keycode) {
@@ -587,6 +606,18 @@ impl Game {
             self.obs_table.height(),
             self.n_goals,
         );
+        let a = self.obs_table.width() / 4;
+        let b = self.obs_table.height() / 4;
+        map_gen::apply_voronoi_inv(&mut self.obs_table, (a * b) as usize);
+        obstacle_automata::apply_automata(&mut self.obs_table);
+        for _ in 0..2 {
+            let a = self.obs_table.width() / 4;
+            let b = self.obs_table.height() / 4;
+            map_gen::apply_voronoi_inv(&mut self.obs_table, (a * b) as usize);
+            //map_gen::apply_voronoi(&mut self.obs_table, (a * b) as usize);
+            map_gen::apply_voronoi_v2(&mut self.obs_table, (a * b) as usize);
+        }
+
         self.clear_obstacles_at_goals();
 
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
