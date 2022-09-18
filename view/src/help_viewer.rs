@@ -62,7 +62,7 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
 
     sc_y += 1;
 
-    screen.print_fbg(1, sc_y, "Fall Over or Game Over", Color::Green, Color::Black);
+    screen.print_fbg(1, sc_y, "Fall Over or Game Over", Color::Rgb { r: 0, g: 255, b: 0 }, Color::Black);
 
     sc_y += 1;
 

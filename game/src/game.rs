@@ -73,7 +73,7 @@ impl Game {
                 opponents: Vec::new(),
                 lookmode: LookMode::new(),
 
-                player: Player::new(table_width as i32 / 2, table_height as i32 / 2, 0),
+                player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
 
                 engine,
 
@@ -101,25 +101,11 @@ impl Game {
             g.goal_table
                 .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
 
-
-
-            let a = g.obs_table.width() / 4;
-            let b = g.obs_table.height() / 4;
-            map_gen::apply_voronoi_inv(&mut g.obs_table, (a * b) as usize);
-            obstacle_automata::apply_automata(&mut g.obs_table);
-            for _ in 0..2 {
-                let a = g.obs_table.width() / 4;
-                let b = g.obs_table.height() / 4;
-                map_gen::apply_voronoi_inv(&mut g.obs_table, (a * b) as usize);
-                //map_gen::apply_voronoi(&mut g.obs_table, (a * b) as usize);
-                map_gen::apply_voronoi_v2(&mut g.obs_table, (a * b) as usize);
-            }
-
             g.clear_obstacles_at_goals();
 
             g.obs_table.set_obstacle(
                 g.player.xy(),
-                Obstacle::Platform(0),
+                Obstacle::Platform,
             );
 
             for _ in 0..g.n_opponents {
@@ -162,10 +148,11 @@ impl Game {
             &self.goal_table,
             x,
             y,
-            self.obs_table.get_height(x, y),
         ));
         self.obs_table
-            .set_obstacle((x, y), Obstacle::Platform(0));
+            .set_obstacle((x, y), Obstacle::Platform);
+
+        map_gen::tunnel_position(&mut self.obs_table, (x, y));
     }
 
     pub fn properties_from_file(&mut self, path: &str) {
@@ -582,7 +569,7 @@ impl Game {
                         self.clear_obstacles_at_goals();
                         self.player =
                             PlayerController::reset_player_gameover(&self.obs_table, &self.player);
-                        self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform(0));
+                        self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform);
                         self.opponents.clear();
                         for _ in 0..self.n_opponents {
                             self.add_opponent();
@@ -606,44 +593,40 @@ impl Game {
             self.obs_table.height(),
             self.n_goals,
         );
-        let a = self.obs_table.width() / 4;
-        let b = self.obs_table.height() / 4;
-        map_gen::apply_voronoi_inv(&mut self.obs_table, (a * b) as usize);
-        obstacle_automata::apply_automata(&mut self.obs_table);
-        for _ in 0..2 {
-            let a = self.obs_table.width() / 4;
-            let b = self.obs_table.height() / 4;
-            map_gen::apply_voronoi_inv(&mut self.obs_table, (a * b) as usize);
-            //map_gen::apply_voronoi(&mut self.obs_table, (a * b) as usize);
-            map_gen::apply_voronoi_v2(&mut self.obs_table, (a * b) as usize);
-        }
+
+        map_gen::voronoi_mapgen(&mut self.obs_table, &self.goal_table);
+
 
         self.clear_obstacles_at_goals();
 
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
         self.obs_table.set_obstacle(
             self.player.xy(),
-            Obstacle::Platform(0),
+            Obstacle::Platform,
         );
 
         self.opponents.clear();
-        for _ in 0..self.n_opponents {
+        for i in 0..self.n_opponents {
             self.add_opponent();
         }
+
+        map_gen::tunnel_position(&mut self.obs_table, self.player.position);
+
+
     }
 
     fn reset_player_continue(&mut self) {
         self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player);
         self.obs_table.set_obstacle(
             self.player.xy(),
-            Obstacle::Platform(0),
+            Obstacle::Platform,
         );
         self.redraw = true;
     }
 
     fn clear_obstacles_at_goals(&mut self) {
         for goal in self.goal_table.goals() {
-            self.obs_table.set_obstacle(*goal, Obstacle::Platform(0));
+            self.obs_table.set_obstacle(*goal, Obstacle::Platform);
         }
     }
 

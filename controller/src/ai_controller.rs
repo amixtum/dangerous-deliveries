@@ -4,7 +4,7 @@ use rand::Rng;
 use super::player_controller::PlayerController;
 
 use model::goal_table::GoalTable;
-use model::obstacle::ObstacleType;
+use model::obstacle::Obstacle;
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -17,9 +17,9 @@ pub struct AIController {
 }
 
 impl AIController {
-    pub fn new(goal_table: &GoalTable, start_x: i32, start_y: i32, height: i32) -> Self {
+    pub fn new(goal_table: &GoalTable, start_x: i32, start_y: i32) -> Self {
         let mut ac = AIController {
-            player: Player::new(start_x, start_y, height),
+            player: Player::new(start_x, start_y),
             goal: (-1, -1),
         };
         ac.choose_goal(goal_table);
@@ -31,7 +31,6 @@ impl AIController {
     pub fn reset(&mut self, obs_table: &ObstacleTable, x: i32, y: i32) {
         self.player.position.0 = x;
         self.player.position.1 = y;
-        self.player.position.2 = obs_table.get_height(x, y);
         self.player.balance = (0.0, 0.0);
         self.player.speed = (0.0, 0.0);
         self.player.n_falls = 0;
@@ -126,8 +125,8 @@ impl AIController {
                 PlayerEvent::FallOver => {
                     falls.push((mov, (mov.time - player.time).round() as u32));
                 }
-                _ => match obs_table.get_obstacle_type(mov.x(), mov.y()) {
-                    ObstacleType::Pit => {}
+                _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
+                    Obstacle::Pit => {}
                     _ => {
                         moves.push((mov, (mov.time - player.time).round() as u32));
                     }
@@ -162,8 +161,8 @@ impl AIController {
                 PlayerEvent::FallOver => {
                     falls.push((mov, (mov.time - player.time).round() as u32));
                 }
-                _ => match obs_table.get_obstacle_type(mov.x(), mov.y()) {
-                    ObstacleType::Platform => {
+                _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
+                    Obstacle::Platform => {
                         moves.push((mov, (mov.time - player.time).round() as u32));
                     }
                     _ => {}

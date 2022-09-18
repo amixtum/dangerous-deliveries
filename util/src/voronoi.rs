@@ -4,7 +4,7 @@ use rand::Rng;
 
 use crate::vec_ops;
 
-fn voronoi_seeds(n: usize, width: u32, height: u32) -> HashSet<(i32, i32)> {
+pub fn voronoi_seeds(n: usize, width: u32, height: u32) -> HashSet<(i32, i32)> {
     let mut seeds = HashSet::new();
 
     if n >= width as usize * height as usize {
@@ -20,13 +20,12 @@ fn voronoi_seeds(n: usize, width: u32, height: u32) -> HashSet<(i32, i32)> {
     seeds
 }
 
-pub fn voronoi_membership(nseeds: usize, width: u32, height: u32) -> HashMap<(i32, i32), (i32, i32)> {
-    let voronoi_seeds = voronoi_seeds(nseeds, width, height);
-    let mut voronoi_dist = vec![((0, 0), 0.0f32); nseeds];
+pub fn voronoi_membership(seeds: &HashSet<(i32, i32)>, width: u32, height: u32) -> HashMap<(i32, i32), (i32, i32)> {
+    let mut voronoi_dist = vec![((0, 0), 0.0f32); seeds.len()];
     let mut voronoi_membership = HashMap::new();
     for x in 0..width {
         for y in 0..height {
-            for (seed, point) in voronoi_seeds.iter().enumerate() {
+            for (seed, point) in seeds.iter().enumerate() {
                 let dist = vec_ops::magnitude((x as f32 - point.0 as f32, y as f32 - point.1 as f32));
                 voronoi_dist[seed] = (*point, dist);
             }

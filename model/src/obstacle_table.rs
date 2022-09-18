@@ -1,4 +1,4 @@
-use super::obstacle::{Obstacle, ObstacleType};
+use super::obstacle::{Obstacle};
 use super::obstacle_automata;
 use super::traversability::Traversability;
 
@@ -41,7 +41,7 @@ impl ObstacleTable {
         for x in 0..width {
             ct.table.push(Vec::new());
             for _ in 0..height {
-                ct.table[x as usize].push(Obstacle::Platform(0));
+                ct.table[x as usize].push(Obstacle::Platform);
             }
         }
 
@@ -68,32 +68,11 @@ impl ObstacleTable {
         self.table[x as usize][y as usize]
     }
 
-    pub fn get_obstacle_type(&self, x: i32, y: i32) -> ObstacleType {
-        match self.table[x as usize][y as usize] {
-            Obstacle::Platform(_) => ObstacleType::Platform,
-            Obstacle::Pit => ObstacleType::Pit,
-            Obstacle::Rail(_, dir) => {
-                let i_dir = vec_ops::discrete_jmp(dir);
-                ObstacleType::Rail(i_dir.0, i_dir.1)
-            }
-            Obstacle::Wall => ObstacleType::Wall,
-        }
-    }
-
-    pub fn get_height(&self, x: i32, y: i32) -> i32 {
-        match self.table[x as usize][y as usize] {
-            Obstacle::Platform(height) => height,
-            Obstacle::Pit => -999,
-            Obstacle::Rail(height, ..) => height,
-            Obstacle::Wall => 999,
-        }
-    }
-
     pub fn get_direction(&self, x: i32, y: i32) -> Option<(f32, f32)> {
         match self.table[x as usize][y as usize] {
-            Obstacle::Platform(_) => None,
+            Obstacle::Platform => None,
             Obstacle::Pit => None,
-            Obstacle::Rail(_, pair) => Some(pair),
+            Obstacle::Rail(xdir, ydir) => Some((xdir as f32, ydir as f32)),
             Obstacle::Wall => None,
         }
     }
@@ -103,9 +82,7 @@ impl ObstacleTable {
         let y_diff = to_y - from_y;
 
         if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 {
-            let h_diff = self.get_height(to_x, to_y) - self.get_height(from_x, from_y);
-
-            return x_diff.abs() <= 1 && y_diff.abs() <= 1 && h_diff.abs() <= 1;
+            return x_diff.abs() <= 1 && y_diff.abs() <= 1;
         }
 
         false
@@ -118,16 +95,9 @@ impl ObstacleTable {
     ) -> Traversability {
         let x_diff = to_x as i32 - from_x as i32;
         let y_diff = to_y as i32 - from_y as i32;
-        let h_diff = self.get_height(to_x, to_y) - self.get_height(from_x, from_y);
 
-        if x_diff.abs() <= 1 && y_diff.abs() <= 1 && h_diff.abs() <= 1 {
-            if h_diff > 0 {
-                return Traversability::Up;
-            } else if h_diff < 0 {
-                return Traversability::Down;
-            } else {
-                return Traversability::Flat;
-            }
+        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 && x_diff.abs() <= 1 && y_diff.abs() <= 1 {
+            return Traversability::Flat;
         }
 
         return Traversability::No;
@@ -170,10 +140,10 @@ impl ObstacleTable {
     pub fn set_platform(&mut self, (x, y): (i32, i32)) {
         match self.table[x as usize][y as usize] {
             Obstacle::Pit => {
-                self.table[x as usize][y as usize] = Obstacle::Platform(0);
+                self.table[x as usize][y as usize] = Obstacle::Platform;
             }
             _ => {
-                self.table[x as usize][y as usize] = Obstacle::Platform(self.get_height(x, y));
+                self.table[x as usize][y as usize] = Obstacle::Platform;
             }
         }
     }
@@ -185,7 +155,7 @@ impl ObstacleTable {
         for x in 0..width {
             self.table.push(Vec::new());
             for _ in 0..height {
-                self.table[x as usize].push(Obstacle::Platform(0));
+                self.table[x as usize].push(Obstacle::Platform);
             }
         }
         self.regen_table();
@@ -194,7 +164,7 @@ impl ObstacleTable {
     pub fn regen_table(&mut self) {
         for x in 0..self.width {
             for y in 0..self.height {
-                self.table[x as usize][y as usize] = Obstacle::Platform(0);
+                self.table[x as usize][y as usize] = Obstacle::Platform;
             }
         }
 
@@ -350,27 +320,23 @@ impl ObstacleTable {
             }
         } else if self.continue_rail {
             self.table[self.turtles[turtle_index].position.0 as usize]
-                [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail(
-                self.turtles[turtle_index].position.2,
+                [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail
                 (
-                    self.turtles[turtle_index].direction.0 as f32,
-                    self.turtles[turtle_index].direction.1 as f32,
-                ),
-            );
+                    self.turtles[turtle_index].direction.0,
+                    self.turtles[turtle_index].direction.1,
+                );
         } else if rand::thread_rng().gen_bool(self.rail_gen_p as f64) {
             self.continue_rail = true;
             self.table[self.turtles[turtle_index].position.0 as usize]
-                [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail(
-                self.turtles[turtle_index].position.2,
+                [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail
                 (
-                    self.turtles[turtle_index].direction.0 as f32,
-                    self.turtles[turtle_index].direction.1 as f32,
-                ),
-            );
+                    self.turtles[turtle_index].direction.0,
+                    self.turtles[turtle_index].direction.1,
+                );
         } else {
             self.table[self.turtles[turtle_index].position.0 as usize]
                 [self.turtles[turtle_index].position.1 as usize] =
-                Obstacle::Platform(self.turtles[turtle_index].position.2);
+                Obstacle::Platform;
         }
     }
 }

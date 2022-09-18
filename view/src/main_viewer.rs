@@ -7,7 +7,6 @@ use util::vec_ops;
 
 use model::goal_table::GoalTable;
 use model::obstacle::Obstacle;
-use model::obstacle::ObstacleType;
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -15,7 +14,7 @@ use model::traversability::Traversability;
 
 pub struct MainViewer {
     color_map: HashMap<Traversability, (Color, Color)>,
-    symbol_map: HashMap<ObstacleType, char>,
+    symbol_map: HashMap<Obstacle, char>,
     message_log: Vec<(String, Color)>,
     log_length: usize,
     max_message_length: u32,
@@ -40,36 +39,36 @@ impl MainViewer {
         gv.color_map
             .insert(Traversability::No, (Color::Green, Color::Black));
 
-        gv.symbol_map.insert(ObstacleType::Pit, 'x');
-        gv.symbol_map.insert(ObstacleType::Platform, '.');
-        gv.symbol_map.insert(ObstacleType::Wall, '#');
+        gv.symbol_map.insert(Obstacle::Pit, 'x');
+        gv.symbol_map.insert(Obstacle::Platform, '.');
+        gv.symbol_map.insert(Obstacle::Wall, '#');
 
         // bug (havent' found it yet)
-        gv.symbol_map.insert(ObstacleType::Rail(0, 0), '_');
+        gv.symbol_map.insert(Obstacle::Rail(0, 0), '_');
 
         // right
-        gv.symbol_map.insert(ObstacleType::Rail(1, 0), '>');
+        gv.symbol_map.insert(Obstacle::Rail(1, 0), '>');
 
         // left
-        gv.symbol_map.insert(ObstacleType::Rail(-1, 0), '<');
+        gv.symbol_map.insert(Obstacle::Rail(-1, 0), '<');
 
         // up
-        gv.symbol_map.insert(ObstacleType::Rail(0, -1), '^');
+        gv.symbol_map.insert(Obstacle::Rail(0, -1), '^');
 
         // down
-        gv.symbol_map.insert(ObstacleType::Rail(0, 1), 'v');
+        gv.symbol_map.insert(Obstacle::Rail(0, 1), 'v');
 
         // diagonal right up
-        gv.symbol_map.insert(ObstacleType::Rail(1, -1), '/');
+        gv.symbol_map.insert(Obstacle::Rail(1, -1), '/');
 
         // diagonal left down
-        gv.symbol_map.insert(ObstacleType::Rail(-1, 1), 'd');
+        gv.symbol_map.insert(Obstacle::Rail(-1, 1), 'd');
 
         // diagonal right down
-        gv.symbol_map.insert(ObstacleType::Rail(1, 1), '\\');
+        gv.symbol_map.insert(Obstacle::Rail(1, 1), '\\');
 
         // diagonal left up
-        gv.symbol_map.insert(ObstacleType::Rail(-1, -1), 'u');
+        gv.symbol_map.insert(Obstacle::Rail(-1, -1), 'u');
 
         gv
     }
@@ -195,7 +194,7 @@ impl MainViewer {
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                let obstacle_type = table.get_obstacle_type(x, y);
+                let obstacle_type = table.get_obstacle(x, y);
 
 
                 /*
@@ -238,7 +237,7 @@ impl MainViewer {
                 }
 
                 match obstacle_type {
-                    ObstacleType::Pit => {}
+                    Obstacle::Pit => {}
                     _ => {
                         for p in ai {
                             if x == p.x() && y == p.y() {
@@ -378,26 +377,26 @@ impl MainViewer {
         let mut message = String::new();
         let mut color = Color::White;
         match event {
-            PlayerEvent::Move => match table.get_obstacle_type(player.x(), player.y()) {
-                ObstacleType::Platform => message.push_str("On Platform"),
-                ObstacleType::Pit => {
+            PlayerEvent::Move => match table.get_obstacle(player.x(), player.y()) {
+                Obstacle::Platform => message.push_str("On Platform"),
+                Obstacle::Pit => {
                     message.push_str("Restart");
                     color = Color::Red;
                 }
-                ObstacleType::Rail(xdir, ydir) => {
+                Obstacle::Rail(xdir, ydir) => {
                     message.push_str("Grinding ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Cyan;
                 },
                 _ => {}
             },
-            PlayerEvent::Wait => match table.get_obstacle_type(player.x(), player.y()) {
-                ObstacleType::Platform => message.push_str("Waiting"),
-                ObstacleType::Pit => {
+            PlayerEvent::Wait => match table.get_obstacle(player.x(), player.y()) {
+                Obstacle::Platform => message.push_str("Waiting"),
+                Obstacle::Pit => {
                     message.push_str("Restart");
                     color = Color::Red;
                 }
-                ObstacleType::Rail(xdir, ydir) => {
+                Obstacle::Rail(xdir, ydir) => {
                     message.push_str("Stalled ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Magenta;
@@ -405,7 +404,7 @@ impl MainViewer {
                 _ => {}
             },
             PlayerEvent::FallOver => match table.get_obstacle(player.x(), player.y()) {
-                Obstacle::Platform(_) => {
+                Obstacle::Platform => {
                     message.push_str("Fell over");
                     color = Color::Red;
                 }
@@ -420,13 +419,13 @@ impl MainViewer {
                 _ => {}
             },
             PlayerEvent::OffRail => {
-                match table.get_obstacle_type(player.x(), player.y()) {
-                    ObstacleType::Platform => message.push_str("On Platform"),
-                    ObstacleType::Pit => {
+                match table.get_obstacle(player.x(), player.y()) {
+                    Obstacle::Platform => message.push_str("On Platform"),
+                    Obstacle::Pit => {
                         message.push_str("Restart");
                         color = Color::Red;
                     }
-                    ObstacleType::Rail(xdir, ydir) => {
+                    Obstacle::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
                         color = Color::Cyan;
@@ -435,13 +434,13 @@ impl MainViewer {
                 }
                 //Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
             }
-            PlayerEvent::OnRail => match table.get_obstacle_type(player.x(), player.y()) {
-                ObstacleType::Platform => message.push_str("On Platform"),
-                ObstacleType::Pit => {
+            PlayerEvent::OnRail => match table.get_obstacle(player.x(), player.y()) {
+                Obstacle::Platform => message.push_str("On Platform"),
+                Obstacle::Pit => {
                     message.push_str("Restart");
                     color = Color::Red;
                 }
-                ObstacleType::Rail(xdir, ydir) => {
+                Obstacle::Rail(xdir, ydir) => {
                     message.push_str("Grinding ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Cyan;

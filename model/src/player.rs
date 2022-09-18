@@ -2,7 +2,7 @@ use super::player_event::PlayerEvent;
 
 #[derive(Clone, Copy)]
 pub struct Player {
-    pub position: (i32, i32, i32),
+    pub position: (i32, i32),
     pub speed: (f32, f32),
     pub balance: (f32, f32),
     pub time: f32,
@@ -19,9 +19,9 @@ pub enum PlayerType {
 }
 
 impl Player {
-    pub fn new(x: i32, y: i32, height: i32) -> Self {
+    pub fn new(x: i32, y: i32) -> Self {
         Player {
-            position: (x, y, height),
+            position: (x, y),
             speed: (0.0, 0.0),
             balance: (0.0, 0.0),
             time: 0.0,
@@ -38,9 +38,6 @@ impl Player {
     }
     pub fn y(&self) -> i32 {
         self.position.1
-    }
-    pub fn height(&self) -> i32 {
-        self.position.2
     }
 
     pub fn xy(&self) -> (i32, i32) {

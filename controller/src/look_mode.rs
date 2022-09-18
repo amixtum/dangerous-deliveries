@@ -80,16 +80,13 @@ impl LookMode {
                 Obstacle::Wall => {
                     s.push_str("Wall ");
                 }
-                Obstacle::Platform(_) => {
+                Obstacle::Platform => {
                     s.push_str("Platform ");
                 }
                 Obstacle::Pit => {
                     s.push_str("Bottomless Pit ");
                 }
-                Obstacle::Rail(_, dir) => {
-                    let x_dir = dir.0.round() as i32;
-                    let y_dir = dir.1.round() as i32;
-
+                Obstacle::Rail(x_dir, y_dir) => {
                     if x_dir == 0 && y_dir == -1 {
                         s.push_str("Up Rail");
                     } else if x_dir == 0 && y_dir == 1 {

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 //use std::f32::consts::PI;
 
-use model::obstacle::{Obstacle, ObstacleType};
+use model::obstacle::{Obstacle};
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -245,7 +245,6 @@ impl PlayerController {
         clone.position = (
             table.width() as i32 / 2,
             table.height() as i32 / 2,
-            table.get_height(table.width() as i32 / 2, table.height() as i32 / 2),
         );
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
@@ -262,7 +261,6 @@ impl PlayerController {
         clone.position = (
             table.width() as i32 / 2,
             table.height() as i32 / 2,
-            table.get_height(table.width() as i32 / 2, table.height() as i32 / 2),
         );
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
@@ -295,7 +293,7 @@ impl PlayerController {
                     ..(table.height() as i32 / 2 + table.height() as i32 / 8),
             );
         }
-        clone.position = (x, y, table.get_height(x, y));
+        clone.position = (x, y);
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.n_falls = 0;
@@ -391,14 +389,10 @@ impl PlayerController {
 
                 for neighbor in neighbors {
                     match table.get_obstacle(neighbor.0, neighbor.1) {
-                        Obstacle::Platform(neighbor_height) => {
-                            if (height - neighbor_height).abs() <= 1 {
-                                clone.position = (neighbor.0, neighbor.1, neighbor_height);
+                        Obstacle::Platform => {
+                                clone.position = (neighbor.0, neighbor.1);
                                 found = true;
                                 break;
-                            }
-
-                            continue;
                         }
                         _ => {
                             continue;
@@ -457,7 +451,7 @@ impl PlayerController {
         let mut clone = Player::clone(player);
 
         match last_obstacle {
-            Obstacle::Platform(_) => {
+            Obstacle::Platform => {
                 // compute speed
                 clone.speed.0 = clone.speed.0 * speed_damp;
                 clone.speed.1 = clone.speed.1 * speed_damp;
@@ -466,12 +460,12 @@ impl PlayerController {
                 clone.speed.0 += add.0; 
                 clone.speed.1 += add.1;
             }
-            Obstacle::Rail(_, (x_dir, y_dir)) => {
+            Obstacle::Rail(x_dir, y_dir) => {
                 // compute speed
 
                 // this will not be NaN, if it is it's a bug
                 // found two on the borders
-                let norm_dir = vec_ops::normalize((x_dir, y_dir));
+                let norm_dir = vec_ops::normalize((x_dir as f32, y_dir as f32));
 
                 clone.speed.0 = clone.speed.0 * speed_damp;
                 clone.speed.1 = clone.speed.1 * speed_damp;
@@ -573,7 +567,7 @@ impl PlayerController {
     }
     */
 
-    fn compute_continue(table: &ObstacleTable, player: &Player) -> (i32, i32, i32) {
+    fn compute_continue(table: &ObstacleTable, player: &Player) -> (i32, i32) {
         let mut next_pos = player.position;
 
         next_pos.0 = ((next_pos.0 as f32 + player.speed.0).round() as i32)
@@ -583,8 +577,6 @@ impl PlayerController {
         next_pos.1 = ((next_pos.1 as f32 + player.speed.1).round() as i32)
             .clamp(next_pos.1 - 1, next_pos.1 + 1);
         next_pos.1 = next_pos.1.clamp(0, table.height() as i32 - 1);
-
-        next_pos.2 = table.get_height(next_pos.0, next_pos.1);
 
         next_pos
     }
@@ -596,7 +588,7 @@ impl PlayerController {
         table: &ObstacleTable,
         player: &Player,
         (inst_x, inst_y): (f32, f32),
-    ) -> (Player, (i32, i32, i32)) {
+    ) -> (Player, (i32, i32)) {
         let mut next_pos = player.position;
         let last_obstacle = table.get_obstacle(player.x(), player.y());
         let units = vec_ops::discrete_jmp((inst_x, inst_y));
@@ -635,9 +627,9 @@ impl PlayerController {
                     clone.recent_event = PlayerEvent::OnRail;
                 }
             },
-            Obstacle::Platform(_) => {
+            Obstacle::Platform => {
                 match obs_at_next {
-                    Obstacle::Rail(_, (_x_dir, _y_dir)) => {
+                    Obstacle::Rail(_x_dir, _y_dir) => {
                         /*
                         let result = PlayerController::compute_onrail(
                             table,
@@ -682,45 +674,35 @@ impl PlayerController {
     fn try_traverse(
         table: &ObstacleTable,
         player: &Player,
-        next_pos: (i32, i32, i32),
+        next_pos: (i32, i32),
         up_speed_fact: f32,
         down_speed_fact: f32,
     ) -> Player {
         // check if next_pos is adjacent to current position
         let mut clone = Player::clone(player);
-        let last_obstacle = table.get_obstacle_type(clone.x(), clone.y());
+        let last_obstacle = table.get_obstacle(clone.x(), clone.y());
 
         if table.can_traverse(player.xy(), (next_pos.0, next_pos.1)) {
-            // change speed when height changes
-            if next_pos.2 < player.position.2 {
-                clone.speed.0 *= down_speed_fact;
-                clone.speed.1 *= down_speed_fact;
-            } else if next_pos.2 > player.position.2 {
-                clone.speed.0 *= up_speed_fact;
-                clone.speed.1 *= up_speed_fact;
-            }
-
             if clone.x() != next_pos.0 || clone.y() != next_pos.1 {
                 // move player to next position
                 clone.position.0 = next_pos.0.clamp(0, table.width() as i32 - 1);
                 clone.position.1 = next_pos.1.clamp(0, table.height() as i32 - 1);
-                clone.position.2 = table.get_height(clone.x(), clone.y());
 
-                match table.get_obstacle_type(clone.x(), clone.y()) {
-                    ObstacleType::Platform => match last_obstacle {
-                        ObstacleType::Platform => {
+                match table.get_obstacle(clone.x(), clone.y()) {
+                    Obstacle::Platform => match last_obstacle {
+                        Obstacle::Platform => {
                             clone.recent_event = PlayerEvent::Move;
                         }
-                        ObstacleType::Pit => {}
-                        ObstacleType::Rail(_, _) => {
+                        Obstacle::Pit => {}
+                        Obstacle::Rail(_, _) => {
                             clone.recent_event = PlayerEvent::OffRail;
                         }
                         _ => {}
                     },
-                    ObstacleType::Pit => {
+                    Obstacle::Pit => {
                         clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
                     }
-                    ObstacleType::Rail(_, _) => {
+                    Obstacle::Rail(_, _) => {
                         clone.recent_event = PlayerEvent::OnRail;
                     }
                     _ => {}
