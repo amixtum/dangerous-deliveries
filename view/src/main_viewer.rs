@@ -225,7 +225,7 @@ impl MainViewer {
                         screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: (255 as f32 * inv_dist) as u8, b: 0 }, Color::Black));
                     }
                     _ => {
-                        let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount)) as u8, g: 0, b: (255 as f32 * balance_amount) as u8 };
+                        let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount) * inv_dist * 2.0) as u8, g: 0, b: (255 as f32 * balance_amount * inv_dist * 2.0) as u8 };
                         screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, color, Color::Black));
                     }
                 }
@@ -234,7 +234,7 @@ impl MainViewer {
                     if x == goal.0 && y == goal.1 {
                         match t {
                             Traversability::No => {
-                                screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::White));
+                                screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Rgb { r: (255.0f32 * inv_dist / 8.0) as u8, g: (255.0f32 * inv_dist / 8.0) as u8, b: (255.0f32 * inv_dist / 8.0) as u8 }));
                             },
                             _ => {
                                 screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg('$', Color::Red, Color::White));

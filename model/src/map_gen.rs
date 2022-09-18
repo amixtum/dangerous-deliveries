@@ -235,3 +235,4 @@ pub fn apply_voronoi_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>,)
         }
     }
 }
+

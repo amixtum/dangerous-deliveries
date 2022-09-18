@@ -1,5 +1,5 @@
 use console_engine::{ConsoleEngine, KeyCode, KeyModifiers, Color};
-use model::map_gen;
+use model::{map_gen};
 use rand::Rng;
 use util::heap::Heap;
 
@@ -217,7 +217,6 @@ impl Game {
         }
 
         if self.engine.is_key_pressed(KeyCode::Char('0')) {
-
         }
 
         /*

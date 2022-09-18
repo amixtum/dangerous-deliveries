@@ -76,17 +76,20 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                 return Obstacle::Wall;
             }
             else {
+                /*
                 let directions = dir_map.keys().collect::<Vec<_>>(); 
                 let mut rng = rand::thread_rng();
                 if let Some((xdir, ydir)) = directions.choose(&mut rng) {
                     return Obstacle::Rail(*xdir, *ydir);
                 }
+                */
 
                 return Obstacle::Platform;
             }
         }
         Obstacle::Platform => {
             if count_platform > 3 {
+                /*
                 let dirs: Vec<(Direction, (i32, i32))> = neighbors
                     .iter()
                     .map(|p| match obs_table.get_obstacle(p.0, p.1) {
@@ -123,6 +126,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                         _ => {}
                     }
                 }
+                */
                 return Obstacle::Wall;
             } 
             else if count_wall <= 2 {
@@ -167,7 +171,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                     return Obstacle::Platform;
                 }
                 return Obstacle::Platform;
-            } else if count_rail < 2 || count_rail == 5 {
+            } else if count_rail < 2 {
                 return Obstacle::Wall;
                 //let dir = (xdir, ydir);
                 //return Obstacle::Rail(obs_table.get_height(x, y), (dir.0 as f32, dir.1 as f32));
