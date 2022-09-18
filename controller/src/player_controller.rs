@@ -379,7 +379,7 @@ impl PlayerController {
         clone.n_falls += 1;
 
         match table.get_obstacle(player.x(), player.y()) {
-            Obstacle::Rail(height, _) => {
+            Obstacle::Rail(_, _) => {
                 let neighbors = vec_ops::neighbors(
                     player.xy(),
                     (0, 0),
@@ -675,8 +675,8 @@ impl PlayerController {
         table: &ObstacleTable,
         player: &Player,
         next_pos: (i32, i32),
-        up_speed_fact: f32,
-        down_speed_fact: f32,
+        _up_speed_fact: f32,
+        _down_speed_fact: f32,
     ) -> Player {
         // check if next_pos is adjacent to current position
         let mut clone = Player::clone(player);

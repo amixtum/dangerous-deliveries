@@ -1,12 +1,11 @@
 use console_engine::{ConsoleEngine, KeyCode, KeyModifiers, Color};
-use model::map_gen::{apply_voronoi, self};
-use model::obstacle_automata::{apply_automata, self};
+use model::map_gen;
 use rand::Rng;
 use util::heap::Heap;
 
 use std::fs;
 
-use util::files;
+use util::{files, vec_ops};
 
 use model::goal_table::GoalTable;
 use model::obstacle::Obstacle;
@@ -38,6 +37,7 @@ pub struct Game {
     max_falls: u32,
     n_goals: u32,
     n_opponents: u32,
+    sight_radius: u32,
 
     state: GameState,
     last_state: GameState,
@@ -80,6 +80,7 @@ impl Game {
                 max_falls: 4,
                 n_goals: 4,
                 n_opponents: 2,
+                sight_radius: 8,
 
                 state: GameState::MainMenu,
                 last_state: GameState::MainMenu,
@@ -101,12 +102,16 @@ impl Game {
             g.goal_table
                 .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
 
+            map_gen::voronoi_mapgen(&mut g.obs_table, &g.goal_table);
+
             g.clear_obstacles_at_goals();
 
             g.obs_table.set_obstacle(
                 g.player.xy(),
                 Obstacle::Platform,
             );
+
+            map_gen::tunnel_position(&mut g.obs_table, g.player.position);
 
             for _ in 0..g.n_opponents {
                 g.add_opponent();
@@ -127,25 +132,24 @@ impl Game {
         let mut rng = rand::thread_rng();
         let mut x = (self.obs_table.width() as i32 / 2)
             + rng
-                .gen_range(-(self.obs_table.width() as i32) / 8..self.obs_table.width() as i32 / 8);
+                .gen_range(-(self.obs_table.width() as i32) / 2 + 1..self.obs_table.width() as i32 / 2) - 1;
         let mut y = (self.obs_table.height() as i32 / 2)
             + rng.gen_range(
-                -(self.obs_table.height() as i32) / 8..self.obs_table.height() as i32 / 8,
+                -(self.obs_table.height() as i32) / 2 + 1..self.obs_table.height() as i32 / 2 - 1,
             );
 
         while x == self.player.x() && y == self.player.y() {
             x = (self.obs_table.width() as i32 / 2)
                 + rng.gen_range(
-                    -(self.obs_table.width() as i32) / 8..self.obs_table.width() as i32 / 8,
+                    -(self.obs_table.width() as i32) / 2 + 1..self.obs_table.width() as i32 / 2 - 1,
                 );
             y = (self.obs_table.height() as i32 / 2)
                 + rng.gen_range(
-                    -(self.obs_table.height() as i32) / 8..self.obs_table.height() as i32 / 8,
+                    -(self.obs_table.height() as i32) / 2 + 1..self.obs_table.height() as i32 / 2 - 1,
                 );
         }
 
         self.opponents.push(AIController::new(
-            &self.goal_table,
             x,
             y,
         ));
@@ -178,6 +182,10 @@ impl Game {
                 } else if words[0] == "opponents" {
                     if let Ok(num) = words[1].parse::<u32>() {
                         self.n_opponents = num;
+                    }
+                } else if words[0] == "sight_radius" {
+                    if let Ok(num) = words[1].parse::<u32>() {
+                        self.sight_radius = num;
                     }
                 }
             }
@@ -379,12 +387,12 @@ impl Game {
                     let mut heap = Heap::new();
 
                     // insert the human player
-                    heap.insert(self.player.time.round() as u32, (999, PlayerType::Human));
+                    heap.insert((100.0 / vec_ops::magnitude(self.player.speed)) as u32, (999, PlayerType::Human));
 
                     // insert the ai opponents
                     for index in 0..self.opponents.len() {
                         heap.insert(
-                            self.opponents[index].player.time.round() as u32,
+                            (100.0 / vec_ops::magnitude(self.opponents[index].player.speed)) as u32,
                             (index, PlayerType::AI),
                         );
                     }
@@ -409,21 +417,13 @@ impl Game {
     }
 
     fn process_ai(&mut self, index: usize) {
-        self.opponents[index].move_player(&self.obs_table, &self.player_control);
-
-        if self
-            .goal_table
-            .remove_goal_if_reached(self.opponents[index].player.xy())
-        {
-            self.opponents[index].choose_goal(&self.goal_table);
-            for other in 0..self.opponents.len() {
-                if self.opponents[other].goal.0 == self.opponents[index].player.x()
-                    && self.opponents[other].goal.1 == self.opponents[index].player.y()
-                {
-                    self.opponents[other].choose_goal(&self.goal_table);
-                }
-            }
+        let p = &self.opponents[index].player;
+        if vec_ops::magnitude(((p.x() - self.player.x()) as f32, (p.y() - self.player.y()) as f32)) <= self.sight_radius as f32 {
+            self.opponents[index].choose_goal(&self.player);
+        } else {
+            self.opponents[index].goal = (-1, -1);
         }
+        self.opponents[index].move_player(&self.obs_table, &self.player_control);
 
         if self.goal_table.count() <= 0 {
             self.set_state(GameState::GameOver);
@@ -523,14 +523,8 @@ impl Game {
         return true;
     }
 
-    fn process_delivered(&mut self, x: i32, y: i32) -> bool {
+    fn process_delivered(&mut self, _x: i32, _y: i32) -> bool {
         self.player.n_delivered += 1;
-
-        for index in 0..self.opponents.len() {
-            if self.opponents[index].goal.0 == x && self.opponents[index].goal.1 == y {
-                self.opponents[index].choose_goal(&self.goal_table);
-            }
-        }
 
         self.viewer.main_view
             .add_string(String::from("Delivered"), Color::Blue);
@@ -606,7 +600,7 @@ impl Game {
         );
 
         self.opponents.clear();
-        for i in 0..self.n_opponents {
+        for _ in 0..self.n_opponents {
             self.add_opponent();
         }
 

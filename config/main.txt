@@ -2,13 +2,13 @@
 window_width 80
 
 # height of the console window 
-window_height 20
+window_height 50
 
 # width of the game world
-game_width 60
+game_width 80
 
 # height of the game world
-game_height 20
+game_height 40
 
 # lsystem file (in config directory)
 lsystem small_lsystem0.txt 

@@ -211,10 +211,18 @@ impl MainViewer {
 
                 let mov = controller.move_player_vel(table, player, (x as f32 - player.x() as f32, y as f32 - player.y() as f32));
                 let balance_amount = vec_ops::magnitude(mov.balance) / fallover_threshold;
+                let dist = vec_ops::magnitude((x as f32 - player.x() as f32, y as f32 - player.y() as f32));
+                let inv_dist: f32;
+                if dist.round() as i32 == 0 {
+                    inv_dist = 1.0;
+                }
+                else {
+                    inv_dist = 4.0 / dist;
+                }
                 match mov.recent_event {
                     PlayerEvent::FallOver |
                     PlayerEvent::GameOver(_) => {
-                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: 255, b: 0 }, Color::Black));
+                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: (255 as f32 * inv_dist) as u8, b: 0 }, Color::Black));
                     }
                     _ => {
                         let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount)) as u8, g: 0, b: (255 as f32 * balance_amount) as u8 };

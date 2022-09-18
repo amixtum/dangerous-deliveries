@@ -1,4 +1,4 @@
-use console_engine::{screen::Screen, Color};
+use console_engine::{screen::Screen};
 
 use controller::player_controller::PlayerController;
 use util::files;

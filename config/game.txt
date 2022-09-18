@@ -2,7 +2,10 @@
 n_goals 8
 
 # number of opponents
-opponents 1
+opponents 0
 
 # number of falls before game over
 max_falls 3
+
+# opponents start chasing from this radius
+sight_radius 5

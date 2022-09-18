@@ -1,5 +1,4 @@
 use super::obstacle::{Obstacle};
-use super::obstacle_automata;
 use super::traversability::Traversability;
 
 use util::lsystem::{Alphabet, LSystem, Turtle};
@@ -7,7 +6,6 @@ use util::vec_ops;
 
 use rand::Rng;
 
-use std::collections::HashMap;
 use std::fs;
 
 pub struct ObstacleTable {
@@ -16,11 +14,11 @@ pub struct ObstacleTable {
     table: Vec<Vec<Obstacle>>,
 
     lsystem: LSystem,
-    turtles: Vec<Turtle>,
-    saved_positions: Vec<Vec<(i32, i32, i32)>>,
+    _turtles: Vec<Turtle>,
+    _saved_positions: Vec<Vec<(i32, i32, i32)>>,
     pit_gen_p: f32,
     rail_gen_p: f32,
-    continue_rail: bool,
+    _continue_rail: bool,
 }
 
 impl ObstacleTable {
@@ -31,11 +29,11 @@ impl ObstacleTable {
             table: Vec::new(),
 
             lsystem: LSystem::from_file(lsystem_file),
-            turtles: Vec::new(),
-            saved_positions: Vec::new(),
+            _turtles: Vec::new(),
+            _saved_positions: Vec::new(),
             pit_gen_p: 0.1,
             rail_gen_p: 0.2,
-            continue_rail: false,
+            _continue_rail: false,
         };
 
         for x in 0..width {
@@ -167,17 +165,6 @@ impl ObstacleTable {
                 self.table[x as usize][y as usize] = Obstacle::Platform;
             }
         }
-
-        /*
-        self.regen_turtles();
-
-        
-        let mut c_idx = 0;
-        while c_idx < self.lsystem.get_current().len() {
-            self.compute_turtles(self.lsystem.get_current()[c_idx]);
-            c_idx += 1;
-        }
-        */
     }
 
     pub fn set_lsystem(&mut self, lsystem: LSystem) {
@@ -186,9 +173,9 @@ impl ObstacleTable {
         self.regen_table();
     }
 
-    fn regen_turtles(&mut self) {
-        self.turtles.clear();
-        self.saved_positions.clear();
+    fn _regen_turtles(&mut self) {
+        self._turtles.clear();
+        self._saved_positions.clear();
 
         let x_skip = (self.width as i32 - self.width as i32 / 4) / self.lsystem.turtles as i32;
         let y_skip = (self.height as i32 - self.height as i32 / 4) / self.lsystem.turtles as i32;
@@ -225,53 +212,53 @@ impl ObstacleTable {
                 d_y = rand::thread_rng().gen_range(-1..=1);
             }
 
-            self.turtles
+            self._turtles
                 .push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
-            self.saved_positions.push(Vec::new());
+            self._saved_positions.push(Vec::new());
 
             p_x += x_skip as i32;
             p_y += y_skip as i32;
         }
     }
 
-    fn compute_turtles(&mut self, letter: Alphabet) {
+    fn _compute_turtles(&mut self, letter: Alphabet) {
         let mut turtle_index = 0;
-        while turtle_index < self.turtles.len() {
+        while turtle_index < self._turtles.len() {
             match letter {
                 Alphabet::Fwd => {
-                    self.fwd_turtle(turtle_index);
+                    self._fwd_turtle(turtle_index);
                 }
                 Alphabet::Left => {
                     let direction = vec_ops::rotate_left((
-                        self.turtles[turtle_index].direction.0,
-                        self.turtles[turtle_index].direction.1,
+                        self._turtles[turtle_index].direction.0,
+                        self._turtles[turtle_index].direction.1,
                     ));
-                    self.turtles[turtle_index].direction.0 = direction.0;
-                    self.turtles[turtle_index].direction.1 = direction.1;
+                    self._turtles[turtle_index].direction.0 = direction.0;
+                    self._turtles[turtle_index].direction.1 = direction.1;
                 }
                 Alphabet::Right => {
                     let direction = vec_ops::rotate_right((
-                        self.turtles[turtle_index].direction.0,
-                        self.turtles[turtle_index].direction.1,
+                        self._turtles[turtle_index].direction.0,
+                        self._turtles[turtle_index].direction.1,
                     ));
-                    self.turtles[turtle_index].direction.0 = direction.0;
-                    self.turtles[turtle_index].direction.1 = direction.1;
+                    self._turtles[turtle_index].direction.0 = direction.0;
+                    self._turtles[turtle_index].direction.1 = direction.1;
                 }
                 Alphabet::Up => {
-                    self.turtles[turtle_index].direction.2 += 1;
+                    self._turtles[turtle_index].direction.2 += 1;
                 }
                 Alphabet::Down => {
-                    self.turtles[turtle_index].direction.2 -= 1;
+                    self._turtles[turtle_index].direction.2 -= 1;
                 }
                 Alphabet::Place => {
-                    self.place_turtle(turtle_index);
+                    self._place_turtle(turtle_index);
                 }
                 Alphabet::Save => {
-                    self.saved_positions[turtle_index].push(self.turtles[turtle_index].position);
+                    self._saved_positions[turtle_index].push(self._turtles[turtle_index].position);
                 }
                 Alphabet::Return => {
-                    if let Some(return_to) = self.saved_positions[turtle_index].pop() {
-                        self.turtles[turtle_index].position = return_to;
+                    if let Some(return_to) = self._saved_positions[turtle_index].pop() {
+                        self._turtles[turtle_index].position = return_to;
                     }
                 }
                 Alphabet::None => {}
@@ -281,61 +268,61 @@ impl ObstacleTable {
         }
     }
 
-    fn fwd_turtle(&mut self, turtle_index: usize) {
-        self.turtles[turtle_index].position.0 += self.turtles[turtle_index].direction.0;
-        self.turtles[turtle_index].position.1 += self.turtles[turtle_index].direction.1;
-        self.turtles[turtle_index].position.2 = 0;
+    fn _fwd_turtle(&mut self, turtle_index: usize) {
+        self._turtles[turtle_index].position.0 += self._turtles[turtle_index].direction.0;
+        self._turtles[turtle_index].position.1 += self._turtles[turtle_index].direction.1;
+        self._turtles[turtle_index].position.2 = 0;
 
-        if self.turtles[turtle_index].position.0 <= 0 {
-            self.turtles[turtle_index].direction.0 = 1;
-        } else if self.turtles[turtle_index].position.0 >= self.width as i32 - 1 {
-            self.turtles[turtle_index].direction.0 = -1;
+        if self._turtles[turtle_index].position.0 <= 0 {
+            self._turtles[turtle_index].direction.0 = 1;
+        } else if self._turtles[turtle_index].position.0 >= self.width as i32 - 1 {
+            self._turtles[turtle_index].direction.0 = -1;
         }
 
-        if self.turtles[turtle_index].position.1 <= 0 {
-            self.turtles[turtle_index].direction.1 = 1;
-        } else if self.turtles[turtle_index].position.1 >= self.height as i32 - 1 {
-            self.turtles[turtle_index].direction.1 = -1;
+        if self._turtles[turtle_index].position.1 <= 0 {
+            self._turtles[turtle_index].direction.1 = 1;
+        } else if self._turtles[turtle_index].position.1 >= self.height as i32 - 1 {
+            self._turtles[turtle_index].direction.1 = -1;
         }
 
-        self.turtles[turtle_index].position.0 = self.turtles[turtle_index]
+        self._turtles[turtle_index].position.0 = self._turtles[turtle_index]
             .position
             .0
             .clamp(0, self.width as i32 - 1);
-        self.turtles[turtle_index].position.1 = self.turtles[turtle_index]
+        self._turtles[turtle_index].position.1 = self._turtles[turtle_index]
             .position
             .1
             .clamp(0, self.height as i32 - 1);
-        self.turtles[turtle_index].position.2 = 0;
+        self._turtles[turtle_index].position.2 = 0;
     }
 
-    fn place_turtle(&mut self, turtle_index: usize) {
+    fn _place_turtle(&mut self, turtle_index: usize) {
         if rand::thread_rng().gen_bool(self.pit_gen_p as f64) {
-            self.continue_rail = false;
-            if !(self.turtles[turtle_index].position.0 == self.width as i32 / 2
-                && self.turtles[turtle_index].position.1 == self.height as i32 / 2)
+            self._continue_rail = false;
+            if !(self._turtles[turtle_index].position.0 == self.width as i32 / 2
+                && self._turtles[turtle_index].position.1 == self.height as i32 / 2)
             {
-                self.table[self.turtles[turtle_index].position.0 as usize]
-                    [self.turtles[turtle_index].position.1 as usize] = Obstacle::Wall;
+                self.table[self._turtles[turtle_index].position.0 as usize]
+                    [self._turtles[turtle_index].position.1 as usize] = Obstacle::Wall;
             }
-        } else if self.continue_rail {
-            self.table[self.turtles[turtle_index].position.0 as usize]
-                [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail
+        } else if self._continue_rail {
+            self.table[self._turtles[turtle_index].position.0 as usize]
+                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail
                 (
-                    self.turtles[turtle_index].direction.0,
-                    self.turtles[turtle_index].direction.1,
+                    self._turtles[turtle_index].direction.0,
+                    self._turtles[turtle_index].direction.1,
                 );
         } else if rand::thread_rng().gen_bool(self.rail_gen_p as f64) {
-            self.continue_rail = true;
-            self.table[self.turtles[turtle_index].position.0 as usize]
-                [self.turtles[turtle_index].position.1 as usize] = Obstacle::Rail
+            self._continue_rail = true;
+            self.table[self._turtles[turtle_index].position.0 as usize]
+                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail
                 (
-                    self.turtles[turtle_index].direction.0,
-                    self.turtles[turtle_index].direction.1,
+                    self._turtles[turtle_index].direction.0,
+                    self._turtles[turtle_index].direction.1,
                 );
         } else {
-            self.table[self.turtles[turtle_index].position.0 as usize]
-                [self.turtles[turtle_index].position.1 as usize] =
+            self.table[self._turtles[turtle_index].position.0 as usize]
+                [self._turtles[turtle_index].position.1 as usize] =
                 Obstacle::Platform;
         }
     }

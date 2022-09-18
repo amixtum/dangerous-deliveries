@@ -1,4 +1,4 @@
-use std::{collections::{HashSet, HashMap}, hash::Hash};
+use std::{collections::{HashSet, HashMap}};
 
 use rand::Rng;
 
