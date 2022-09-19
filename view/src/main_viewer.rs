@@ -203,24 +203,44 @@ impl MainViewer {
                     let t = table.traversability((player.x(), player.y()), (x, y));
                     let symbol = self.symbol_map[&obstacle_type];
 
-
-                    let mov = controller.move_player_vel(table, player, (x as f32 - player.x() as f32, y as f32 - player.y() as f32));
+                    let mov = controller.move_player_vel(
+                        table,
+                        player,
+                        (x as f32 - player.x() as f32, y as f32 - player.y() as f32),
+                    );
                     let balance_amount = vec_ops::magnitude(mov.balance) / fallover_threshold;
-                    let dist = vec_ops::magnitude((x as f32 - player.x() as f32, y as f32 - player.y() as f32));
+                    let dist = vec_ops::magnitude((
+                        x as f32 - player.x() as f32,
+                        y as f32 - player.y() as f32,
+                    ));
                     let inv_dist: f32;
                     if dist.round() as i32 == 0 {
                         inv_dist = 1.0;
-                    }
-                    else {
+                    } else {
                         inv_dist = 4.0 / dist;
                     }
                     match mov.recent_event {
-                        PlayerEvent::FallOver |
-                        PlayerEvent::GameOver(_) => {
-                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: (255 as f32 * inv_dist) as u8, b: 0 }, Color::Black));
+                        PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
+                            screen.set_pxl(
+                                sc_x,
+                                sc_y,
+                                pixel::pxl_fbg(
+                                    symbol,
+                                    Color::Rgb {
+                                        r: 0,
+                                        g: (255 as f32 * inv_dist) as u8,
+                                        b: 0,
+                                    },
+                                    Color::Black,
+                                ),
+                            );
                         }
                         _ => {
-                            let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount) * inv_dist * 2.0) as u8, g: 0, b: (255 as f32 * balance_amount * inv_dist * 2.0) as u8 };
+                            let color = Color::Rgb {
+                                r: (255 as f32 * (1.0 - balance_amount) * inv_dist * 2.0) as u8,
+                                g: 0,
+                                b: (255 as f32 * balance_amount * inv_dist * 2.0) as u8,
+                            };
                             screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, color, Color::Black));
                         }
                     }
@@ -229,19 +249,46 @@ impl MainViewer {
                         if x == goal.0 && y == goal.1 {
                             match t {
                                 Traversability::No => {
-                                    screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Rgb { r: (255.0f32 * inv_dist.powf(2.0)) as u8, g: (255.0f32 * inv_dist.powf(2.0)) as u8, b: (255.0f32 * inv_dist.powf(2.0)) as u8 }));
-                                },
-                                _ => {
-                                    match mov.recent_event {
-                                        PlayerEvent::FallOver |
-                                        PlayerEvent::GameOver(_) => {
-                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Rgb { r: (255.0f32 * inv_dist.sqrt()) as u8, g: (255.0f32 * inv_dist.sqrt()) as u8, b: (255.0f32 * inv_dist.sqrt()) as u8 }));
-                                        }
-                                        _ => {
-                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg('$', Color::Rgb { r: 255, g: 0, b: 0 }, Color::White));
-                                        }
-                                    }
+                                    screen.set_pxl(
+                                        sc_x,
+                                        sc_y,
+                                        pixel::pxl_fg(
+                                            '$',
+                                            Color::Rgb {
+                                                r: (255.0f32 * inv_dist.powf(2.0)) as u8,
+                                                g: (255.0f32 * inv_dist.powf(2.0)) as u8,
+                                                b: (255.0f32 * inv_dist.powf(2.0)) as u8,
+                                            },
+                                        ),
+                                    );
                                 }
+                                _ => match mov.recent_event {
+                                    PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
+                                        screen.set_pxl(
+                                            sc_x,
+                                            sc_y,
+                                            pixel::pxl_fg(
+                                                '$',
+                                                Color::Rgb {
+                                                    r: (255.0f32 * inv_dist.sqrt()) as u8,
+                                                    g: (255.0f32 * inv_dist.sqrt()) as u8,
+                                                    b: (255.0f32 * inv_dist.sqrt()) as u8,
+                                                },
+                                            ),
+                                        );
+                                    }
+                                    _ => {
+                                        screen.set_pxl(
+                                            sc_x,
+                                            sc_y,
+                                            pixel::pxl_fbg(
+                                                '$',
+                                                Color::Rgb { r: 255, g: 0, b: 0 },
+                                                Color::White,
+                                            ),
+                                        );
+                                    }
+                                },
                             }
                             break;
                         }
@@ -257,13 +304,14 @@ impl MainViewer {
                                             screen.set_pxl(
                                                 sc_x,
                                                 sc_y,
-                                                pixel::pxl_fg('!', 
+                                                pixel::pxl_fg(
+                                                    '!',
                                                     Color::Rgb {
                                                         r: (255.0f32) as u8,
                                                         g: (127.0f32) as u8,
                                                         b: 0,
-                                                    }
-                                                ), 
+                                                    },
+                                                ),
                                             );
                                         }
                                         _ => {
@@ -288,7 +336,11 @@ impl MainViewer {
                             if x == player.x() && y == player.y() {
                                 match player.recent_event {
                                     PlayerEvent::FallOver => {
-                                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::White));
+                                        screen.set_pxl(
+                                            sc_x,
+                                            sc_y,
+                                            pixel::pxl_fg('!', Color::White),
+                                        );
                                     }
                                     _ => {
                                         screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
@@ -298,7 +350,6 @@ impl MainViewer {
                         }
                     }
                 }
-
 
                 sc_y += 1;
             }
@@ -406,7 +457,7 @@ impl MainViewer {
                     message.push_str("Grinding ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
                     color = Color::Cyan;
-                },
+                }
                 _ => {}
             },
             PlayerEvent::Wait => match table.get_obstacle(player.x(), player.y()) {

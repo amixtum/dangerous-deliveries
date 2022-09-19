@@ -1,6 +1,6 @@
-use console_engine::{ConsoleEngine, KeyCode, KeyModifiers, Color};
+use console_engine::{Color, ConsoleEngine, KeyCode, KeyModifiers};
 use controller::collision;
-use model::{map_gen};
+use model::map_gen;
 use rand::Rng;
 use util::heap::Heap;
 
@@ -107,10 +107,7 @@ impl Game {
 
             g.clear_obstacles_at_goals();
 
-            g.obs_table.set_obstacle(
-                g.player.xy(),
-                Obstacle::Platform,
-            );
+            g.obs_table.set_obstacle(g.player.xy(), Obstacle::Platform);
 
             map_gen::tunnel_position(&mut g.obs_table, g.player.position);
 
@@ -134,8 +131,10 @@ impl Game {
     fn add_opponent(&mut self) {
         let mut rng = rand::thread_rng();
         let mut x = (self.obs_table.width() as i32 / 2)
-            + rng
-                .gen_range(-(self.obs_table.width() as i32) / 2 + 1..self.obs_table.width() as i32 / 2) - 1;
+            + rng.gen_range(
+                -(self.obs_table.width() as i32) / 2 + 1..self.obs_table.width() as i32 / 2,
+            )
+            - 1;
         let mut y = (self.obs_table.height() as i32 / 2)
             + rng.gen_range(
                 -(self.obs_table.height() as i32) / 2 + 1..self.obs_table.height() as i32 / 2 - 1,
@@ -148,16 +147,13 @@ impl Game {
                 );
             y = (self.obs_table.height() as i32 / 2)
                 + rng.gen_range(
-                    -(self.obs_table.height() as i32) / 2 + 1..self.obs_table.height() as i32 / 2 - 1,
+                    -(self.obs_table.height() as i32) / 2 + 1
+                        ..self.obs_table.height() as i32 / 2 - 1,
                 );
         }
 
-        self.opponents.push(AIController::new(
-            x,
-            y,
-        ));
-        self.obs_table
-            .set_obstacle((x, y), Obstacle::Platform);
+        self.opponents.push(AIController::new(x, y));
+        self.obs_table.set_obstacle((x, y), Obstacle::Platform);
 
         map_gen::tunnel_position(&mut self.obs_table, (x, y));
     }
@@ -219,8 +215,7 @@ impl Game {
             self.redraw = true;
         }
 
-        if self.engine.is_key_pressed(KeyCode::Char('0')) {
-        }
+        if self.engine.is_key_pressed(KeyCode::Char('0')) {}
 
         if self.redraw {
             self.engine.clear_screen();
@@ -312,9 +307,9 @@ impl Game {
                 _ => GameState::Playing,
             });
         } /* else if self.engine.is_key_pressed(KeyCode::Char('2')) {
-            
-            self.set_state(GameState::SizeChooser);
-        }*/
+
+              self.set_state(GameState::SizeChooser);
+          }*/
 
         return true;
     }
@@ -355,12 +350,14 @@ impl Game {
         if self.engine.is_key_pressed(KeyCode::Esc) {
             self.set_state(GameState::MainMenu);
         } else if self.engine.is_key_pressed(KeyCode::Char(';')) {
-            self.viewer.main_view
+            self.viewer
+                .main_view
                 .add_string(String::from("Look Where?"), Color::Yellow);
             self.set_state(GameState::LookMode);
         } else if self.engine.is_key_pressed(KeyCode::Enter) {
             self.set_state(GameState::Restart);
-        } /*else if self.engine.is_key_pressed(KeyCode::Char('g')) {
+        }
+        /*else if self.engine.is_key_pressed(KeyCode::Char('g')) {
             if !self.applied_automata {
                 self.obs_table.apply_automata();
                 let w = self.obs_table.width() / 4;
@@ -374,7 +371,8 @@ impl Game {
                 self.applied_automata = true;
                 self.redraw = true;
             }
-        }*/ else {
+        }*/
+        else {
             let keysv = self.player_control.get_keys();
             for keycode in keysv {
                 if self.engine.is_key_pressed(keycode) {
@@ -382,7 +380,10 @@ impl Game {
                     let mut heap = Heap::new();
 
                     // insert the human player
-                    heap.insert((100.0 / vec_ops::magnitude(self.player.speed)) as u32, (999, PlayerType::Human));
+                    heap.insert(
+                        (100.0 / vec_ops::magnitude(self.player.speed)) as u32,
+                        (999, PlayerType::Human),
+                    );
 
                     // insert the ai opponents
                     for index in 0..self.opponents.len() {
@@ -403,7 +404,11 @@ impl Game {
                             }
                         }
 
-                        collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents);
+                        collision::update_blocked(
+                            &mut self.obs_table,
+                            &self.player,
+                            &self.opponents,
+                        );
                     }
                     break;
                 }
@@ -415,7 +420,11 @@ impl Game {
 
     fn process_ai(&mut self, index: usize) {
         let p = &self.opponents[index].player;
-        if vec_ops::magnitude(((p.x() - self.player.x()) as f32, (p.y() - self.player.y()) as f32)) <= self.sight_radius as f32 {
+        if vec_ops::magnitude((
+            (p.x() - self.player.x()) as f32,
+            (p.y() - self.player.y()) as f32,
+        )) <= self.sight_radius as f32
+        {
             self.opponents[index].choose_goal(&self.player);
         } else {
             self.opponents[index].goal = (-1, -1);
@@ -434,7 +443,6 @@ impl Game {
         }
 
         //self.opponents[index].choose_goal(&self.goal_table);
-
 
         self.redraw = true;
     }
@@ -485,13 +493,14 @@ impl Game {
                 self.applied_automata = false;
             }
         }
-
     }
 
     // dummy state for the purposes of updating the view after process_move
     fn process_post_move(&mut self) -> bool {
         self.set_state(GameState::Playing);
-        self.viewer.main_view.add_message(&self.obs_table, &self.player, &self.player.recent_event);
+        self.viewer
+            .main_view
+            .add_message(&self.obs_table, &self.player, &self.player.recent_event);
         return true;
     }
 
@@ -515,7 +524,8 @@ impl Game {
 
     fn process_looked_at(&mut self) -> bool {
         if let GameState::LookedAt(s) = &self.state {
-            self.viewer.main_view
+            self.viewer
+                .main_view
                 .add_string(String::from(s), Color::Green);
         }
         self.set_state(GameState::Playing);
@@ -525,7 +535,8 @@ impl Game {
     fn process_delivered(&mut self, _x: i32, _y: i32) -> bool {
         self.player.n_delivered += 1;
 
-        self.viewer.main_view
+        self.viewer
+            .main_view
             .add_string(String::from("Delivered"), Color::Blue);
 
         self.set_state(GameState::Playing);
@@ -562,7 +573,8 @@ impl Game {
                         self.clear_obstacles_at_goals();
                         self.player =
                             PlayerController::reset_player_gameover(&self.obs_table, &self.player);
-                        self.obs_table.set_obstacle(self.player.xy(), Obstacle::Platform);
+                        self.obs_table
+                            .set_obstacle(self.player.xy(), Obstacle::Platform);
                         self.opponents.clear();
                         for _ in 0..self.n_opponents {
                             self.add_opponent();
@@ -589,14 +601,11 @@ impl Game {
 
         map_gen::voronoi_mapgen(&mut self.obs_table, &self.goal_table);
 
-
         self.clear_obstacles_at_goals();
 
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
-        self.obs_table.set_obstacle(
-            self.player.xy(),
-            Obstacle::Platform,
-        );
+        self.obs_table
+            .set_obstacle(self.player.xy(), Obstacle::Platform);
 
         self.opponents.clear();
         for _ in 0..self.n_opponents {
@@ -604,16 +613,12 @@ impl Game {
         }
 
         map_gen::tunnel_position(&mut self.obs_table, self.player.position);
-
-
     }
 
     fn reset_player_continue(&mut self) {
         self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player);
-        self.obs_table.set_obstacle(
-            self.player.xy(),
-            Obstacle::Platform,
-        );
+        self.obs_table
+            .set_obstacle(self.player.xy(), Obstacle::Platform);
         self.redraw = true;
     }
 

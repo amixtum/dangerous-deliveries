@@ -1,6 +1,6 @@
 use crate::player::Player;
 
-use super::obstacle::{Obstacle};
+use super::obstacle::Obstacle;
 use super::traversability::Traversability;
 
 use util::lsystem::{Alphabet, LSystem, Turtle};
@@ -8,7 +8,7 @@ use util::vec_ops;
 
 use rand::Rng;
 
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use std::fs;
 
 pub struct ObstacleTable {
@@ -84,7 +84,12 @@ impl ObstacleTable {
         let x_diff = to_x - from_x;
         let y_diff = to_y - from_y;
 
-        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 && !self.blocked.contains_key(&(to_x, to_y)){
+        if to_x >= 0
+            && to_x < self.width as i32
+            && to_y >= 0
+            && to_y < self.height as i32
+            && !self.blocked.contains_key(&(to_x, to_y))
+        {
             return x_diff.abs() <= 1 && y_diff.abs() <= 1;
         }
 
@@ -99,7 +104,13 @@ impl ObstacleTable {
         let x_diff = to_x as i32 - from_x as i32;
         let y_diff = to_y as i32 - from_y as i32;
 
-        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 && x_diff.abs() <= 1 && y_diff.abs() <= 1 {
+        if to_x >= 0
+            && to_x < self.width as i32
+            && to_y >= 0
+            && to_y < self.height as i32
+            && x_diff.abs() <= 1
+            && y_diff.abs() <= 1
+        {
             return Traversability::Flat;
         }
 
@@ -130,8 +141,6 @@ impl ObstacleTable {
             }
         }
     }
-
-
 
     pub fn set_obstacle(&mut self, (x, y): (i32, i32), obs: Obstacle) {
         self.table[x as usize][y as usize] = obs;
@@ -312,23 +321,20 @@ impl ObstacleTable {
             }
         } else if self._continue_rail {
             self.table[self._turtles[turtle_index].position.0 as usize]
-                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail
-                (
-                    self._turtles[turtle_index].direction.0,
-                    self._turtles[turtle_index].direction.1,
-                );
+                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail(
+                self._turtles[turtle_index].direction.0,
+                self._turtles[turtle_index].direction.1,
+            );
         } else if rand::thread_rng().gen_bool(self.rail_gen_p as f64) {
             self._continue_rail = true;
             self.table[self._turtles[turtle_index].position.0 as usize]
-                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail
-                (
-                    self._turtles[turtle_index].direction.0,
-                    self._turtles[turtle_index].direction.1,
-                );
+                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail(
+                self._turtles[turtle_index].direction.0,
+                self._turtles[turtle_index].direction.1,
+            );
         } else {
             self.table[self._turtles[turtle_index].position.0 as usize]
-                [self._turtles[turtle_index].position.1 as usize] =
-                Obstacle::Platform;
+                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Platform;
         }
     }
 }

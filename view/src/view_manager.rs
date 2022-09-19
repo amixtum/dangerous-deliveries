@@ -1,4 +1,4 @@
-use console_engine::{screen::Screen};
+use console_engine::screen::Screen;
 
 use controller::player_controller::PlayerController;
 use util::files;
@@ -70,12 +70,12 @@ impl ViewManager {
                     window_height,
                 );
             }
-            GameState::Playing |
-            GameState::PostMove |
-            GameState::DeliveredPackage( .. ) |
-            GameState::LookedAt(_) |
-            GameState::LookMode |
-            GameState::Restart => {
+            GameState::Playing
+            | GameState::PostMove
+            | GameState::DeliveredPackage(..)
+            | GameState::LookedAt(_)
+            | GameState::LookMode
+            | GameState::Restart => {
                 //self.main_view.clear_log();
 
                 return self.main_view.draw_layout(

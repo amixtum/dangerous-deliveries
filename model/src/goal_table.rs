@@ -44,9 +44,13 @@ impl GoalTable {
 
         let mut region: (i32, i32) = (1, 0);
         for _ in 0..count {
-            let p_x = (width as i32 / 2) + (region.0 * (rand::thread_rng().gen_range(width as i32 / 4..width as i32 / 2))) - 2 * region.0;
+            let p_x = (width as i32 / 2)
+                + (region.0 * (rand::thread_rng().gen_range(width as i32 / 4..width as i32 / 2)))
+                - 2 * region.0;
 
-            let p_y = (height as i32 / 2) + (region.1 * (rand::thread_rng().gen_range(height as i32 / 4..height as i32 / 2))) - 2 * region.1;
+            let p_y = (height as i32 / 2)
+                + (region.1 * (rand::thread_rng().gen_range(height as i32 / 4..height as i32 / 2)))
+                - 2 * region.1;
 
             self.goals.insert((p_x, p_y));
             region = vec_ops::rotate_left(region);

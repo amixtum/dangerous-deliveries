@@ -1,9 +1,14 @@
 use std::{collections::HashSet, f32::consts::PI};
 
 use rand::Rng;
-use util::{voronoi, vec_ops::{neighbors, self}};
+use util::{
+    vec_ops::{self, neighbors},
+    voronoi,
+};
 
-use crate::{obstacle_table::ObstacleTable, obstacle::Obstacle, obstacle_automata, goal_table::GoalTable};
+use crate::{
+    goal_table::GoalTable, obstacle::Obstacle, obstacle_automata, obstacle_table::ObstacleTable,
+};
 
 pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
     let mut directions = Vec::new();
@@ -22,15 +27,22 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
     let mut tunneler2: (i32, i32);
     let mut main_direction1: (i32, i32) = (0, 0);
     let main_direction2: (i32, i32);
-    'outer: loop  {
+    'outer: loop {
         for dir in directions.iter().enumerate() {
-            iters[dir.0].0 += dir.1.0; 
-            iters[dir.0].1 += dir.1.1;
-            if iters[dir.0].0 <= 0 || iters[dir.0].0 >= table.width() as i32 ||
-                iters[dir.0].1 <= 0 || iters[dir.0].1 >= table.height() as i32 {
-                    continue;
+            iters[dir.0].0 += dir.1 .0;
+            iters[dir.0].1 += dir.1 .1;
+            if iters[dir.0].0 <= 0
+                || iters[dir.0].0 >= table.width() as i32
+                || iters[dir.0].1 <= 0
+                || iters[dir.0].1 >= table.height() as i32
+            {
+                continue;
             }
-            let nbrs = neighbors((iters[dir.0].0, iters[dir.0].1), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+            let nbrs = neighbors(
+                (iters[dir.0].0, iters[dir.0].1),
+                (0, 0),
+                (table.width() as i32 - 1, table.height() as i32 - 1),
+            );
             if table.get_obstacle(iters[dir.0].0, iters[dir.0].1) == Obstacle::Platform {
                 let mut count_platforms = 0;
                 for nbr in nbrs {
@@ -44,15 +56,13 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
                         tunneler1 = (iters[dir.0].0, iters[dir.0].1);
 
                         // the opposite direction of how we got there
-                        main_direction1 = (-dir.1.0, -dir.1.1);
+                        main_direction1 = (-dir.1 .0, -dir.1 .1);
                         one_done = true;
-                    }
-
-                    else {
+                    } else {
                         tunneler2 = (iters[dir.0].0, iters[dir.0].1);
 
                         // the opposite direction of how we got there
-                        main_direction2 = (-dir.1.0, -dir.1.1);
+                        main_direction2 = (-dir.1 .0, -dir.1 .1);
                         break 'outer;
                     }
                 }
@@ -72,7 +82,10 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
         }
         let double2 = vec_ops::rotate(main_direction2, sign as f32 * PI / 8.0);
 
-        let mut tunnel1 = (tunneler1.0 + main_direction1.0, tunneler1.1 + main_direction1.1);
+        let mut tunnel1 = (
+            tunneler1.0 + main_direction1.0,
+            tunneler1.1 + main_direction1.1,
+        );
         tunnel1.0 = tunnel1.0.clamp(0, table.width() as i32 - 1);
         tunnel1.1 = tunnel1.1.clamp(0, table.height() as i32 - 1);
 
@@ -80,7 +93,10 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
         perturb_tunnel1.0 = perturb_tunnel1.0.clamp(0, table.width() as i32 - 1);
         perturb_tunnel1.1 = perturb_tunnel1.1.clamp(0, table.height() as i32 - 1);
 
-        let mut tunnel2 = (tunneler2.0 + main_direction2.0, tunneler2.1 + main_direction2.1);
+        let mut tunnel2 = (
+            tunneler2.0 + main_direction2.0,
+            tunneler2.1 + main_direction2.1,
+        );
         tunnel2.0 = tunnel2.0.clamp(0, table.width() as i32 - 1);
         tunnel2.1 = tunnel2.1.clamp(0, table.height() as i32 - 1);
 
@@ -103,7 +119,10 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
         }
         let double2 = vec_ops::rotate(main_direction2, sign as f32 * PI / 8.0);
 
-        let tunnel2 = (tunneler2.0 + main_direction2.0, tunneler2.1 + main_direction2.1);
+        let tunnel2 = (
+            tunneler2.0 + main_direction2.0,
+            tunneler2.1 + main_direction2.1,
+        );
         //tunnel2.0 = tunnel2.0.clamp(0, table.width() as i32 - 1);
         //tunnel2.1 = tunnel2.1.clamp(0, table.height() as i32 - 1);
 
@@ -117,7 +136,7 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
     }
 }
 
-// tunnels into the nearest open space 
+// tunnels into the nearest open space
 pub fn tunnel_goals(table: &mut ObstacleTable, goals: &GoalTable) {
     for goal in goals.goals() {
         tunnel_position(table, *goal);
@@ -134,7 +153,11 @@ pub fn voronoi_mapgen(obs_table: &mut ObstacleTable, goals: &GoalTable) {
         }
     }
 
-    let seeds = voronoi::voronoi_seeds(a as usize * b as usize, obs_table.width(), obs_table.height());
+    let seeds = voronoi::voronoi_seeds(
+        a as usize * b as usize,
+        obs_table.width(),
+        obs_table.height(),
+    );
     for _ in 0..1 {
         apply_voronoi(obs_table, &seeds);
         //apply_voronoi_n2(obs_table, &seeds);
@@ -145,12 +168,16 @@ pub fn voronoi_mapgen(obs_table: &mut ObstacleTable, goals: &GoalTable) {
     tunnel_goals(obs_table, goals);
 }
 
-pub fn apply_voronoi_inv(table: &mut ObstacleTable,seeds: &HashSet<(i32, i32)>) {
+pub fn apply_voronoi_inv(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {
     let vmembers = voronoi::voronoi_membership(seeds, table.width(), table.height());
     for x in 0..table.width() {
         for y in 0..table.height() {
             let mut nbrs_count = 0;
-            let nbrs = neighbors((x as i32, y as i32), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+            let nbrs = neighbors(
+                (x as i32, y as i32),
+                (0, 0),
+                (table.width() as i32 - 1, table.height() as i32 - 1),
+            );
             let myseed = vmembers[&(x as i32, y as i32)];
             for nbr in nbrs.iter() {
                 if nbr.0.abs() == 1 && nbr.1.abs() == 1 {
@@ -170,12 +197,16 @@ pub fn apply_voronoi_inv(table: &mut ObstacleTable,seeds: &HashSet<(i32, i32)>) 
     }
 }
 
-pub fn apply_voronoi_inv_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>,) {
+pub fn apply_voronoi_inv_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {
     let vmembers = voronoi::voronoi_membership(seeds, table.width(), table.height());
     for x in 0..table.width() {
         for y in 0..table.height() {
             let mut nbrs_count = 0;
-            let nbrs = neighbors((x as i32, y as i32), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+            let nbrs = neighbors(
+                (x as i32, y as i32),
+                (0, 0),
+                (table.width() as i32 - 1, table.height() as i32 - 1),
+            );
             let myseed = vmembers[&(x as i32, y as i32)];
             for nbr in nbrs.iter() {
                 let nbrseed = vmembers[nbr];
@@ -191,12 +222,16 @@ pub fn apply_voronoi_inv_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32
     }
 }
 
-pub fn apply_voronoi(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>,) {
+pub fn apply_voronoi(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {
     let vmembers = voronoi::voronoi_membership(seeds, table.width(), table.height());
     for x in 0..table.width() {
         for y in 0..table.height() {
             let mut nbrs_count = 0;
-            let nbrs = neighbors((x as i32, y as i32), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+            let nbrs = neighbors(
+                (x as i32, y as i32),
+                (0, 0),
+                (table.width() as i32 - 1, table.height() as i32 - 1),
+            );
             let myseed = vmembers[&(x as i32, y as i32)];
             for nbr in nbrs.iter() {
                 if nbr.0.abs() == 1 && nbr.1.abs() == 1 {
@@ -215,12 +250,16 @@ pub fn apply_voronoi(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>,) {
     }
 }
 
-pub fn apply_voronoi_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>,) {
+pub fn apply_voronoi_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {
     let vmembers = voronoi::voronoi_membership(seeds, table.width(), table.height());
     for x in 0..table.width() {
         for y in 0..table.height() {
             let mut nbrs_count = 0;
-            let nbrs = neighbors((x as i32, y as i32), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+            let nbrs = neighbors(
+                (x as i32, y as i32),
+                (0, 0),
+                (table.width() as i32 - 1, table.height() as i32 - 1),
+            );
             let myseed = vmembers[&(x as i32, y as i32)];
             for nbr in nbrs.iter() {
                 let nbrseed = vmembers[nbr];
@@ -235,4 +274,3 @@ pub fn apply_voronoi_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>,)
         }
     }
 }
-

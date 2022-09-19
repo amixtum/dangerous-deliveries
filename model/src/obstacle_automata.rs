@@ -7,7 +7,7 @@ use rand::prelude::SliceRandom;
 
 use util::vec_ops;
 
-use super::obstacle::{Obstacle};
+use super::obstacle::Obstacle;
 use super::obstacle_table::ObstacleTable;
 
 use super::direction::Direction;
@@ -44,7 +44,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
     for neighbor in neighbors.iter() {
         match obs_table.get_obstacle(neighbor.0, neighbor.1) {
             Obstacle::Pit => {}
-            Obstacle::Wall => count_wall += 1, 
+            Obstacle::Wall => count_wall += 1,
             Obstacle::Platform => {
                 count_platform += 1;
             }
@@ -67,17 +67,15 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
     match obs_table.get_obstacle(x, y) {
         Obstacle::Pit => {
             return Obstacle::Pit;
-        },
+        }
         Obstacle::Wall => {
             if count_wall > 3 {
                 return Obstacle::Platform;
-            } 
-            else if count_platform > 2 {
+            } else if count_platform > 2 {
                 return Obstacle::Wall;
-            }
-            else {
+            } else {
                 /*
-                let directions = dir_map.keys().collect::<Vec<_>>(); 
+                let directions = dir_map.keys().collect::<Vec<_>>();
                 let mut rng = rand::thread_rng();
                 if let Some((xdir, ydir)) = directions.choose(&mut rng) {
                     return Obstacle::Rail(*xdir, *ydir);
@@ -128,11 +126,9 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                 }
                 */
                 return Obstacle::Wall;
-            } 
-            else if count_wall <= 2 {
+            } else if count_wall <= 2 {
                 return Obstacle::Wall;
-            }
-            else {
+            } else {
                 return Obstacle::Wall;
             }
         }
@@ -163,8 +159,7 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                         | Direction::SouthEast
                         | Direction::SouthWest => {
                             let dir = vec_ops::rotate((xdir, ydir), PI / 4.0);
-                            return Obstacle::Rail
-                                (dir.0, dir.1);
+                            return Obstacle::Rail(dir.0, dir.1);
                         }
                         _ => {}
                     }

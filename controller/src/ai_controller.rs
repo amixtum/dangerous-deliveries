@@ -39,7 +39,7 @@ impl AIController {
     }
 
     pub fn choose_goal(&mut self, player: &Player) {
-        self.goal = player.position; 
+        self.goal = player.position;
     }
 
     pub fn move_player(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) {

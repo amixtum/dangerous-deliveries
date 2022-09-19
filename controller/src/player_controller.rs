@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 //use std::f32::consts::PI;
 
-use model::obstacle::{Obstacle};
+use model::obstacle::Obstacle;
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
@@ -192,7 +192,12 @@ impl PlayerController {
         self.key_map.get(&key)
     }
 
-    pub fn move_player_vel(&self, table: &ObstacleTable, player: &Player, inst_v: (f32, f32)) -> Player {
+    pub fn move_player_vel(
+        &self,
+        table: &ObstacleTable,
+        player: &Player,
+        inst_v: (f32, f32),
+    ) -> Player {
         return PlayerController::compute_move(
             table,
             player,
@@ -244,10 +249,7 @@ impl PlayerController {
 
     pub fn reset_player_gameover(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
-        clone.position = (
-            table.width() as i32 / 2,
-            table.height() as i32 / 2,
-        );
+        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2);
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
@@ -260,10 +262,7 @@ impl PlayerController {
     pub fn reset_player_continue(table: &ObstacleTable, player: &Player) -> Player {
         let mut clone = Player::clone(player);
         let last_pos = clone.position;
-        clone.position = (
-            table.width() as i32 / 2,
-            table.height() as i32 / 2,
-        );
+        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2);
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.n_falls = 0;
@@ -345,8 +344,7 @@ impl PlayerController {
         }
 
         // fallover if the player is off balance
-        if vec_ops::magnitude(player.balance) >= fallover_threshold
-        {
+        if vec_ops::magnitude(player.balance) >= fallover_threshold {
             return PlayerController::fallover(table, &player);
         }
 
@@ -392,9 +390,9 @@ impl PlayerController {
                 for neighbor in neighbors {
                     match table.get_obstacle(neighbor.0, neighbor.1) {
                         Obstacle::Platform => {
-                                clone.position = (neighbor.0, neighbor.1);
-                                found = true;
-                                break;
+                            clone.position = (neighbor.0, neighbor.1);
+                            found = true;
+                            break;
                         }
                         _ => {
                             continue;
@@ -417,19 +415,21 @@ impl PlayerController {
             let units = vec_ops::discrete_jmp(norm_inst);
             if inst_length.abs() < 1.0 {
                 if units.0 == 1 && units.1 == 1 {
-                    return (norm_inst.0 * inst_length.sqrt(),
-                            norm_inst.1 * inst_length.sqrt());
+                    return (
+                        norm_inst.0 * inst_length.sqrt(),
+                        norm_inst.1 * inst_length.sqrt(),
+                    );
                 } else {
-                    return (norm_inst.0 * inst_length,
-                            norm_inst.1 * inst_length);
+                    return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
                 }
             } else {
                 if units.0 == 1 && units.1 == 1 {
-                    return (norm_inst.0 * inst_length,
-                            norm_inst.1 * inst_length);
+                    return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
                 } else {
-                    return (norm_inst.0 * inst_length.sqrt(),
-                            norm_inst.1 * inst_length.sqrt());
+                    return (
+                        norm_inst.0 * inst_length.sqrt(),
+                        norm_inst.1 * inst_length.sqrt(),
+                    );
                 }
             }
         }
@@ -459,7 +459,7 @@ impl PlayerController {
                 clone.speed.1 = clone.speed.1 * speed_damp;
 
                 let add = PlayerController::get_scaled((inst_x, inst_y), inst_length);
-                clone.speed.0 += add.0; 
+                clone.speed.0 += add.0;
                 clone.speed.1 += add.1;
             }
             Obstacle::Rail(x_dir, y_dir) => {
@@ -482,7 +482,6 @@ impl PlayerController {
                 clone.speed.0 += inst_add.0;
                 clone.speed.1 += inst_add.1;
 
-
                 clone.speed.0 = clone.speed.0.clamp(-max_speed, max_speed);
                 clone.speed.1 = clone.speed.1.clamp(-max_speed, max_speed);
             }
@@ -492,8 +491,7 @@ impl PlayerController {
         if vec_ops::magnitude(clone.speed) >= max_speed {
             clone.speed.0 *= max_speed / vec_ops::magnitude(clone.speed);
             clone.speed.1 *= max_speed / vec_ops::magnitude(clone.speed);
-        }
-        else if vec_ops::magnitude(clone.speed) <= 0.25 {
+        } else if vec_ops::magnitude(clone.speed) <= 0.25 {
             clone.speed.0 = 0.0;
             clone.speed.1 = 0.0;
         }
@@ -507,16 +505,14 @@ impl PlayerController {
 
             let dotp = vec_ops::dot(inst_v, last_speed).abs();
 
-            let turn = (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed)
-                - dotp) / (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
-            
+            let turn = (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed) - dotp)
+                / (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
+
             clone.balance.0 =
-                clone.balance.0 * balance_damp + 
-                diff.1.signum() as f32 * turn * turn_fact;
+                clone.balance.0 * balance_damp + diff.1.signum() as f32 * turn * turn_fact;
 
             clone.balance.1 =
-                clone.balance.1 * balance_damp - 
-                diff.0.signum() as f32 * turn * turn_fact;
+                clone.balance.1 * balance_damp - diff.0.signum() as f32 * turn * turn_fact;
 
             //clone.balance.0 += norm_inst.0 * turn_fact;
             //clone.balance.1 += norm_inst.1 * turn_fact;
@@ -713,13 +709,11 @@ impl PlayerController {
 
         // fallover if we cannot traverse to next_pos
         // and do not update the player's position
-        } 
-        else if let Some(collided) = table.blocked.get(&next_pos) {
+        } else if let Some(collided) = table.blocked.get(&next_pos) {
             if collided.x() != clone.x() || collided.y() != clone.y() {
                 clone = collision::collide(table, &clone, collided)
             }
-        }
-        else {
+        } else {
             clone = PlayerController::fallover(table, player);
         }
 
