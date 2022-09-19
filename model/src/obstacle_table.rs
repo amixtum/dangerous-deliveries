@@ -84,11 +84,14 @@ impl ObstacleTable {
         let x_diff = to_x - from_x;
         let y_diff = to_y - from_y;
 
+        if self.blocked.contains_key(&(to_x, to_y)) && !(from_x == to_x && from_y == to_y) {
+            return false;
+        }
+
         if to_x >= 0
             && to_x < self.width as i32
             && to_y >= 0
-            && to_y < self.height as i32
-            && !self.blocked.contains_key(&(to_x, to_y))
+            && to_y < self.height as i32 
         {
             return x_diff.abs() <= 1 && y_diff.abs() <= 1;
         }
