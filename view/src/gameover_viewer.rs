@@ -1,22 +1,21 @@
-use console_engine::{pixel, screen::Screen, Color};
-
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
+use rltk::RGB;
 
 pub fn game_over_screen(
+    ctx: &mut rltk::Rltk,
     obs_table: &ObstacleTable,
     player: &Player,
-    width: u32,
+    _width: u32,
     height: u32,
-) -> Screen {
-    let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-    screen.print_fbg(
-        (width as i32 / 2) - "All Packages Delivered".chars().count() as i32 / 2,
+) {
+
+    ctx.print_color_centered(
         (height as i32 / 2) - 1,
+        RGB::named(rltk::GREEN),
+        RGB::named(rltk::BLACK),
         "All Packages Delivered",
-        Color::Green,
-        Color::Black,
     );
 
     let mut info = String::new();
@@ -30,8 +29,7 @@ pub fn game_over_screen(
     } else {
         info.push_str(&format!("You delivered {} packages", player.n_delivered));
     }
-    screen.print(
-        (width as i32 / 2) - info.chars().count() as i32 / 2,
+    ctx.print_centered(
         height as i32 / 2,
         &info,
     );
@@ -39,11 +37,8 @@ pub fn game_over_screen(
     info.clear();
 
     info.push_str("Press R to restart. Press Esc to exit.");
-    screen.print(
-        (width as i32 / 2) - info.chars().count() as i32 / 2,
+    ctx.print_centered(
         (height as i32 / 2) + 1,
         &info,
     );
-
-    screen
 }

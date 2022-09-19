@@ -1,6 +1,3 @@
-use rand::prelude::SliceRandom;
-use rand::Rng;
-
 use super::player_controller::PlayerController;
 
 use model::obstacle::Obstacle;
@@ -8,6 +5,7 @@ use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 
+use rltk::RandomNumberGenerator;
 use util::vec_ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -58,6 +56,7 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Player {
+        let mut rng = RandomNumberGenerator::new();
         let try_platform = self.next_platform(obs_table, player_control);
 
         // if the only platform is the one the player is standing on,
@@ -68,7 +67,7 @@ impl AIController {
             moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
 
             if moves.len() > 0 {
-                if rand::thread_rng().gen_bool(0.77) || moves.len() == 1 {
+                if rng.roll_dice(1, 100) < 77 || moves.len() == 1 {
                     return moves[0].0;
                 } else if moves.len() > 1 {
                     return moves[1].0;
@@ -84,12 +83,13 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Player {
+        let mut rng = RandomNumberGenerator::new();
         let mut moves = AIController::get_moves_platform(&self.player, obs_table, player_control);
 
         if moves.len() > 0 {
             moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
 
-            if rand::thread_rng().gen_bool(0.77) || moves.len() == 1 {
+            if rng.roll_dice(1, 100) < 77 || moves.len() == 1 {
                 return moves[0].0;
             } else if moves.len() > 1 {
                 return moves[1].0;
@@ -108,6 +108,7 @@ impl AIController {
     ) -> Vec<(Player, f32)> {
         let mut moves = Vec::new();
         let mut falls: Vec<(Player, f32)> = Vec::new();
+        let mut rng = RandomNumberGenerator::new();
 
         // iterate through all possible inputs to the player controller
         // and push the new player with the time the move took
@@ -129,8 +130,7 @@ impl AIController {
         }
 
         if moves.len() == 0 {
-            let mut rng = rand::thread_rng();
-            if let Some(choice) = falls.choose(&mut rng) {
+            if let Some(choice) = rng.random_slice_entry(&falls) {
                 moves.push(*choice);
             }
         }
@@ -143,6 +143,7 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Vec<(Player, f32)> {
+        let mut rng = RandomNumberGenerator::new();
         let mut moves = Vec::new();
         let mut falls = Vec::new();
 
@@ -165,8 +166,7 @@ impl AIController {
         }
 
         if moves.len() == 0 {
-            let mut rng = rand::thread_rng();
-            if let Some(choice) = falls.choose(&mut rng) {
+            if let Some(choice) = rng.random_slice_entry(&falls) {
                 moves.push(*choice);
             }
         }

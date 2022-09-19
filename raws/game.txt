@@ -1,3 +1,9 @@
+# width of the game world
+game_width 80
+
+# height of the game world
+game_height 40
+
 # number of goals
 n_goals 8
 

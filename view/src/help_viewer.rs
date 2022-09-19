@@ -1,8 +1,6 @@
-use console_engine::{pixel, screen::Screen, Color};
+use rltk::RGB;
 
-pub fn help_screen(width: u32, height: u32) -> Screen {
-    let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-
+pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     let mut left_col = Vec::new();
     let mut right_col = Vec::new();
 
@@ -52,22 +50,23 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
     let mut sc_y = 0;
 
     while col < left_col.len() && col < right_col.len() {
-        screen.print(1, sc_y, &left_col[col]);
-        screen.print(width as i32 / 2, sc_y, &right_col[col]);
+        ctx.print(1, sc_y, &left_col[col]);
+        ctx.print(width as i32 / 2, sc_y, &right_col[col]);
         sc_y += 1;
         col += 1;
     }
 
-    screen.print_fbg(1, sc_y, "Color Coding", Color::Yellow, Color::Black);
+
+    ctx.print_color(1, sc_y, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Color Coding");
 
     sc_y += 1;
 
-    screen.print_fbg(
+    ctx.print_color(
         1,
         sc_y,
+        RGB::from_u8(0,255,0),
+        RGB::named(rltk::BLACK),
         "Fall Over or Game Over",
-        Color::Rgb { r: 0, g: 255, b: 0 },
-        Color::Black,
     );
 
     sc_y += 1;
@@ -76,37 +75,31 @@ pub fn help_screen(width: u32, height: u32) -> Screen {
     let ds = "Decrease Balance, ";
     let is = "Increase Balance";
 
-    screen.print_fbg(
+    ctx.print_color(
         1,
         sc_y,
+        RGB::from_u8(255, 0, 255),
+        RGB::named(rltk::BLACK),
         title,
-        Color::Rgb {
-            r: 255,
-            g: 0,
-            b: 255,
-        },
-        Color::Black,
     );
 
-    screen.print_fbg(
-        title.chars().count() as i32 + 1,
+    ctx.print_color(
+    title.chars().count() as i32 + 1,
         sc_y,
+        RGB::from_u8(0, 0, 255),
+        RGB::named(rltk::BLACK),
         ds,
-        Color::Rgb { r: 0, g: 0, b: 255 },
-        Color::Black,
     );
 
-    screen.print_fbg(
+    ctx.print_color(
         title.chars().count() as i32 + ds.chars().count() as i32 + 2,
         sc_y,
+        RGB::from_u8(255, 0, 0),
+        RGB::named(rltk::BLACK),
         is,
-        Color::Rgb { r: 255, g: 0, b: 0 },
-        Color::Black,
     );
 
     sc_y += 1;
 
-    screen.print_fbg(1, sc_y, "Esc to Return", Color::White, Color::Black);
-
-    screen
+    ctx.print(1, sc_y, "Esc to Return");
 }

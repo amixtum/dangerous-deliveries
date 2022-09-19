@@ -1,9 +1,6 @@
-use console_engine::KeyCode;
-
-use rand::Rng;
+use rltk::{VirtualKeyCode, RandomNumberGenerator};
 
 use std::collections::HashMap;
-use std::fs;
 //use std::f32::consts::PI;
 
 use model::obstacle::Obstacle;
@@ -16,7 +13,7 @@ use util::vec_ops;
 use crate::collision;
 
 pub struct PlayerController {
-    key_map: HashMap<KeyCode, (f32, f32)>,
+    key_map: HashMap<VirtualKeyCode, (f32, f32)>,
     pub speed_damp: f32,
     pub balance_damp: f32,
     pub turn_factor: f32,
@@ -31,80 +28,82 @@ pub struct PlayerController {
 }
 
 impl PlayerController {
-    pub fn new(conf_file: &str) -> Self {
-        let mut speed_damp: f32 = 0.5;
+    pub fn new() -> Self {
+        let mut speed_damp: f32 = 0.66;
         let mut inst_length: f32 = 0.66;
         let mut rail_boost: f32 = 2.0;
-        let mut balance_damp: f32 = 0.75;
-        let mut turn_factor: f32 = 0.25;
+        let mut balance_damp: f32 = 0.5;
+        let mut turn_factor: f32 = 1.33;
         let mut onrail_balance_factor: f32 = 0.25;
         let mut offrail_balance_factor: f32 = 0.25;
         let mut up_speed_factor: f32 = 0.5;
         let mut down_speed_factor: f32 = 1.5;
         let mut max_speed: f32 = 3.0;
-        let mut fallover_threshold: f32 = 5.0;
+        let mut fallover_threshold: f32 = 1.0;
 
         // read conf file
-        if let Ok(contents) = fs::read_to_string(conf_file) {
-            for line in contents.lines() {
-                let words: Vec<&str> = line.split_ascii_whitespace().collect();
-                if words.len() == 2 {
-                    if words[0] == "rail_boost" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            rail_boost = num;
-                        }
+        let raw_data = rltk::embedding::EMBED
+            .lock()
+            .get_resource("/home/ganiparrott/src/projects/rust_book/roguelike/raws/model.txt".to_string())
+            .unwrap();
+        let raw_string = std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
+        for line in raw_string.lines() {
+            let words: Vec<&str> = line.split_ascii_whitespace().collect();
+            if words.len() == 2 {
+                if words[0] == "rail_boost" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        rail_boost = num;
                     }
-                    if words[0] == "inst_length" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            inst_length = num;
-                        }
+                }
+                if words[0] == "inst_length" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        inst_length = num;
                     }
-                    if words[0] == "speed_damp" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            speed_damp = num;
-                        }
-                    } else if words[0] == "balance_damp" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            balance_damp = num;
-                        }
-                    } else if words[0] == "turn_factor" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            turn_factor = num;
-                        }
-                    } else if words[0] == "offrail_balance_factor" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            offrail_balance_factor = num;
-                        }
+                }
+                if words[0] == "speed_damp" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        speed_damp = num;
                     }
-                    if words[0] == "turn_factor" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            turn_factor = num;
-                        }
-                    } else if words[0] == "onrail_balance_factor" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            onrail_balance_factor = num;
-                        }
-                    } else if words[0] == "up_speed_factor" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            up_speed_factor = num;
-                        }
-                    } else if words[0] == "down_speed_factor" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            down_speed_factor = num;
-                        }
-                    } else if words[0] == "max_speed" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            max_speed = num;
-                        }
-                    } else if words[0] == "fallover_threshold" {
-                        if let Ok(num) = words[1].parse::<f32>() {
-                            fallover_threshold = num;
-                        }
+                } else if words[0] == "balance_damp" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        balance_damp = num;
+                    }
+                } else if words[0] == "turn_factor" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        turn_factor = num;
+                    }
+                } else if words[0] == "offrail_balance_factor" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        offrail_balance_factor = num;
+                    }
+                }
+                if words[0] == "turn_factor" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        turn_factor = num;
+                    }
+                } else if words[0] == "onrail_balance_factor" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        onrail_balance_factor = num;
+                    }
+                } else if words[0] == "up_speed_factor" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        up_speed_factor = num;
+                    }
+                } else if words[0] == "down_speed_factor" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        down_speed_factor = num;
+                    }
+                } else if words[0] == "max_speed" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        max_speed = num;
+                    }
+                } else if words[0] == "fallover_threshold" {
+                    if let Ok(num) = words[1].parse::<f32>() {
+                        fallover_threshold = num;
                     }
                 }
             }
         }
-
         let mut pc = PlayerController {
             key_map: HashMap::new(),
             speed_damp,
@@ -121,40 +120,40 @@ impl PlayerController {
         };
 
         // left
-        pc.key_map.insert(KeyCode::Char('h'), (-1.0, 0.0));
-        pc.key_map.insert(KeyCode::Char('a'), (-1.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::H, (-1.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::A, (-1.0, 0.0));
 
         // right
-        pc.key_map.insert(KeyCode::Char('l'), (1.0, 0.0));
-        pc.key_map.insert(KeyCode::Char('d'), (1.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::L, (1.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::D, (1.0, 0.0));
 
         // up
-        pc.key_map.insert(KeyCode::Char('k'), (0.0, -1.0));
-        pc.key_map.insert(KeyCode::Char('w'), (0.0, -1.0));
+        pc.key_map.insert(VirtualKeyCode::K, (0.0, -1.0));
+        pc.key_map.insert(VirtualKeyCode::W, (0.0, -1.0));
 
         // down
-        pc.key_map.insert(KeyCode::Char('j'), (0.0, 1.0));
-        pc.key_map.insert(KeyCode::Char('s'), (0.0, 1.0));
+        pc.key_map.insert(VirtualKeyCode::J, (0.0, 1.0));
+        pc.key_map.insert(VirtualKeyCode::S, (0.0, 1.0));
 
         // up right
-        pc.key_map.insert(KeyCode::Char('u'), (1.0, -1.0));
-        pc.key_map.insert(KeyCode::Char('e'), (1.0, -1.0));
+        pc.key_map.insert(VirtualKeyCode::U, (1.0, -1.0));
+        pc.key_map.insert(VirtualKeyCode::E, (1.0, -1.0));
 
         // up left
-        pc.key_map.insert(KeyCode::Char('y'), (-1.0, -1.0));
-        pc.key_map.insert(KeyCode::Char('q'), (-1.0, -1.0));
+        pc.key_map.insert(VirtualKeyCode::Y, (-1.0, -1.0));
+        pc.key_map.insert(VirtualKeyCode::Q, (-1.0, -1.0));
 
         // down left
-        pc.key_map.insert(KeyCode::Char('b'), (-1.0, 1.0));
-        pc.key_map.insert(KeyCode::Char('z'), (-1.0, 1.0));
+        pc.key_map.insert(VirtualKeyCode::B, (-1.0, 1.0));
+        pc.key_map.insert(VirtualKeyCode::Z, (-1.0, 1.0));
 
         // down right
-        pc.key_map.insert(KeyCode::Char('n'), (1.0, 1.0));
-        pc.key_map.insert(KeyCode::Char('c'), (1.0, 1.0));
+        pc.key_map.insert(VirtualKeyCode::N, (1.0, 1.0));
+        pc.key_map.insert(VirtualKeyCode::C, (1.0, 1.0));
 
         // wait
-        pc.key_map.insert(KeyCode::Char('.'), (0.0, 0.0));
-        pc.key_map.insert(KeyCode::Tab, (0.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::Period, (0.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::Tab, (0.0, 0.0));
 
         pc
     }
@@ -184,11 +183,11 @@ impl PlayerController {
         self.fallover_threshold = fallover_threshold;
     }
 
-    pub fn get_keys(&self) -> Vec<KeyCode> {
+    pub fn get_keys(&self) -> Vec<VirtualKeyCode> {
         self.key_map.keys().map(|k| k.clone()).collect()
     }
 
-    pub fn get_inst_velocity(&self, key: KeyCode) -> Option<&(f32, f32)> {
+    pub fn get_inst_velocity(&self, key: VirtualKeyCode) -> Option<&(f32, f32)> {
         self.key_map.get(&key)
     }
 
@@ -214,7 +213,7 @@ impl PlayerController {
         );
     }
 
-    pub fn move_player(&self, table: &ObstacleTable, player: &Player, key: KeyCode) -> Player {
+    pub fn move_player(&self, table: &ObstacleTable, player: &Player, key: VirtualKeyCode) -> Player {
         if let Some(inst_v) = self.get_inst_velocity(key) {
             return PlayerController::compute_move(
                 table,
@@ -274,24 +273,25 @@ impl PlayerController {
     }
 
     pub fn reset_ai_continue(table: &ObstacleTable, player: &Player) -> Player {
+        let mut rng = RandomNumberGenerator::new();
         let mut clone = Player::clone(player);
-        let mut x = rand::thread_rng().gen_range(
-            (table.width() as i32 / 2 - table.width() as i32 / 8)
-                ..(table.width() as i32 / 2 + table.width() as i32 / 8),
+        let mut x = rng.range(
+            table.width() as i32 / 2 - table.width() as i32 / 8
+                , table.width() as i32 / 2 + table.width() as i32 / 8,
         );
-        let mut y = rand::thread_rng().gen_range(
-            (table.height() as i32 / 2 - table.height() as i32 / 8)
-                ..(table.height() as i32 / 2 + table.height() as i32 / 8),
+        let mut y = rng.range(
+            table.height() as i32 / 2 - table.height() as i32 / 8
+                ,table.height() as i32 / 2 + table.height() as i32 / 8,
         );
 
         while x == table.width() as i32 / 2 && y == table.height() as i32 / 2 {
-            x = rand::thread_rng().gen_range(
-                (table.width() as i32 / 2 - table.width() as i32 / 8)
-                    ..(table.width() as i32 / 2 + table.width() as i32 / 8),
+            x = rng.range(
+                table.width() as i32 / 2 - table.width() as i32 / 8
+                    ,table.width() as i32 / 2 + table.width() as i32 / 8,
             );
-            y = rand::thread_rng().gen_range(
-                (table.height() as i32 / 2 - table.height() as i32 / 8)
-                    ..(table.height() as i32 / 2 + table.height() as i32 / 8),
+            y = rng.range(
+                table.height() as i32 / 2 - table.height() as i32 / 8
+                    ,table.height() as i32 / 2 + table.height() as i32 / 8,
             );
         }
         clone.position = (x, y);

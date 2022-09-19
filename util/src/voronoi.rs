@@ -1,19 +1,20 @@
 use std::collections::{HashMap, HashSet};
 
-use rand::Rng;
+use rltk::RandomNumberGenerator;
 
 use crate::vec_ops;
 
 pub fn voronoi_seeds(n: usize, width: u32, height: u32) -> HashSet<(i32, i32)> {
     let mut seeds = HashSet::new();
+    let mut rng = RandomNumberGenerator::new();
 
     if n >= width as usize * height as usize {
         return seeds;
     }
 
     while seeds.len() < n {
-        let x = rand::thread_rng().gen_range(0..width) as i32;
-        let y = rand::thread_rng().gen_range(0..height) as i32;
+        let x = rng.range(0, width) as i32;
+        let y = rng.range(0, height) as i32;
         seeds.insert((x, y));
     }
 

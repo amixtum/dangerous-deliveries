@@ -1,6 +1,6 @@
-use console_engine::{pixel, screen::Screen, Color};
 use controller::player_controller::PlayerController;
 use model::visibility;
+use rltk::{RGB, FontCharType};
 
 use std::collections::HashMap;
 
@@ -14,9 +14,8 @@ use model::player_event::PlayerEvent;
 use model::traversability::Traversability;
 
 pub struct MainViewer {
-    color_map: HashMap<Traversability, (Color, Color)>,
-    symbol_map: HashMap<Obstacle, char>,
-    message_log: Vec<(String, Color)>,
+    symbol_map: HashMap<Obstacle, FontCharType>,
+    message_log: Vec<(String, RGB)>,
     log_length: usize,
     max_message_length: u32,
 }
@@ -24,52 +23,42 @@ pub struct MainViewer {
 impl MainViewer {
     pub fn new(log_length: usize) -> Self {
         let mut gv = MainViewer {
-            color_map: HashMap::new(),
             symbol_map: HashMap::new(),
             message_log: Vec::new(),
             log_length,
             max_message_length: 16,
         };
 
-        gv.color_map
-            .insert(Traversability::Flat, (Color::Blue, Color::Black));
-        gv.color_map
-            .insert(Traversability::Up, (Color::Magenta, Color::Black));
-        gv.color_map
-            .insert(Traversability::Down, (Color::Cyan, Color::Black));
-        gv.color_map
-            .insert(Traversability::No, (Color::Green, Color::Black));
-
-        gv.symbol_map.insert(Obstacle::Pit, 'x');
-        gv.symbol_map.insert(Obstacle::Platform, '.');
-        gv.symbol_map.insert(Obstacle::Wall, '#');
+        gv.symbol_map.insert(Obstacle::Pit, rltk::to_cp437('x'));
+        gv.symbol_map.insert(Obstacle::Platform, rltk::to_cp437('.'));
+        gv.symbol_map.insert(Obstacle::Wall, rltk::to_cp437('#'));
 
         // bug (havent' found it yet)
-        gv.symbol_map.insert(Obstacle::Rail(0, 0), '_');
+        gv.symbol_map.insert(Obstacle::Rail(0, 0), rltk::to_cp437('_'));
 
         // right
-        gv.symbol_map.insert(Obstacle::Rail(1, 0), '>');
+        gv.symbol_map.insert(Obstacle::Rail(1, 0), rltk::to_cp437('>'));
 
         // left
-        gv.symbol_map.insert(Obstacle::Rail(-1, 0), '<');
+        gv.symbol_map.insert(Obstacle::Rail(-1, 0), rltk::to_cp437('<'));
 
         // up
-        gv.symbol_map.insert(Obstacle::Rail(0, -1), '^');
+        gv.symbol_map.insert(Obstacle::Rail(0, -1), rltk::to_cp437('^'));
 
         // down
-        gv.symbol_map.insert(Obstacle::Rail(0, 1), 'v');
+        gv.symbol_map.insert(Obstacle::Rail(0, 1), rltk::to_cp437('v'));
 
         // diagonal right up
-        gv.symbol_map.insert(Obstacle::Rail(1, -1), '/');
+        gv.symbol_map.insert(Obstacle::Rail(1, -1), rltk::to_cp437('/'));
 
         // diagonal left down
-        gv.symbol_map.insert(Obstacle::Rail(-1, 1), 'd');
+        gv.symbol_map.insert(Obstacle::Rail(-1, 1), rltk::to_cp437('d'));
 
         // diagonal right down
-        gv.symbol_map.insert(Obstacle::Rail(1, 1), '\\');
+        gv.symbol_map.insert(Obstacle::Rail(1, 1), rltk::to_cp437('\\'));
 
         // diagonal left up
-        gv.symbol_map.insert(Obstacle::Rail(-1, -1), 'u');
+        gv.symbol_map.insert(Obstacle::Rail(-1, -1), rltk::to_cp437('u'));
 
         gv
     }
@@ -94,6 +83,7 @@ impl MainViewer {
 impl MainViewer {
     pub fn draw_layout(
         &self,
+        ctx: &mut rltk::Rltk,
         table: &ObstacleTable,
         goals: &GoalTable,
         player: &Player,
@@ -104,7 +94,7 @@ impl MainViewer {
         fallover_threshold: f32,
         width: u32,
         height: u32,
-    ) -> Screen {
+    ) {
         let balance_size = 5;
         let speed_x = width as i32 - (balance_size * 2) - 1;
         let balance_x = speed_x - (balance_size * 2) - 1;
@@ -115,7 +105,10 @@ impl MainViewer {
         let table_view_width = balance_x - 1;
         let table_view_height = height as i32 - 1;
 
-        let table_view = self.draw_table(
+        self.draw_table(
+            ctx,
+            0,
+            0,
             table,
             goals,
             player,
@@ -125,18 +118,9 @@ impl MainViewer {
             table_view_height as u32,
             fallover_threshold,
         );
-        let balance_view = self.draw_balance(player, fallover_threshold, balance_size as u32);
-        let speed_view = self.draw_speed(player, max_speed, balance_size as u32);
-        let msg_log_view = self.draw_msg_log(msg_log_height as u32);
-
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-
-        screen.print_screen(1, 0, &table_view);
-        screen.print_fbg(speed_x as i32, 0, "Speed", Color::Cyan, Color::Black);
-        screen.print_screen(speed_x as i32, 1, &speed_view);
-        screen.print_fbg(balance_x as i32, 0, "Balance", Color::Blue, Color::Black);
-        screen.print_screen(balance_x as i32, 1, &balance_view);
-        screen.print_screen(r_panel_x as i32, msg_log_tl_y as i32 + 1, &msg_log_view);
+        self.draw_balance(ctx, balance_x, 0, player, fallover_threshold, balance_size as u32);
+        self.draw_speed(ctx, speed_x, 0, player, max_speed, balance_size as u32);
+        self.draw_msg_log(ctx, r_panel_x, msg_log_tl_y, msg_log_height as u32);
 
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
@@ -144,9 +128,7 @@ impl MainViewer {
         s.push_str(&format!("HP: {}, ", max_falls as i32 - player.n_falls));
         s.push_str("Help: press Esc");
 
-        screen.print(0, height as i32 - 1, &s);
-
-        screen
+        ctx.print(0, height as i32 - 1, &s);
     }
 
     // return a Screen of dimensions width x height that maps a width x height section
@@ -154,6 +136,9 @@ impl MainViewer {
     // are clamped out and the screen doesn't draw anything there)
     pub fn draw_table(
         &self,
+        ctx: &mut rltk::Rltk,
+        sc_tlx: i32,
+        sc_tly: i32,
         table: &ObstacleTable,
         goals: &GoalTable,
         player: &Player,
@@ -162,9 +147,7 @@ impl MainViewer {
         width: u32,
         height: u32,
         fallover_threshold: f32,
-    ) -> Screen {
-        let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
-
+    ) {
         // compute ObstacleTable coordinates
         let middle = player.xy();
         let mut tl_x = (middle.0 - (width / 2) as i32).clamp(0, table.width() as i32 - 1);
@@ -190,8 +173,8 @@ impl MainViewer {
         }
 
         // screen coords
-        let mut sc_x = 0;
-        let mut sc_y = 0;
+        let mut sc_x = sc_tlx;
+        let mut sc_y = sc_tly;
 
         let visible = visibility::get_visible(player.xy(), table, 160);
 
@@ -221,27 +204,20 @@ impl MainViewer {
                     }
                     match mov.recent_event {
                         PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
-                            screen.set_pxl(
-                                sc_x,
-                                sc_y,
-                                pixel::pxl_fbg(
-                                    symbol,
-                                    Color::Rgb {
-                                        r: 0,
-                                        g: (255 as f32 * inv_dist) as u8,
-                                        b: 0,
-                                    },
-                                    Color::Black,
-                                ),
-                            );
+                            ctx.set(
+                                sc_x, 
+                                sc_y, 
+                                RGB::from_f32(0.0, inv_dist, 0.0), 
+                                RGB::named(rltk::BLACK), 
+                                symbol);
                         }
                         _ => {
-                            let color = Color::Rgb {
-                                r: (255 as f32 * (1.0 - balance_amount) * inv_dist * 2.0) as u8,
-                                g: 0,
-                                b: (255 as f32 * balance_amount * inv_dist * 2.0) as u8,
-                            };
-                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, color, Color::Black));
+                            ctx.set(
+                                sc_x, 
+                                sc_y, 
+                                RGB::from_f32(1.0 - balance_amount, 0.0, balance_amount), 
+                                RGB::named(rltk::BLACK), 
+                                symbol);
                         }
                     }
 
@@ -249,44 +225,29 @@ impl MainViewer {
                         if x == goal.0 && y == goal.1 {
                             match t {
                                 Traversability::No => {
-                                    screen.set_pxl(
-                                        sc_x,
-                                        sc_y,
-                                        pixel::pxl_fg(
-                                            '$',
-                                            Color::Rgb {
-                                                r: (255.0f32 * inv_dist.powf(2.0)) as u8,
-                                                g: (255.0f32 * inv_dist.powf(2.0)) as u8,
-                                                b: (255.0f32 * inv_dist.powf(2.0)) as u8,
-                                            },
-                                        ),
-                                    );
+                                    ctx.set(sc_x, sc_y, 
+                                        RGB::from_f32(
+                                            inv_dist, 
+                                            inv_dist, 
+                                            inv_dist, ),
+                                            RGB::named(rltk::BLACK), 
+                                            rltk::to_cp437('$'));
                                 }
                                 _ => match mov.recent_event {
                                     PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
-                                        screen.set_pxl(
-                                            sc_x,
-                                            sc_y,
-                                            pixel::pxl_fg(
-                                                '$',
-                                                Color::Rgb {
-                                                    r: (255.0f32 * inv_dist.sqrt()) as u8,
-                                                    g: (255.0f32 * inv_dist.sqrt()) as u8,
-                                                    b: (255.0f32 * inv_dist.sqrt()) as u8,
-                                                },
-                                            ),
-                                        );
+                                        ctx.set(sc_x, sc_y, 
+                                            RGB::from_f32(
+                                                inv_dist, 
+                                                inv_dist, 
+                                                inv_dist,),
+                                                RGB::named(rltk::BLACK), 
+                                                rltk::to_cp437('$'));
                                     }
                                     _ => {
-                                        screen.set_pxl(
-                                            sc_x,
-                                            sc_y,
-                                            pixel::pxl_fbg(
-                                                '$',
-                                                Color::Rgb { r: 255, g: 0, b: 0 },
-                                                Color::White,
-                                            ),
-                                        );
+                                        ctx.set(sc_x, sc_y, 
+                                            RGB::from_f32(1.0, 0.0, 0.0),
+                                            RGB::named(rltk::WHITE), 
+                                            rltk::to_cp437('$'));
                                     }
                                 },
                             }
@@ -301,32 +262,16 @@ impl MainViewer {
                                 if x == p.x() && y == p.y() {
                                     match p.recent_event {
                                         PlayerEvent::FallOver => {
-                                            screen.set_pxl(
-                                                sc_x,
-                                                sc_y,
-                                                pixel::pxl_fg(
-                                                    '!',
-                                                    Color::Rgb {
-                                                        r: (255.0f32) as u8,
-                                                        g: (127.0f32) as u8,
-                                                        b: 0,
-                                                    },
-                                                ),
-                                            );
+                                            ctx.set(sc_x, sc_y, 
+                                                RGB::from_f32(1.0, 0.5, 0.0),
+                                                RGB::named(rltk::BLACK), 
+                                                rltk::to_cp437('!'));
                                         }
                                         _ => {
-                                            screen.set_pxl(
-                                                sc_x,
-                                                sc_y,
-                                                pixel::pxl_fg(
-                                                    '@',
-                                                    Color::Rgb {
-                                                        r: (255.0f32) as u8,
-                                                        g: (127.0f32) as u8,
-                                                        b: 0,
-                                                    },
-                                                ),
-                                            );
+                                            ctx.set(sc_x, sc_y, 
+                                                RGB::from_f32(1.0, 0.5, 0.0),
+                                                RGB::named(rltk::BLACK), 
+                                                rltk::to_cp437('@'));
                                         }
                                     }
                                 }
@@ -336,14 +281,16 @@ impl MainViewer {
                             if x == player.x() && y == player.y() {
                                 match player.recent_event {
                                     PlayerEvent::FallOver => {
-                                        screen.set_pxl(
-                                            sc_x,
-                                            sc_y,
-                                            pixel::pxl_fg('!', Color::White),
-                                        );
+                                        ctx.set(sc_x, sc_y, 
+                                            RGB::named(rltk::WHITE),
+                                            RGB::named(rltk::BLACK), 
+                                            rltk::to_cp437('!'));
                                     }
                                     _ => {
-                                        screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
+                                        ctx.set(sc_x, sc_y, 
+                                            RGB::named(rltk::WHITE),
+                                            RGB::named(rltk::BLACK), 
+                                            rltk::to_cp437('@'));
                                     }
                                 }
                             }
@@ -357,86 +304,52 @@ impl MainViewer {
             sc_y = 0;
             sc_x += 1;
         }
-
-        screen
     }
 
     // returns a Screen which visualizes the direction of the Player's
     // Balance vector, and their closeness to falling over (the nearness of the indicator to the border)
-    pub fn draw_balance(&self, player: &Player, fallover_threshold: f32, size: u32) -> Screen {
-        self.draw_vector(player.balance, fallover_threshold, size, Color::Blue)
+    pub fn draw_balance(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, player: &Player, fallover_threshold: f32, size: u32) {
+        self.draw_vector(ctx, tlx, tly, player.balance, fallover_threshold, size, RGB::named(rltk::BLUE));
     }
 
-    pub fn draw_speed(&self, player: &Player, max_speed: f32, size: u32) -> Screen {
-        self.draw_vector(player.speed, max_speed, size, Color::Cyan)
+    pub fn draw_speed(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, player: &Player, max_speed: f32, size: u32) {
+        self.draw_vector(ctx, tlx, tly, player.balance, max_speed, size, RGB::named(rltk::CYAN));
     }
 
-    pub fn draw_vector(&self, v: (f32, f32), max: f32, size: u32, color: Color) -> Screen {
-        // create empty square
-        let mut screen = Screen::new_fill(size * 2 + 1, size, pixel::pxl(' '));
-
+    pub fn draw_vector(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, v: (f32, f32), max: f32, size: u32, color: RGB) {
         // draw border
-        screen.rect(
-            0,
-            0,
-            size as i32 * 2,
-            (size as i32) - 1,
-            pixel::pxl_fg('#', color),
-        );
+        ctx.draw_box(
+            tlx, tly, size * 2 + 1, size, color, RGB::named(rltk::BLACK));
 
         // compute position of vector inside the rect
+        // is p_x correct?
         let p_x = (((v.0 / max) * (size as f32 * 2.0)).round() as i32 + (size as i32))
             .clamp(0, size as i32 * 2);
         let p_y = (((v.1 / max) * (size as f32)).round() as i32 + (size as i32 / 2))
             .clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
-        screen.set_pxl(p_x, p_y, pixel::pxl('*'));
-
-        // return the screen so a ConsoleEngine can render it (wherever it wants)
-        screen
+        ctx.set(tlx + p_x, tly + p_y, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), rltk::to_cp437('*'));
     }
 
-    pub fn draw_msg_log(&self, height: u32) -> Screen {
-        let mut screen = Screen::new(self.max_message_length + 2, height);
-
-        screen.rect(
-            0,
-            0,
-            self.max_message_length as i32 + 1,
-            (height as i32) - 1,
-            pixel::pxl('#'),
-        );
+    pub fn draw_msg_log(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, height: u32) {
+        ctx.draw_box(tlx, tly, self.max_message_length + 2, height, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK));
 
         let mut l_index = (self.message_log.len() as i32 - 1) as i32;
-        let mut scr_y = height as i32 - 2;
+        let mut scr_y = tly + height as i32 - 2;
 
-        while scr_y > 0 && l_index >= 0 {
+        while scr_y > tly && l_index >= 0 {
             if scr_y == height as i32 - 2 {
-                screen.print_fbg(
-                    1,
-                    scr_y,
-                    &self.message_log[l_index as usize].0,
-                    self.message_log[l_index as usize].1,
-                    Color::Black,
-                );
+                ctx.print_color(tlx + 1, scr_y, self.message_log[l_index as usize].1, RGB::named(rltk::BLACK), &self.message_log[l_index as usize].0);
             } else {
-                screen.print_fbg(
-                    1,
-                    scr_y,
-                    &self.message_log[l_index as usize].0,
-                    Color::DarkGrey,
-                    Color::Black,
-                );
+                ctx.print_color(tlx + 1, scr_y, RGB::named(rltk::DARKGREY), RGB::named(rltk::BLACK), &self.message_log[l_index as usize].0);
             }
             scr_y -= 1;
             l_index -= 1;
         }
-
-        screen
     }
 
-    pub fn add_string(&mut self, s: String, c: Color) {
+    pub fn add_string(&mut self, s: String, c: RGB) {
         self.message_log.push((s, c));
         if self.message_log.len() > self.log_length {
             self.message_log.remove(0);
@@ -445,18 +358,18 @@ impl MainViewer {
 
     pub fn add_message(&mut self, table: &ObstacleTable, player: &Player, event: &PlayerEvent) {
         let mut message = String::new();
-        let mut color = Color::White;
+        let mut color = RGB::named(rltk::WHITE);
         match event {
             PlayerEvent::Move => match table.get_obstacle(player.x(), player.y()) {
                 Obstacle::Platform => message.push_str("On Platform"),
                 Obstacle::Pit => {
                     message.push_str("Restart");
-                    color = Color::Red;
+                    color = RGB::named(rltk::RED);
                 }
                 Obstacle::Rail(xdir, ydir) => {
                     message.push_str("Grinding ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                    color = Color::Cyan;
+                    color = RGB::named(rltk::CYAN);
                 }
                 _ => {}
             },
@@ -464,27 +377,26 @@ impl MainViewer {
                 Obstacle::Platform => message.push_str("Waiting"),
                 Obstacle::Pit => {
                     message.push_str("Restart");
-                    color = Color::Red;
+                    color = RGB::named(rltk::RED);
                 }
                 Obstacle::Rail(xdir, ydir) => {
                     message.push_str("Stalled ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                    color = Color::Magenta;
+                    color = RGB::named(rltk::MAGENTA);
                 }
                 _ => {}
             },
             PlayerEvent::FallOver => match table.get_obstacle(player.x(), player.y()) {
                 Obstacle::Platform => {
                     message.push_str("Fell over");
-                    color = Color::Red;
+                    color = RGB::named(rltk::RED);
                 }
                 Obstacle::Pit => {
                     message.push_str("Restart");
-                    color = Color::Red;
                 }
                 Obstacle::Rail(_, _) => {
                     message.push_str("Fell over");
-                    color = Color::Red;
+                    color = RGB::named(rltk::RED);
                 }
                 _ => {}
             },
@@ -493,12 +405,11 @@ impl MainViewer {
                     Obstacle::Platform => message.push_str("On Platform"),
                     Obstacle::Pit => {
                         message.push_str("Restart");
-                        color = Color::Red;
                     }
                     Obstacle::Rail(xdir, ydir) => {
                         message.push_str("Grinding ");
                         message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                        color = Color::Cyan;
+                        color = RGB::named(rltk::CYAN);
                     }
                     _ => {}
                 }
@@ -508,19 +419,19 @@ impl MainViewer {
                 Obstacle::Platform => message.push_str("On Platform"),
                 Obstacle::Pit => {
                     message.push_str("Restart");
-                    color = Color::Red;
+                    color = RGB::named(rltk::RED);
                 }
                 Obstacle::Rail(xdir, ydir) => {
                     message.push_str("Grinding ");
                     message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                    color = Color::Cyan;
+                    color = RGB::named(rltk::CYAN);
                 }
                 _ => {}
             },
 
             PlayerEvent::GameOver(_) => {
                 message.push_str("Restart");
-                color = Color::Red;
+                color = RGB::named(rltk::RED);
             }
         }
 
@@ -533,35 +444,5 @@ impl MainViewer {
 
     pub fn clear_log(&mut self) {
         self.message_log.clear();
-    }
-
-    pub fn debug(&mut self, player: &Player) {
-        let mut message = String::new();
-        message.push_str("B: ");
-        message.push_str(&player.balance.0.to_string());
-        message.push_str(", ");
-        message.push_str(&player.balance.1.to_string());
-
-        self.message_log.push((message, Color::White));
-
-        if self.message_log.len() >= self.log_length {
-            self.message_log.remove(0);
-        }
-
-        let mut message = String::new();
-        message.push_str("S: ");
-        message.push_str(&player.speed_x().to_string());
-        message.push_str(", ");
-        message.push_str(&player.speed_y().to_string());
-
-        self.message_log.push((message, Color::White));
-
-        let mut message = String::new();
-        message.push_str("P: ");
-        message.push_str(&player.x().to_string());
-        message.push_str(", ");
-        message.push_str(&player.y().to_string());
-
-        self.message_log.push((message, Color::White));
     }
 }

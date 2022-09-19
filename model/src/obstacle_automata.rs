@@ -1,9 +1,4 @@
-use std::f32::consts::PI;
-//use std::collections::HashSet;
 use std::collections::HashMap;
-
-//use rand::Rng;
-use rand::prelude::SliceRandom;
 
 use util::vec_ops;
 
@@ -151,20 +146,6 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                         _ => true,
                     })
                     .collect();
-                let mut rng = rand::thread_rng();
-                if let Some(choice) = dirs.choose(&mut rng) {
-                    match *choice {
-                        Direction::NorthEast
-                        | Direction::NorthWest
-                        | Direction::SouthEast
-                        | Direction::SouthWest => {
-                            let dir = vec_ops::rotate((xdir, ydir), PI / 4.0);
-                            return Obstacle::Rail(dir.0, dir.1);
-                        }
-                        _ => {}
-                    }
-                    return Obstacle::Platform;
-                }
                 return Obstacle::Platform;
             } else if count_rail < 2 {
                 return Obstacle::Wall;

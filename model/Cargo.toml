@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 util = { path = "../util" }
 
-rand = "0.8.5"
+rltk = "0.8.1"

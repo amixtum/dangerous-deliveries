@@ -1,10 +1,7 @@
-use console_engine::{Color, ConsoleEngine, KeyCode, KeyModifiers};
 use controller::collision;
 use model::map_gen;
-use rand::Rng;
+use rltk::{GameState, VirtualKeyCode, RGB, RandomNumberGenerator};
 use util::heap::Heap;
-
-use std::fs;
 
 use util::{vec_ops};
 
@@ -13,7 +10,7 @@ use model::obstacle::Obstacle;
 use model::obstacle_table::ObstacleTable;
 use model::player::{Player, PlayerType};
 use model::player_event::PlayerEvent;
-use model::state::GameState;
+use model::state::ProcState;
 
 use view::view_manager::ViewManager;
 
@@ -33,121 +30,137 @@ pub struct Game {
 
     player: Player,
 
-    engine: ConsoleEngine,
-
     max_falls: u32,
     n_goals: u32,
     n_opponents: u32,
     sight_radius: u32,
 
-    state: GameState,
-    last_state: GameState,
+    state: ProcState,
+    last_state: ProcState,
 
     redraw: bool,
     first_draw: bool,
     gameover_done: bool,
     applied_automata: bool,
-
-    current_lsystem: String,
 }
 
 impl Game {
     pub fn new(
-        window_width: u32,
-        window_height: u32,
-        target_fps: u32,
         table_width: u32,
         table_height: u32,
-        conf_file: &str,
-        model_file: &str,
-        lsystem_file: &str,
-    ) -> Result<Self, String> {
-        if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
+    ) -> Self {
+        
             let mut g = Game {
                 obs_table: ObstacleTable::new(table_width, table_height),
                 goal_table: GoalTable::new(),
 
                 viewer: ViewManager::new(),
 
-                player_control: PlayerController::new(model_file),
+                player_control: PlayerController::new(),
                 opponents: Vec::new(),
                 lookmode: LookMode::new(),
 
                 player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
-
-                engine,
 
                 max_falls: 4,
                 n_goals: 4,
                 n_opponents: 2,
                 sight_radius: 8,
 
-                state: GameState::MainMenu,
-                last_state: GameState::MainMenu,
+                state: ProcState::MainMenu,
+                last_state: ProcState::MainMenu,
 
                 redraw: true,
                 first_draw: true,
                 gameover_done: false,
                 applied_automata: true,
-
-                current_lsystem: String::new(),
             };
 
-            if let Some(pair) = lsystem_file.rsplit_once('/') {
-                g.current_lsystem.push_str(pair.1);
-            }
+            Game::init(&mut g);
 
-            g.properties_from_file(conf_file);
-
-            g.goal_table
-                .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
-
-            map_gen::voronoi_mapgen(&mut g.obs_table, &g.goal_table);
-
-            g.clear_obstacles_at_goals();
-
-            g.obs_table.set_obstacle(g.player.xy(), Obstacle::Platform);
-
-            map_gen::tunnel_position(&mut g.obs_table, g.player.position);
-
-            for _ in 0..g.n_opponents {
-                g.add_opponent();
-            }
-
-            collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents);
-
-            return Ok(g);
-        }
-        Err(format!(
-            "Could not create window of width {}, height {}, at target_fps {}",
-            window_width, window_height, target_fps
-        ))
+            return g;
     }
 }
 
+
+impl GameState for Game {
+    fn tick(&mut self, ctx: &mut rltk::BTerm) {
+        match ctx.key {
+            None => {}
+            Some(key) => match key {
+                VirtualKeyCode::C => {
+                    if ctx.control {
+                        std::process::exit(0);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let playing = self.handle_input(ctx);
+
+        if !playing {
+            std::process::exit(0);
+        }
+
+        if self.first_draw {
+            ctx.cls();
+            self.print_screen(ctx);
+            self.first_draw = false;
+        }
+
+        if self.redraw {
+            ctx.cls();
+            self.print_screen(ctx);
+        }
+
+
+    }       
+}
+
 impl Game {
+    fn init(g: &mut Game) {
+        g.goal_table
+            .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
+
+        map_gen::voronoi_mapgen(&mut g.obs_table, &g.goal_table);
+
+        g.clear_obstacles_at_goals();
+
+        g.obs_table.set_obstacle(g.player.xy(), Obstacle::Platform);
+
+        map_gen::tunnel_position(&mut g.obs_table, g.player.position);
+
+        for _ in 0..g.n_opponents {
+            g.add_opponent();
+        }
+
+        g.properties_from_file();
+
+        collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents);
+    }
     // regen opponent
     fn add_opponent(&mut self) {
-        let mut rng = rand::thread_rng();
+        let mut rng = RandomNumberGenerator::new();
         let mut x = (self.obs_table.width() as i32 / 2)
-            + rng.gen_range(
-                -(self.obs_table.width() as i32) / 2 + 1..self.obs_table.width() as i32 / 2,
+            + rng.range(
+                -(self.obs_table.width() as i32) / 2 + 1, self.obs_table.width() as i32 / 2,
             )
             - 1;
         let mut y = (self.obs_table.height() as i32 / 2)
-            + rng.gen_range(
-                -(self.obs_table.height() as i32) / 2 + 1..self.obs_table.height() as i32 / 2 - 1,
+            + rng.range(
+                -(self.obs_table.height() as i32) / 2 + 1, self.obs_table.height() as i32 / 2 - 1,
             );
 
         while x == self.player.x() && y == self.player.y() {
             x = (self.obs_table.width() as i32 / 2)
-                + rng.gen_range(
-                    -(self.obs_table.width() as i32) / 2 + 1..self.obs_table.width() as i32 / 2 - 1,
+                + rng.range(
+                    -(self.obs_table.width() as i32) / 2 + 1, self.obs_table.width() as i32 / 2 - 1,
                 );
             y = (self.obs_table.height() as i32 / 2)
-                + rng.gen_range(
+                + rng.range(
                     -(self.obs_table.height() as i32) / 2 + 1
-                        ..self.obs_table.height() as i32 / 2 - 1,
+                        , self.obs_table.height() as i32 / 2 - 1,
                 );
         }
 
@@ -157,85 +170,57 @@ impl Game {
         map_gen::tunnel_position(&mut self.obs_table, (x, y));
     }
 
-    pub fn properties_from_file(&mut self, path: &str) {
-        if let Ok(contents) = fs::read_to_string(path) {
-            for line in contents.lines() {
-                if let Some(c) = line.chars().nth(0) {
-                    if c == '#' {
-                        continue;
-                    }
-                } else {
+    pub fn properties_from_file(&mut self) {
+// Retrieve the raw data as an array of u8 (8-bit unsigned chars)
+        let raw_data = rltk::embedding::EMBED
+            .lock()
+            .get_resource("/home/ganiparrott/src/projects/rust_book/roguelike/raws/game.txt".to_string())
+            .unwrap();
+        let raw_string = std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
+        for line in raw_string.lines() {
+            if let Some(c) = line.chars().nth(0) {
+                if c == '#' {
                     continue;
                 }
+            } else {
+                continue;
+            }
 
-                let words: Vec<&str> = line.split_ascii_whitespace().collect();
-                if words[0] == "n_goals" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.n_goals = num;
-                    }
-                } else if words[0] == "max_falls" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.max_falls = num;
-                    }
-                } else if words[0] == "opponents" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.n_opponents = num;
-                    }
-                } else if words[0] == "sight_radius" {
-                    if let Ok(num) = words[1].parse::<u32>() {
-                        self.sight_radius = num;
-                    }
+            let words: Vec<&str> = line.split_ascii_whitespace().collect();
+            if words[0] == "n_goals" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    self.n_goals = num;
+                }
+            } else if words[0] == "max_falls" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    self.max_falls = num;
+                }
+            } else if words[0] == "opponents" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    self.n_opponents = num;
+                }
+            } else if words[0] == "sight_radius" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    self.sight_radius = num;
                 }
             }
         }
     }
 
-    pub fn run(&mut self) -> bool {
-        self.engine.wait_frame();
 
-        if self
-            .engine
-            .is_key_pressed_with_modifier(KeyCode::Char('c'), KeyModifiers::CONTROL)
-        {
-            return false;
-        }
 
-        let done = self.handle_input();
-
-        if self.first_draw {
-            self.engine.clear_screen();
-            self.print_screen();
-            self.engine.draw();
-            self.first_draw = false;
-        }
-
-        if let Some(resize) = self.engine.get_resize() {
-            self.engine.resize(resize.0 as u32, resize.1 as u32);
-            self.redraw = true;
-        }
-
-        if self.engine.is_key_pressed(KeyCode::Char('0')) {}
-
-        if self.redraw {
-            self.engine.clear_screen();
-            self.print_screen();
-            self.engine.draw();
-        }
-
-        done
-    }
-
-    pub fn handle_input(&mut self) -> bool {
+    pub fn handle_input(&mut self, ctx: &mut rltk::Rltk) -> bool {
         self.redraw = false;
-        self.process()
+        self.process(ctx)
     }
 
     fn ai_vec(&self) -> Vec<Player> {
         self.opponents.iter().map(|item| item.player).collect()
     }
 
-    pub fn print_screen(&mut self) {
-        let screen = self.viewer.get_screen(
+    pub fn print_screen(&mut self, ctx: &mut rltk::Rltk) {
+        self.viewer.get_screen(
+            ctx,
             &self.state,
             &self.obs_table,
             &self.goal_table,
@@ -245,39 +230,38 @@ impl Game {
             self.max_falls,
             self.player_control.max_speed,
             self.player_control.fallover_threshold,
-            self.engine.get_width(),
-            self.engine.get_height(),
+            ctx.get_char_size().0,
+            ctx.get_char_size().1,
         );
-        self.engine.print_screen(0, 0, &screen);
     }
 
-    fn process(&mut self) -> bool {
+    fn process(&mut self, ctx: &mut rltk::Rltk) -> bool {
         match self.state {
-            GameState::MainMenu => {
-                return self.process_main_menu();
+            ProcState::MainMenu => {
+                return self.process_main_menu(ctx);
             }
-            GameState::Help => {
-                return self.process_help();
+            ProcState::Help => {
+                return self.process_help(ctx);
             }
-            GameState::GameOver => {
-                return self.process_gameover();
+            ProcState::GameOver => {
+                return self.process_gameover(ctx);
             }
-            GameState::Playing => {
-                return self.process_playing();
+            ProcState::Playing => {
+                return self.process_playing(ctx);
             }
-            GameState::PostMove => {
+            ProcState::PostMove => {
                 return self.process_post_move();
             }
-            GameState::DeliveredPackage(x, y) => {
+            ProcState::DeliveredPackage(x, y) => {
                 return self.process_delivered(x, y);
             }
-            GameState::LookMode => {
-                return self.process_lookmode();
+            ProcState::LookMode => {
+                return self.process_lookmode(ctx);
             }
-            GameState::LookedAt(_) => {
+            ProcState::LookedAt(_) => {
                 return self.process_looked_at();
             }
-            GameState::Restart => {
+            ProcState::Restart => {
                 return self.process_restart();
             } /*
               _  => {
@@ -286,45 +270,62 @@ impl Game {
         }
     }
 
-    fn process_main_menu(&mut self) -> bool {
-        if self.engine.is_key_pressed(KeyCode::Char('q')) {
-            return false;
-        } else if self.engine.is_key_pressed(KeyCode::Char('0')) {
-            self.set_state(GameState::Help);
-        } else if self.engine.is_key_pressed(KeyCode::Char('1'))
-            || self.engine.is_key_pressed(KeyCode::Esc)
-        {
-            self.set_state(match self.last_state {
-                GameState::LookMode => GameState::LookMode,
-                _ => GameState::Playing,
-            });
-        } /* else if self.engine.is_key_pressed(KeyCode::Char('2')) {
-
-              self.set_state(GameState::SizeChooser);
-          }*/
-
-        return true;
-    }
-
-    fn process_help(&mut self) -> bool {
-        if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.set_state(GameState::MainMenu);
+    fn process_main_menu(&mut self, ctx: &mut rltk::Rltk) -> bool {
+        match ctx.key {
+            None => {},
+            Some(key) => match key {
+                VirtualKeyCode::Q => {  
+                    return false;
+                },
+                VirtualKeyCode::Key0 => {
+                    self.set_state(ProcState::Help);
+                }
+                VirtualKeyCode::Escape |
+                VirtualKeyCode::Key1 => {
+                    self.set_state(match self.last_state {
+                        ProcState::LookMode => ProcState::LookMode,
+                        _ => ProcState::Playing,
+                    });
+                }
+                _ => {},
+            }
         }
 
         return true;
     }
 
-    fn process_gameover(&mut self) -> bool {
+    fn process_help(&mut self, ctx: &mut rltk::Rltk) -> bool {
+        match ctx.key {
+            None => {},
+            Some(key) => match key {
+                VirtualKeyCode::Escape => {
+                    self.set_state(ProcState::MainMenu);
+                },
+                _ => {},
+            }
+        }
+
+        return true;
+    }
+
+    fn process_gameover(&mut self, ctx: &mut rltk::Rltk) -> bool {
         if !self.gameover_done {
             self.reset_game();
             self.gameover_done = true;
         }
 
-        if self.engine.is_key_pressed(KeyCode::Char('r')) {
-            self.set_state(GameState::Playing);
-            self.gameover_done = false;
-        } else if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.set_state(GameState::MainMenu);
+        match ctx.key {
+            None => {}
+            Some(key) => match key {
+                VirtualKeyCode::R => {
+                    self.set_state(ProcState::Playing);
+                    self.gameover_done = false;
+                }
+                VirtualKeyCode::Escape => {
+                    self.set_state(ProcState::MainMenu);
+                }
+                _ => {},
+            }
         }
 
         return true;
@@ -332,62 +333,69 @@ impl Game {
 
     fn process_restart(&mut self) -> bool {
         self.reset_game();
-        self.set_state(GameState::Playing);
+        self.set_state(ProcState::Playing);
         self.applied_automata = true;
         self.viewer.main_view.clear_log();
         return true;
     }
 
-    fn process_playing(&mut self) -> bool {
-        if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.set_state(GameState::MainMenu);
-        } else if self.engine.is_key_pressed(KeyCode::Char(';')) {
-            self.viewer
-                .main_view
-                .add_string(String::from("Look Where?"), Color::Yellow);
-            self.set_state(GameState::LookMode);
-        } else if self.engine.is_key_pressed(KeyCode::Enter) {
-            self.set_state(GameState::Restart);
-        }
-        else {
-            let keysv = self.player_control.get_keys();
-            for keycode in keysv {
-                if self.engine.is_key_pressed(keycode) {
-                    // compute turn order
-                    let mut heap = Heap::new();
+    fn process_playing(&mut self, ctx: &mut rltk::Rltk) -> bool {
+        match ctx.key {
+            None => {}
+            Some(key) => match key {
+                VirtualKeyCode::Escape => {
+                    self.set_state(ProcState::MainMenu);
+                }
+                VirtualKeyCode::Semicolon => {
+                    self.viewer
+                        .main_view
+                        .add_string(String::from("Look Where?"), RGB::named(rltk::YELLOW));
+                    self.set_state(ProcState::LookMode);
+                }
+                VirtualKeyCode::Return => {
+                    self.set_state(ProcState::Restart);
+                }
+                _ => {
+                    let keysv = self.player_control.get_keys();
+                    for keycode in keysv {
+                        if keycode == key {
+                            // compute turn order
+                            let mut heap = Heap::new();
 
-                    // insert the human player
-                    heap.insert(
-                        (100.0 / vec_ops::magnitude(self.player.speed)) as u32,
-                        (999, PlayerType::Human),
-                    );
+                            // insert the human player
+                            heap.insert(
+                                (100.0 / vec_ops::magnitude(self.player.speed)) as u32,
+                                (999, PlayerType::Human),
+                            );
 
-                    // insert the ai opponents
-                    for index in 0..self.opponents.len() {
-                        heap.insert(
-                            (100.0 / vec_ops::magnitude(self.opponents[index].player.speed)) as u32,
-                            (index, PlayerType::AI),
-                        );
-                    }
-
-                    while !heap.empty() {
-                        let goes_next = heap.extract_min();
-                        match goes_next.1 {
-                            PlayerType::Human => {
-                                self.process_move_human(keycode);
+                            // insert the ai opponents
+                            for index in 0..self.opponents.len() {
+                                heap.insert(
+                                    (100.0 / vec_ops::magnitude(self.opponents[index].player.speed)) as u32,
+                                    (index, PlayerType::AI),
+                                );
                             }
-                            PlayerType::AI => {
-                                self.process_ai(goes_next.0);
+
+                            while !heap.empty() {
+                                let goes_next = heap.extract_min();
+                                match goes_next.1 {
+                                    PlayerType::Human => {
+                                        self.process_move_human(keycode);
+                                    }
+                                    PlayerType::AI => {
+                                        self.process_ai(goes_next.0);
+                                    }
+                                }
+
+                                collision::update_blocked(
+                                    &mut self.obs_table,
+                                    &self.player,
+                                    &self.opponents,
+                                );
                             }
+                            break;
                         }
-
-                        collision::update_blocked(
-                            &mut self.obs_table,
-                            &self.player,
-                            &self.opponents,
-                        );
                     }
-                    break;
                 }
             }
         }
@@ -409,7 +417,7 @@ impl Game {
         self.opponents[index].move_player(&self.obs_table, &self.player_control);
 
         if self.goal_table.count() <= 0 {
-            self.set_state(GameState::GameOver);
+            self.set_state(ProcState::GameOver);
             self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
         } else if let PlayerEvent::GameOver(_) = self.opponents[index].player.recent_event {
             self.opponents[index].player =
@@ -424,7 +432,7 @@ impl Game {
         self.redraw = true;
     }
 
-    fn process_move_human(&mut self, keycode: KeyCode) {
+    fn process_move_human(&mut self, keycode: VirtualKeyCode) {
         // move player according to the key pressed
         let result = self
             .player_control
@@ -433,7 +441,7 @@ impl Game {
 
         // check if we reached a goal
         if self.goal_table.remove_goal_if_reached(self.player.xy()) {
-            self.set_state(GameState::DeliveredPackage(
+            self.set_state(ProcState::DeliveredPackage(
                 self.player.x(),
                 self.player.y(),
             ));
@@ -441,7 +449,7 @@ impl Game {
 
         // check if the player has reached all the goals
         if self.goal_table.count() <= 0 {
-            self.set_state(GameState::GameOver);
+            self.set_state(ProcState::GameOver);
             self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
         }
         // check if move player returned a player with a GameOver event
@@ -456,8 +464,8 @@ impl Game {
         // after computing the result of the turn
         else {
             self.set_state(match self.state {
-                GameState::DeliveredPackage(x, y) => GameState::DeliveredPackage(x, y),
-                _ => GameState::PostMove,
+                ProcState::DeliveredPackage(x, y) => ProcState::DeliveredPackage(x, y),
+                _ => ProcState::PostMove,
             });
         }
 
@@ -474,25 +482,31 @@ impl Game {
 
     // dummy state for the purposes of updating the view after process_move
     fn process_post_move(&mut self) -> bool {
-        self.set_state(GameState::Playing);
+        self.set_state(ProcState::Playing);
         self.viewer
             .main_view
             .add_message(&self.obs_table, &self.player, &self.player.recent_event);
         return true;
     }
 
-    fn process_lookmode(&mut self) -> bool {
-        if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.set_state(GameState::MainMenu);
-        }
-
-        for keycode in self.lookmode.get_keys() {
-            if self.engine.is_key_pressed(*keycode) {
-                let result =
-                    self.lookmode
-                        .describe_direction(&self.obs_table, &self.player, *keycode);
-                self.set_state(GameState::LookedAt(result));
-                break;
+    fn process_lookmode(&mut self, ctx: &mut rltk::Rltk) -> bool {
+        match ctx.key {
+            None => {}
+            Some(key) => match key {
+                VirtualKeyCode::Return => {
+                    self.set_state(ProcState::MainMenu);
+                }
+                _ => {
+                    for keycode in self.lookmode.get_keys() {
+                        if *keycode == key {
+                            let result =
+                                self.lookmode
+                                    .describe_direction(&self.obs_table, &self.player, *keycode);
+                            self.set_state(ProcState::LookedAt(result));
+                            break;
+                        }
+                    }                   
+                }
             }
         }
 
@@ -500,12 +514,12 @@ impl Game {
     }
 
     fn process_looked_at(&mut self) -> bool {
-        if let GameState::LookedAt(s) = &self.state {
+        if let ProcState::LookedAt(s) = &self.state {
             self.viewer
                 .main_view
-                .add_string(String::from(s), Color::Green);
+                .add_string(String::from(s), RGB::named(rltk::GREEN));
         }
-        self.set_state(GameState::Playing);
+        self.set_state(ProcState::Playing);
         return true;
     }
 
@@ -514,14 +528,14 @@ impl Game {
 
         self.viewer
             .main_view
-            .add_string(String::from("Delivered"), Color::Blue);
+            .add_string(String::from("Delivered"), RGB::named(rltk::BLUE));
 
-        self.set_state(GameState::Playing);
+        self.set_state(ProcState::Playing);
         return true;
     }
 
-    fn set_state(&mut self, state: GameState) {
-        self.last_state = GameState::clone(&self.state);
+    fn set_state(&mut self, state: ProcState) {
+        self.last_state = ProcState::clone(&self.state);
         self.state = state;
         self.redraw = true;
     }

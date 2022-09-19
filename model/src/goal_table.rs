@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use rand::Rng;
+use rltk::RandomNumberGenerator;
 use util::vec_ops;
 
 pub struct GoalTable {
@@ -41,15 +41,16 @@ impl GoalTable {
 
     pub fn regen_goals(&mut self, width: u32, height: u32, count: u32) {
         self.goals.clear();
+        let mut rng = RandomNumberGenerator::new();
 
         let mut region: (i32, i32) = (1, 0);
         for _ in 0..count {
             let p_x = (width as i32 / 2)
-                + (region.0 * (rand::thread_rng().gen_range(width as i32 / 4..width as i32 / 2)))
+                + (region.0 * (rng.range(width as i32 / 4, width as i32 / 2)))
                 - 2 * region.0;
 
             let p_y = (height as i32 / 2)
-                + (region.1 * (rand::thread_rng().gen_range(height as i32 / 4..height as i32 / 2)))
+                + (region.1 * (rng.range(height as i32 / 4, height as i32 / 2)))
                 - 2 * region.1;
 
             self.goals.insert((p_x, p_y));

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, f32::consts::PI};
 
-use rand::Rng;
+use rltk::RandomNumberGenerator;
 use util::{
     vec_ops::{self, neighbors},
     voronoi,
@@ -11,6 +11,7 @@ use crate::{
 };
 
 pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
+    let mut rng = RandomNumberGenerator::new();
     let mut directions = Vec::new();
     directions.push((0, -1));
     directions.push((0, 1));
@@ -70,16 +71,10 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
         }
     }
     while !(tunneler1.0 == x && tunneler1.1 == y) && !(tunneler2.0 == x && tunneler2.1 == y) {
-        let mut sign: i32 = rand::thread_rng().gen_range(-1..=1);
-        if sign == 0 {
-            sign = -1 + (rand::thread_rng().gen_range(0..=1) % 2) * 2;
-        }
+        let sign = -1 + rng.range(0, 2) * 2;
         let double1 = vec_ops::rotate(main_direction1, sign as f32 * PI / 8.0);
 
-        sign = rand::thread_rng().gen_range(-1..=1);
-        if sign == 0 {
-            sign = -1 + (rand::thread_rng().gen_range(0..=1) % 2) * 2;
-        }
+        let sign = -1 + rng.range(0, 2) * 2;
         let double2 = vec_ops::rotate(main_direction2, sign as f32 * PI / 8.0);
 
         let mut tunnel1 = (
@@ -113,10 +108,7 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
         tunneler2 = tunnel2;
     }
     while !(tunneler2.0 == x && tunneler2.1 == y) {
-        let mut sign = rand::thread_rng().gen_range(-1..=1);
-        if sign == 0 {
-            sign = -1 + (rand::thread_rng().gen_range(0..=1)) * 2;
-        }
+        let sign = -1 + rng.range(0, 2) * 2;
         let double2 = vec_ops::rotate(main_direction2, sign as f32 * PI / 8.0);
 
         let tunnel2 = (

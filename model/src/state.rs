@@ -1,5 +1,5 @@
 #[derive(Clone)]
-pub enum GameState {
+pub enum ProcState {
     MainMenu,
     Help,
     GameOver,

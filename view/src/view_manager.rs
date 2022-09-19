@@ -1,5 +1,3 @@
-use console_engine::screen::Screen;
-
 use controller::player_controller::PlayerController;
 
 use super::gameover_viewer;
@@ -10,7 +8,7 @@ use super::main_viewer::MainViewer;
 use model::goal_table::GoalTable;
 use model::obstacle_table::ObstacleTable;
 use model::player::Player;
-use model::state::GameState;
+use model::state::ProcState;
 
 pub struct ViewManager {
     pub main_view: MainViewer,
@@ -27,7 +25,8 @@ impl ViewManager {
 impl ViewManager {
     pub fn get_screen(
         &mut self,
-        state: &GameState,
+        ctx: &mut rltk::Rltk,
+        state: &ProcState,
         obs_table: &ObstacleTable,
         goal_table: &GoalTable,
         player: &Player,
@@ -38,32 +37,34 @@ impl ViewManager {
         fallover_threshold: f32,
         window_width: u32,
         window_height: u32,
-    ) -> Screen {
+    ) {
         match state {
-            GameState::MainMenu => {
-                return main_menu_viewer::main_menu_screen(window_width, window_height);
+            ProcState::MainMenu => {
+                main_menu_viewer::main_menu_screen(ctx, window_width, window_height);
             }
-            GameState::Help => {
-                return help_viewer::help_screen(window_width, window_height);
+            ProcState::Help => {
+                help_viewer::help_screen(ctx, window_width, window_height);
             }
-            GameState::GameOver => {
+            ProcState::GameOver => {
                 self.main_view.clear_log();
-                return gameover_viewer::game_over_screen(
+                gameover_viewer::game_over_screen(
+                    ctx,
                     obs_table,
                     &player,
                     window_width,
                     window_height,
                 );
             }
-            GameState::Playing
-            | GameState::PostMove
-            | GameState::DeliveredPackage(..)
-            | GameState::LookedAt(_)
-            | GameState::LookMode
-            | GameState::Restart => {
+            ProcState::Playing
+            | ProcState::PostMove
+            | ProcState::DeliveredPackage(..)
+            | ProcState::LookedAt(_)
+            | ProcState::LookMode
+            | ProcState::Restart => {
                 //self.main_view.clear_log();
 
                 return self.main_view.draw_layout(
+                    ctx,
                     &obs_table,
                     &goal_table,
                     &player,

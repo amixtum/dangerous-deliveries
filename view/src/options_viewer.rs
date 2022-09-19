@@ -1,5 +1,4 @@
-use console_engine::{pixel, screen::Screen, Color};
-
+/*
 pub fn size_chooser_viewer(width: u32, height: u32) -> Screen {
     let mut screen = Screen::new_fill(width, height, pixel::pxl(' '));
 
@@ -34,3 +33,4 @@ pub fn size_chooser_viewer(width: u32, height: u32) -> Screen {
 
     screen
 }
+*/
