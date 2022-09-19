@@ -13,3 +13,5 @@ pub mod traversability;
 pub mod state;
 
 pub mod map_gen;
+
+pub mod visibility;

@@ -1,5 +1,6 @@
 use console_engine::{pixel, screen::Screen, Color};
 use controller::player_controller::PlayerController;
+use model::visibility;
 
 use std::collections::HashMap;
 
@@ -192,102 +193,108 @@ impl MainViewer {
         let mut sc_x = 0;
         let mut sc_y = 0;
 
+        let visible = visibility::get_visible(player.xy(), table, table.height() * 2);
+
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                let obstacle_type = table.get_obstacle(x, y);
+                if visible.contains(&(x, y)) || (player.x() == x && player.y() == y) {
+                    let obstacle_type = table.get_obstacle(x, y);
+
+                    let t = table.traversability((player.x(), player.y()), (x, y));
+                    let symbol = self.symbol_map[&obstacle_type];
 
 
-                /*
-                let neighbors = vec_ops::neighbors_set(
-                    player.xy(),
-                    (0, 0),
-                    (table.width() as i32 - 1, table.height() as i32 - 1),
-                );
-                */
-
-                let t = table.traversability((player.x(), player.y()), (x, y));
-                let symbol = self.symbol_map[&obstacle_type];
-
-
-                let mov = controller.move_player_vel(table, player, (x as f32 - player.x() as f32, y as f32 - player.y() as f32));
-                let balance_amount = vec_ops::magnitude(mov.balance) / fallover_threshold;
-                let dist = vec_ops::magnitude((x as f32 - player.x() as f32, y as f32 - player.y() as f32));
-                let inv_dist: f32;
-                if dist.round() as i32 == 0 {
-                    inv_dist = 1.0;
-                }
-                else {
-                    inv_dist = 4.0 / dist;
-                }
-                match mov.recent_event {
-                    PlayerEvent::FallOver |
-                    PlayerEvent::GameOver(_) => {
-                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: (255 as f32 * inv_dist) as u8, b: 0 }, Color::Black));
+                    let mov = controller.move_player_vel(table, player, (x as f32 - player.x() as f32, y as f32 - player.y() as f32));
+                    let balance_amount = vec_ops::magnitude(mov.balance) / fallover_threshold;
+                    let dist = vec_ops::magnitude((x as f32 - player.x() as f32, y as f32 - player.y() as f32));
+                    let inv_dist: f32;
+                    if dist.round() as i32 == 0 {
+                        inv_dist = 1.0;
                     }
-                    _ => {
-                        let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount) * inv_dist * 2.0) as u8, g: 0, b: (255 as f32 * balance_amount * inv_dist * 2.0) as u8 };
-                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, color, Color::Black));
+                    else {
+                        inv_dist = 4.0 / dist;
                     }
-                }
-
-                for goal in goals.goals() {
-                    if x == goal.0 && y == goal.1 {
-                        match t {
-                            Traversability::No => {
-                                screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Rgb { r: (255.0f32 * inv_dist / 8.0) as u8, g: (255.0f32 * inv_dist / 8.0) as u8, b: (255.0f32 * inv_dist / 8.0) as u8 }));
-                            },
-                            _ => {
-                                screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg('$', Color::Red, Color::White));
-                            }
+                    match mov.recent_event {
+                        PlayerEvent::FallOver |
+                        PlayerEvent::GameOver(_) => {
+                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, Color::Rgb { r: 0, g: (255 as f32 * inv_dist) as u8, b: 0 }, Color::Black));
                         }
-                        break;
+                        _ => {
+                            let color = Color::Rgb { r: (255 as f32 * (1.0 - balance_amount) * inv_dist * 2.0) as u8, g: 0, b: (255 as f32 * balance_amount * inv_dist * 2.0) as u8 };
+                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg(symbol, color, Color::Black));
+                        }
                     }
-                }
 
-                match obstacle_type {
-                    Obstacle::Pit => {}
-                    _ => {
-                        for p in ai {
-                            if x == p.x() && y == p.y() {
-                                match p.recent_event {
+                    for goal in goals.goals() {
+                        if x == goal.0 && y == goal.1 {
+                            match t {
+                                Traversability::No => {
+                                    screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Rgb { r: (255.0f32 * inv_dist.powf(2.0)) as u8, g: (255.0f32 * inv_dist.powf(2.0)) as u8, b: (255.0f32 * inv_dist.powf(2.0)) as u8 }));
+                                },
+                                _ => {
+                                    match mov.recent_event {
+                                        PlayerEvent::FallOver |
+                                        PlayerEvent::GameOver(_) => {
+                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('$', Color::Rgb { r: (255.0f32 * inv_dist.sqrt()) as u8, g: (255.0f32 * inv_dist.sqrt()) as u8, b: (255.0f32 * inv_dist.sqrt()) as u8 }));
+                                        }
+                                        _ => {
+                                            screen.set_pxl(sc_x, sc_y, pixel::pxl_fbg('$', Color::Rgb { r: 255, g: 0, b: 0 }, Color::White));
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    match obstacle_type {
+                        Obstacle::Pit => {}
+                        _ => {
+                            for p in ai {
+                                if x == p.x() && y == p.y() {
+                                    match p.recent_event {
+                                        /*
+                                        PlayerEvent::FallOver => {
+                                            screen.set_pxl(
+                                                sc_x,
+                                                sc_y,
+                                                pixel::pxl_fg('!', Color::Yellow),
+                                            );
+                                        }
+                                        */
+                                        _ => {
+                                            screen.set_pxl(
+                                                sc_x,
+                                                sc_y,
+                                                pixel::pxl_fg(
+                                                    '@',
+                                                    Color::Rgb {
+                                                        r: (255.0f32 * inv_dist) as u8,
+                                                        g: (127.0f32 * inv_dist) as u8,
+                                                        b: 0,
+                                                    },
+                                                ),
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
+                            // draw player last so it is on top
+                            if x == player.x() && y == player.y() {
+                                match player.recent_event {
                                     PlayerEvent::FallOver => {
-                                        screen.set_pxl(
-                                            sc_x,
-                                            sc_y,
-                                            pixel::pxl_fg('!', Color::Yellow),
-                                        );
+                                        screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::White));
                                     }
                                     _ => {
-                                        screen.set_pxl(
-                                            sc_x,
-                                            sc_y,
-                                            pixel::pxl_fg(
-                                                '@',
-                                                Color::Rgb {
-                                                    r: 255,
-                                                    g: 127,
-                                                    b: 0,
-                                                },
-                                            ),
-                                        );
+                                        screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
                                     }
-                                }
-                            }
-                        }
-
-                        // draw player last so it is on top
-                        if x == player.x() && y == player.y() {
-                            match player.recent_event {
-                                PlayerEvent::FallOver => {
-                                    screen.set_pxl(sc_x, sc_y, pixel::pxl_fg('!', Color::Red));
-                                }
-                                _ => {
-                                    screen.set_pxl(sc_x, sc_y, pixel::pxl('@'));
                                 }
                             }
                         }
                     }
                 }
+
 
                 sc_y += 1;
             }
