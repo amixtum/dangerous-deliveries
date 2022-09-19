@@ -1,4 +1,4 @@
-use rltk::{VirtualKeyCode, RandomNumberGenerator};
+use rltk::{RandomNumberGenerator, VirtualKeyCode};
 
 use std::collections::HashMap;
 //use std::f32::consts::PI;
@@ -44,9 +44,12 @@ impl PlayerController {
         // read conf file
         let raw_data = rltk::embedding::EMBED
             .lock()
-            .get_resource("/home/ganiparrott/src/projects/rust_book/roguelike/raws/model.txt".to_string())
+            .get_resource(
+                "/home/ganiparrott/src/projects/rust_book/roguelike/raws/model.txt".to_string(),
+            )
             .unwrap();
-        let raw_string = std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
+        let raw_string =
+            std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
         for line in raw_string.lines() {
             let words: Vec<&str> = line.split_ascii_whitespace().collect();
             if words.len() == 2 {
@@ -213,7 +216,12 @@ impl PlayerController {
         );
     }
 
-    pub fn move_player(&self, table: &ObstacleTable, player: &Player, key: VirtualKeyCode) -> Player {
+    pub fn move_player(
+        &self,
+        table: &ObstacleTable,
+        player: &Player,
+        key: VirtualKeyCode,
+    ) -> Player {
         if let Some(inst_v) = self.get_inst_velocity(key) {
             return PlayerController::compute_move(
                 table,
@@ -276,22 +284,22 @@ impl PlayerController {
         let mut rng = RandomNumberGenerator::new();
         let mut clone = Player::clone(player);
         let mut x = rng.range(
-            table.width() as i32 / 2 - table.width() as i32 / 8
-                , table.width() as i32 / 2 + table.width() as i32 / 8,
+            table.width() as i32 / 2 - table.width() as i32 / 8,
+            table.width() as i32 / 2 + table.width() as i32 / 8,
         );
         let mut y = rng.range(
-            table.height() as i32 / 2 - table.height() as i32 / 8
-                ,table.height() as i32 / 2 + table.height() as i32 / 8,
+            table.height() as i32 / 2 - table.height() as i32 / 8,
+            table.height() as i32 / 2 + table.height() as i32 / 8,
         );
 
         while x == table.width() as i32 / 2 && y == table.height() as i32 / 2 {
             x = rng.range(
-                table.width() as i32 / 2 - table.width() as i32 / 8
-                    ,table.width() as i32 / 2 + table.width() as i32 / 8,
+                table.width() as i32 / 2 - table.width() as i32 / 8,
+                table.width() as i32 / 2 + table.width() as i32 / 8,
             );
             y = rng.range(
-                table.height() as i32 / 2 - table.height() as i32 / 8
-                    ,table.height() as i32 / 2 + table.height() as i32 / 8,
+                table.height() as i32 / 2 - table.height() as i32 / 8,
+                table.height() as i32 / 2 + table.height() as i32 / 8,
             );
         }
         clone.position = (x, y);

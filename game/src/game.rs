@@ -1,9 +1,9 @@
 use controller::collision;
 use model::map_gen;
-use rltk::{GameState, VirtualKeyCode, RGB, RandomNumberGenerator};
+use rltk::{GameState, RandomNumberGenerator, VirtualKeyCode, RGB};
 use util::heap::Heap;
 
-use util::{vec_ops};
+use util::vec_ops;
 
 use model::goal_table::GoalTable;
 use model::obstacle::Obstacle;
@@ -45,46 +45,43 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(
-        table_width: u32,
-        table_height: u32,
-    ) -> Self {
-        
-            let mut g = Game {
-                obs_table: ObstacleTable::new(table_width, table_height),
-                goal_table: GoalTable::new(),
+    pub fn new(table_width: u32, table_height: u32) -> Self {
+        let mut g = Game {
+            obs_table: ObstacleTable::new(table_width, table_height),
+            goal_table: GoalTable::new(),
 
-                viewer: ViewManager::new(),
+            viewer: ViewManager::new(),
 
-                player_control: PlayerController::new(),
-                opponents: Vec::new(),
-                lookmode: LookMode::new(),
+            player_control: PlayerController::new(),
+            opponents: Vec::new(),
+            lookmode: LookMode::new(),
 
-                player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
+            player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
 
-                max_falls: 4,
-                n_goals: 4,
-                n_opponents: 2,
-                sight_radius: 8,
+            max_falls: 4,
+            n_goals: 4,
+            n_opponents: 2,
+            sight_radius: 8,
 
-                state: ProcState::MainMenu,
-                last_state: ProcState::MainMenu,
+            state: ProcState::MainMenu,
+            last_state: ProcState::MainMenu,
 
-                redraw: true,
-                first_draw: true,
-                gameover_done: false,
-                applied_automata: true,
-            };
+            redraw: true,
+            first_draw: true,
+            gameover_done: false,
+            applied_automata: true,
+        };
 
-            Game::init(&mut g);
+        Game::init(&mut g);
 
-            return g;
+        return g;
     }
 }
 
-
 impl GameState for Game {
     fn tick(&mut self, ctx: &mut rltk::BTerm) {
+        // doens't work on web
+        /*
         match ctx.key {
             None => {}
             Some(key) => match key {
@@ -96,12 +93,15 @@ impl GameState for Game {
                 _ => {}
             }
         }
+        */
 
-        let playing = self.handle_input(ctx);
+        let _playing = self.handle_input(ctx);
 
+        /* crashes the webpage
         if !playing {
             std::process::exit(0);
         }
+        */
 
         if self.first_draw {
             ctx.cls();
@@ -113,13 +113,13 @@ impl GameState for Game {
             ctx.cls();
             self.print_screen(ctx);
         }
-
-
-    }       
+    }
 }
 
 impl Game {
     fn init(g: &mut Game) {
+        g.properties_from_file();
+
         g.goal_table
             .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
 
@@ -135,8 +135,6 @@ impl Game {
             g.add_opponent();
         }
 
-        g.properties_from_file();
-
         collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents);
     }
     // regen opponent
@@ -144,23 +142,26 @@ impl Game {
         let mut rng = RandomNumberGenerator::new();
         let mut x = (self.obs_table.width() as i32 / 2)
             + rng.range(
-                -(self.obs_table.width() as i32) / 2 + 1, self.obs_table.width() as i32 / 2,
+                -(self.obs_table.width() as i32) / 2 + 1,
+                self.obs_table.width() as i32 / 2,
             )
             - 1;
         let mut y = (self.obs_table.height() as i32 / 2)
             + rng.range(
-                -(self.obs_table.height() as i32) / 2 + 1, self.obs_table.height() as i32 / 2 - 1,
+                -(self.obs_table.height() as i32) / 2 + 1,
+                self.obs_table.height() as i32 / 2 - 1,
             );
 
         while x == self.player.x() && y == self.player.y() {
             x = (self.obs_table.width() as i32 / 2)
                 + rng.range(
-                    -(self.obs_table.width() as i32) / 2 + 1, self.obs_table.width() as i32 / 2 - 1,
+                    -(self.obs_table.width() as i32) / 2 + 1,
+                    self.obs_table.width() as i32 / 2 - 1,
                 );
             y = (self.obs_table.height() as i32 / 2)
                 + rng.range(
-                    -(self.obs_table.height() as i32) / 2 + 1
-                        , self.obs_table.height() as i32 / 2 - 1,
+                    -(self.obs_table.height() as i32) / 2 + 1,
+                    self.obs_table.height() as i32 / 2 - 1,
                 );
         }
 
@@ -171,12 +172,15 @@ impl Game {
     }
 
     pub fn properties_from_file(&mut self) {
-// Retrieve the raw data as an array of u8 (8-bit unsigned chars)
+        // Retrieve the raw data as an array of u8 (8-bit unsigned chars)
         let raw_data = rltk::embedding::EMBED
             .lock()
-            .get_resource("/home/ganiparrott/src/projects/rust_book/roguelike/raws/game.txt".to_string())
+            .get_resource(
+                "/home/ganiparrott/src/projects/rust_book/roguelike/raws/game.txt".to_string(),
+            )
             .unwrap();
-        let raw_string = std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
+        let raw_string =
+            std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
         for line in raw_string.lines() {
             if let Some(c) = line.chars().nth(0) {
                 if c == '#' {
@@ -206,8 +210,6 @@ impl Game {
             }
         }
     }
-
-
 
     pub fn handle_input(&mut self, ctx: &mut rltk::Rltk) -> bool {
         self.redraw = false;
@@ -272,23 +274,22 @@ impl Game {
 
     fn process_main_menu(&mut self, ctx: &mut rltk::Rltk) -> bool {
         match ctx.key {
-            None => {},
+            None => {}
             Some(key) => match key {
-                VirtualKeyCode::Q => {  
+                VirtualKeyCode::Q => {
                     return false;
-                },
+                }
                 VirtualKeyCode::Key0 => {
                     self.set_state(ProcState::Help);
                 }
-                VirtualKeyCode::Escape |
-                VirtualKeyCode::Key1 => {
+                VirtualKeyCode::Escape | VirtualKeyCode::Key1 => {
                     self.set_state(match self.last_state {
                         ProcState::LookMode => ProcState::LookMode,
                         _ => ProcState::Playing,
                     });
                 }
-                _ => {},
-            }
+                _ => {}
+            },
         }
 
         return true;
@@ -296,13 +297,13 @@ impl Game {
 
     fn process_help(&mut self, ctx: &mut rltk::Rltk) -> bool {
         match ctx.key {
-            None => {},
+            None => {}
             Some(key) => match key {
                 VirtualKeyCode::Escape => {
                     self.set_state(ProcState::MainMenu);
-                },
-                _ => {},
-            }
+                }
+                _ => {}
+            },
         }
 
         return true;
@@ -324,8 +325,8 @@ impl Game {
                 VirtualKeyCode::Escape => {
                     self.set_state(ProcState::MainMenu);
                 }
-                _ => {},
-            }
+                _ => {}
+            },
         }
 
         return true;
@@ -371,7 +372,8 @@ impl Game {
                             // insert the ai opponents
                             for index in 0..self.opponents.len() {
                                 heap.insert(
-                                    (100.0 / vec_ops::magnitude(self.opponents[index].player.speed)) as u32,
+                                    (100.0 / vec_ops::magnitude(self.opponents[index].player.speed))
+                                        as u32,
                                     (index, PlayerType::AI),
                                 );
                             }
@@ -397,7 +399,7 @@ impl Game {
                         }
                     }
                 }
-            }
+            },
         }
 
         return true;
@@ -499,15 +501,17 @@ impl Game {
                 _ => {
                     for keycode in self.lookmode.get_keys() {
                         if *keycode == key {
-                            let result =
-                                self.lookmode
-                                    .describe_direction(&self.obs_table, &self.player, *keycode);
+                            let result = self.lookmode.describe_direction(
+                                &self.obs_table,
+                                &self.player,
+                                *keycode,
+                            );
                             self.set_state(ProcState::LookedAt(result));
                             break;
                         }
-                    }                   
+                    }
                 }
-            }
+            },
         }
 
         return true;

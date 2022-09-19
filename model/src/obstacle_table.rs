@@ -66,11 +66,7 @@ impl ObstacleTable {
             return false;
         }
 
-        if to_x >= 0
-            && to_x < self.width as i32
-            && to_y >= 0
-            && to_y < self.height as i32 
-        {
+        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 {
             return x_diff.abs() <= 1 && y_diff.abs() <= 1;
         }
 
@@ -136,6 +132,4 @@ impl ObstacleTable {
             }
         }
     }
-
-    
 }

@@ -1,6 +1,6 @@
 use controller::player_controller::PlayerController;
 use model::visibility;
-use rltk::{RGB, FontCharType};
+use rltk::{FontCharType, RGB};
 
 use std::collections::HashMap;
 
@@ -17,7 +17,7 @@ pub struct MainViewer {
     symbol_map: HashMap<Obstacle, FontCharType>,
     message_log: Vec<(String, RGB)>,
     log_length: usize,
-    max_message_length: u32,
+    _max_message_length: u32,
 }
 
 impl MainViewer {
@@ -26,39 +26,49 @@ impl MainViewer {
             symbol_map: HashMap::new(),
             message_log: Vec::new(),
             log_length,
-            max_message_length: 16,
+            _max_message_length: 16,
         };
 
         gv.symbol_map.insert(Obstacle::Pit, rltk::to_cp437('x'));
-        gv.symbol_map.insert(Obstacle::Platform, rltk::to_cp437('.'));
+        gv.symbol_map
+            .insert(Obstacle::Platform, rltk::to_cp437('.'));
         gv.symbol_map.insert(Obstacle::Wall, rltk::to_cp437('#'));
 
         // bug (havent' found it yet)
-        gv.symbol_map.insert(Obstacle::Rail(0, 0), rltk::to_cp437('_'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(0, 0), rltk::to_cp437('_'));
 
         // right
-        gv.symbol_map.insert(Obstacle::Rail(1, 0), rltk::to_cp437('>'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(1, 0), rltk::to_cp437('>'));
 
         // left
-        gv.symbol_map.insert(Obstacle::Rail(-1, 0), rltk::to_cp437('<'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(-1, 0), rltk::to_cp437('<'));
 
         // up
-        gv.symbol_map.insert(Obstacle::Rail(0, -1), rltk::to_cp437('^'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(0, -1), rltk::to_cp437('^'));
 
         // down
-        gv.symbol_map.insert(Obstacle::Rail(0, 1), rltk::to_cp437('v'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(0, 1), rltk::to_cp437('v'));
 
         // diagonal right up
-        gv.symbol_map.insert(Obstacle::Rail(1, -1), rltk::to_cp437('/'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(1, -1), rltk::to_cp437('/'));
 
         // diagonal left down
-        gv.symbol_map.insert(Obstacle::Rail(-1, 1), rltk::to_cp437('d'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(-1, 1), rltk::to_cp437('d'));
 
         // diagonal right down
-        gv.symbol_map.insert(Obstacle::Rail(1, 1), rltk::to_cp437('\\'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(1, 1), rltk::to_cp437('\\'));
 
         // diagonal left up
-        gv.symbol_map.insert(Obstacle::Rail(-1, -1), rltk::to_cp437('u'));
+        gv.symbol_map
+            .insert(Obstacle::Rail(-1, -1), rltk::to_cp437('u'));
 
         gv
     }
@@ -90,25 +100,21 @@ impl MainViewer {
         ai: &Vec<Player>,
         controller: &PlayerController,
         max_falls: u32,
-        max_speed: f32,
+        _max_speed: f32,
         fallover_threshold: f32,
         width: u32,
         height: u32,
     ) {
-        let balance_size = 5;
-        let speed_x = width as i32 - (balance_size * 2) - 1;
-        let balance_x = speed_x - (balance_size * 2) - 1;
-        let r_panel_width = self.max_message_length as i32 + 2;
-        let r_panel_x = width as i32 - r_panel_width - 1;
-        let msg_log_tl_y = balance_size;
-        let msg_log_height = height as i32 - msg_log_tl_y - 2;
-        let table_view_width = balance_x - 1;
-        let table_view_height = height as i32 - 1;
+        let msg_log_height = 8;
+        let table_view_width = width;
+
+        let table_view_height = height as i32 - msg_log_height - 1;
+        let msg_log_tl_y = height as i32 - msg_log_height - 1;
 
         self.draw_table(
             ctx,
             0,
-            0,
+            1,
             table,
             goals,
             player,
@@ -118,9 +124,13 @@ impl MainViewer {
             table_view_height as u32,
             fallover_threshold,
         );
-        self.draw_balance(ctx, balance_x, 0, player, fallover_threshold, balance_size as u32);
-        self.draw_speed(ctx, speed_x, 0, player, max_speed, balance_size as u32);
-        self.draw_msg_log(ctx, r_panel_x, msg_log_tl_y, msg_log_height as u32);
+        self.draw_msg_log(
+            ctx,
+            0,
+            msg_log_tl_y as i32,
+            width - 1,
+            msg_log_height as u32,
+        );
 
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
@@ -128,7 +138,13 @@ impl MainViewer {
         s.push_str(&format!("HP: {}, ", max_falls as i32 - player.n_falls));
         s.push_str("Help: press Esc");
 
-        ctx.print(0, height as i32 - 1, &s);
+        ctx.print_color(
+            0,
+            0,
+            RGB::named(rltk::ALICEBLUE),
+            RGB::named(rltk::BLACK),
+            &s,
+        );
     }
 
     // return a Screen of dimensions width x height that maps a width x height section
@@ -176,7 +192,7 @@ impl MainViewer {
         let mut sc_x = sc_tlx;
         let mut sc_y = sc_tly;
 
-        let visible = visibility::get_visible(player.xy(), table, 160);
+        let visible = visibility::get_visible(player.xy(), table, 512);
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
@@ -205,19 +221,21 @@ impl MainViewer {
                     match mov.recent_event {
                         PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
                             ctx.set(
-                                sc_x, 
-                                sc_y, 
-                                RGB::from_f32(0.0, inv_dist, 0.0), 
-                                RGB::named(rltk::BLACK), 
-                                symbol);
+                                sc_x,
+                                sc_y,
+                                RGB::from_f32(0.0, inv_dist, 0.0),
+                                RGB::named(rltk::BLACK),
+                                symbol,
+                            );
                         }
                         _ => {
                             ctx.set(
-                                sc_x, 
-                                sc_y, 
-                                RGB::from_f32(1.0 - balance_amount, 0.0, balance_amount), 
-                                RGB::named(rltk::BLACK), 
-                                symbol);
+                                sc_x,
+                                sc_y,
+                                RGB::from_f32(1.0 - balance_amount, 0.0, balance_amount),
+                                RGB::named(rltk::BLACK),
+                                symbol,
+                            );
                         }
                     }
 
@@ -225,29 +243,32 @@ impl MainViewer {
                         if x == goal.0 && y == goal.1 {
                             match t {
                                 Traversability::No => {
-                                    ctx.set(sc_x, sc_y, 
-                                        RGB::from_f32(
-                                            inv_dist, 
-                                            inv_dist, 
-                                            inv_dist, ),
-                                            RGB::named(rltk::BLACK), 
-                                            rltk::to_cp437('$'));
+                                    ctx.set(
+                                        sc_x,
+                                        sc_y,
+                                        RGB::from_f32(inv_dist, inv_dist, inv_dist),
+                                        RGB::named(rltk::BLACK),
+                                        rltk::to_cp437('$'),
+                                    );
                                 }
                                 _ => match mov.recent_event {
                                     PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
-                                        ctx.set(sc_x, sc_y, 
-                                            RGB::from_f32(
-                                                inv_dist, 
-                                                inv_dist, 
-                                                inv_dist,),
-                                                RGB::named(rltk::BLACK), 
-                                                rltk::to_cp437('$'));
+                                        ctx.set(
+                                            sc_x,
+                                            sc_y,
+                                            RGB::from_f32(inv_dist, inv_dist, inv_dist),
+                                            RGB::named(rltk::BLACK),
+                                            rltk::to_cp437('$'),
+                                        );
                                     }
                                     _ => {
-                                        ctx.set(sc_x, sc_y, 
+                                        ctx.set(
+                                            sc_x,
+                                            sc_y,
                                             RGB::from_f32(1.0, 0.0, 0.0),
-                                            RGB::named(rltk::WHITE), 
-                                            rltk::to_cp437('$'));
+                                            RGB::named(rltk::WHITE),
+                                            rltk::to_cp437('$'),
+                                        );
                                     }
                                 },
                             }
@@ -262,16 +283,22 @@ impl MainViewer {
                                 if x == p.x() && y == p.y() {
                                     match p.recent_event {
                                         PlayerEvent::FallOver => {
-                                            ctx.set(sc_x, sc_y, 
+                                            ctx.set(
+                                                sc_x,
+                                                sc_y,
                                                 RGB::from_f32(1.0, 0.5, 0.0),
-                                                RGB::named(rltk::BLACK), 
-                                                rltk::to_cp437('!'));
+                                                RGB::named(rltk::BLACK),
+                                                rltk::to_cp437('!'),
+                                            );
                                         }
                                         _ => {
-                                            ctx.set(sc_x, sc_y, 
+                                            ctx.set(
+                                                sc_x,
+                                                sc_y,
                                                 RGB::from_f32(1.0, 0.5, 0.0),
-                                                RGB::named(rltk::BLACK), 
-                                                rltk::to_cp437('@'));
+                                                RGB::named(rltk::BLACK),
+                                                rltk::to_cp437('@'),
+                                            );
                                         }
                                     }
                                 }
@@ -281,16 +308,22 @@ impl MainViewer {
                             if x == player.x() && y == player.y() {
                                 match player.recent_event {
                                     PlayerEvent::FallOver => {
-                                        ctx.set(sc_x, sc_y, 
+                                        ctx.set(
+                                            sc_x,
+                                            sc_y,
                                             RGB::named(rltk::WHITE),
-                                            RGB::named(rltk::BLACK), 
-                                            rltk::to_cp437('!'));
+                                            RGB::named(rltk::BLACK),
+                                            rltk::to_cp437('!'),
+                                        );
                                     }
                                     _ => {
-                                        ctx.set(sc_x, sc_y, 
+                                        ctx.set(
+                                            sc_x,
+                                            sc_y,
                                             RGB::named(rltk::WHITE),
-                                            RGB::named(rltk::BLACK), 
-                                            rltk::to_cp437('@'));
+                                            RGB::named(rltk::BLACK),
+                                            rltk::to_cp437('@'),
+                                        );
                                     }
                                 }
                             }
@@ -301,25 +334,65 @@ impl MainViewer {
                 sc_y += 1;
             }
 
-            sc_y = 0;
+            sc_y = sc_tly;
             sc_x += 1;
         }
     }
 
     // returns a Screen which visualizes the direction of the Player's
     // Balance vector, and their closeness to falling over (the nearness of the indicator to the border)
-    pub fn draw_balance(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, player: &Player, fallover_threshold: f32, size: u32) {
-        self.draw_vector(ctx, tlx, tly, player.balance, fallover_threshold, size, RGB::named(rltk::BLUE));
+    pub fn draw_balance(
+        &self,
+        ctx: &mut rltk::Rltk,
+        tlx: i32,
+        tly: i32,
+        player: &Player,
+        fallover_threshold: f32,
+        size: u32,
+    ) {
+        self.draw_vector(
+            ctx,
+            tlx,
+            tly,
+            player.balance,
+            fallover_threshold,
+            size,
+            RGB::named(rltk::BLUE),
+        );
     }
 
-    pub fn draw_speed(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, player: &Player, max_speed: f32, size: u32) {
-        self.draw_vector(ctx, tlx, tly, player.balance, max_speed, size, RGB::named(rltk::CYAN));
+    pub fn draw_speed(
+        &self,
+        ctx: &mut rltk::Rltk,
+        tlx: i32,
+        tly: i32,
+        player: &Player,
+        max_speed: f32,
+        size: u32,
+    ) {
+        self.draw_vector(
+            ctx,
+            tlx,
+            tly,
+            player.balance,
+            max_speed,
+            size,
+            RGB::named(rltk::CYAN),
+        );
     }
 
-    pub fn draw_vector(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, v: (f32, f32), max: f32, size: u32, color: RGB) {
+    pub fn draw_vector(
+        &self,
+        ctx: &mut rltk::Rltk,
+        tlx: i32,
+        tly: i32,
+        v: (f32, f32),
+        max: f32,
+        size: u32,
+        color: RGB,
+    ) {
         // draw border
-        ctx.draw_box(
-            tlx, tly, size * 2 + 1, size, color, RGB::named(rltk::BLACK));
+        ctx.draw_box(tlx, tly, size * 2 + 1, size, color, RGB::named(rltk::BLACK));
 
         // compute position of vector inside the rect
         // is p_x correct?
@@ -329,20 +402,45 @@ impl MainViewer {
             .clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
-        ctx.set(tlx + p_x, tly + p_y, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), rltk::to_cp437('*'));
+        ctx.set(
+            tlx + p_x,
+            tly + p_y,
+            RGB::named(rltk::WHITE),
+            RGB::named(rltk::BLACK),
+            rltk::to_cp437('*'),
+        );
     }
 
-    pub fn draw_msg_log(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, height: u32) {
-        ctx.draw_box(tlx, tly, self.max_message_length + 2, height, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK));
+    pub fn draw_msg_log(&self, ctx: &mut rltk::Rltk, tlx: i32, tly: i32, width: u32, height: u32) {
+        ctx.draw_box(
+            tlx,
+            tly,
+            width,
+            height,
+            RGB::named(rltk::WHITE),
+            RGB::named(rltk::BLACK),
+        );
 
         let mut l_index = (self.message_log.len() as i32 - 1) as i32;
         let mut scr_y = tly + height as i32 - 2;
 
         while scr_y > tly && l_index >= 0 {
-            if scr_y == height as i32 - 2 {
-                ctx.print_color(tlx + 1, scr_y, self.message_log[l_index as usize].1, RGB::named(rltk::BLACK), &self.message_log[l_index as usize].0);
+            if scr_y == tly + height as i32 - 2 {
+                ctx.print_color(
+                    tlx + 1,
+                    scr_y,
+                    self.message_log[l_index as usize].1,
+                    RGB::named(rltk::BLACK),
+                    &self.message_log[l_index as usize].0,
+                );
             } else {
-                ctx.print_color(tlx + 1, scr_y, RGB::named(rltk::DARKGREY), RGB::named(rltk::BLACK), &self.message_log[l_index as usize].0);
+                ctx.print_color(
+                    tlx + 1,
+                    scr_y,
+                    RGB::named(rltk::DARKGREY),
+                    RGB::named(rltk::BLACK),
+                    &self.message_log[l_index as usize].0,
+                );
             }
             scr_y -= 1;
             l_index -= 1;

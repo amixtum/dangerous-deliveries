@@ -14,4 +14,4 @@ opponents 32
 max_falls 3
 
 # opponents start chasing from this radius
-sight_radius 5
+sight_radius 8

@@ -16,8 +16,8 @@ pub fn main_menu_screen(ctx: &mut rltk::Rltk, width: u32, height: u32) {
     //left_col.push(("Set Level", Color::Magenta));
     //right_col.push("Press 2");
 
-    left_col.push(("Exit", RGB::named(rltk::RED)));
-    right_col.push("Press Q or Ctrl+C");
+    //left_col.push(("Exit", RGB::named(rltk::RED)));
+    //right_col.push("Press Q or Ctrl+C");
 
     let mut index = 0;
     let mut sc_y = 0;
@@ -25,24 +25,27 @@ pub fn main_menu_screen(ctx: &mut rltk::Rltk, width: u32, height: u32) {
     while index < left_col.len() {
         if index == 0 {
             ctx.print_color(
-                width as i32 / 4, 
-                sc_y + 1, 
-                left_col[index].1, 
-                RGB::named(rltk::BLACK), 
-                &left_col[index].0);
+                width as i32 / 4,
+                sc_y + 1,
+                left_col[index].1,
+                RGB::named(rltk::BLACK),
+                &left_col[index].0,
+            );
         } else {
             ctx.print_color(
-                1, 
-                sc_y, 
-                left_col[index].1, 
-                RGB::named(rltk::BLACK), 
-                &left_col[index].0);
+                1,
+                sc_y,
+                left_col[index].1,
+                RGB::named(rltk::BLACK),
+                &left_col[index].0,
+            );
             ctx.print_color(
-                width as i32 / 2, 
-                sc_y, 
-                left_col[index].1, 
-                RGB::named(rltk::BLACK), 
-                &right_col[index]);
+                width as i32 / 2,
+                sc_y,
+                left_col[index].1,
+                RGB::named(rltk::BLACK),
+                &right_col[index],
+            );
         }
 
         index += 1;

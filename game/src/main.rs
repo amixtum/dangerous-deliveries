@@ -4,13 +4,16 @@ pub mod raws;
 use game::Game;
 use rltk::BError;
 
-const WIDTH: u32 = 80;
-const HEIGHT: u32 = 50;
+const TABLEWIDTH: u32 = 80;
+const TABLEHEIGHT: u32 = 50;
+
+const WINDOWWIDTH: u32 = 80;
+const WINDOWHEIGHT: u32 = 50;
 
 fn main() -> BError {
     use rltk::RltkBuilder;
     let try_context = RltkBuilder::simple80x50()
-        .with_dimensions(WIDTH * 2, HEIGHT * 2)
+        .with_dimensions(WINDOWWIDTH * 2, WINDOWHEIGHT * 2)
         .with_title("Dangerous Deliveries")
         .build();
 
@@ -26,5 +29,5 @@ fn main() -> BError {
 
 fn load_game() -> Game {
     raws::load_raws();
-    Game::new(WIDTH, HEIGHT)
+    Game::new(TABLEWIDTH, TABLEHEIGHT)
 }

@@ -127,25 +127,8 @@ pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {
                 return Obstacle::Wall;
             }
         }
-        Obstacle::Rail(xdir, ydir) => {
+        Obstacle::Rail(_, _) => {
             if count_rail == 3 {
-                let dirs: Vec<Direction> = neighbors
-                    .iter()
-                    .map(|p| match obs_table.get_obstacle(p.0, p.1) {
-                        Obstacle::Rail(_, _) => {
-                            let dir = (p.0 - x, p.1 - y);
-                            if let Some(dir) = dir_map.get(&(dir.0, dir.1)) {
-                                return *dir;
-                            }
-                            return Direction::Center;
-                        }
-                        _ => Direction::Center,
-                    })
-                    .filter(|d| match d {
-                        Direction::Center => false,
-                        _ => true,
-                    })
-                    .collect();
                 return Obstacle::Platform;
             } else if count_rail < 2 {
                 return Obstacle::Wall;

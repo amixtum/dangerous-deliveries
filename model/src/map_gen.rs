@@ -267,12 +267,6 @@ pub fn apply_voronoi_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) 
     }
 }
 
-
-
-
-
-
-
 /*
 pub fn set_lsystem(&mut self, lsystem: LSystem) {
         self.lsystem = lsystem;

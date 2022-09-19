@@ -10,7 +10,6 @@ pub fn game_over_screen(
     _width: u32,
     height: u32,
 ) {
-
     ctx.print_color_centered(
         (height as i32 / 2) - 1,
         RGB::named(rltk::GREEN),
@@ -29,16 +28,10 @@ pub fn game_over_screen(
     } else {
         info.push_str(&format!("You delivered {} packages", player.n_delivered));
     }
-    ctx.print_centered(
-        height as i32 / 2,
-        &info,
-    );
+    ctx.print_centered(height as i32 / 2, &info);
 
     info.clear();
 
     info.push_str("Press R to restart. Press Esc to exit.");
-    ctx.print_centered(
-        (height as i32 / 2) + 1,
-        &info,
-    );
+    ctx.print_centered((height as i32 / 2) + 1, &info);
 }

@@ -34,8 +34,8 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     left_col.push(String::from("Wait"));
     right_col.push(String::from("Tab or Period"));
 
-    left_col.push(String::from("Apply Automata"));
-    right_col.push(String::from("G"));
+    //left_col.push(String::from("Apply Automata"));
+    //right_col.push(String::from("G"));
 
     left_col.push(String::from("Restart"));
     right_col.push(String::from("Enter"));
@@ -52,24 +52,29 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     while col < left_col.len() && col < right_col.len() {
         ctx.print(1, sc_y, &left_col[col]);
         ctx.print(width as i32 / 2, sc_y, &right_col[col]);
-        sc_y += 1;
+        sc_y += 2;
         col += 1;
     }
-
-
-    ctx.print_color(1, sc_y, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Color Coding");
-
-    sc_y += 1;
 
     ctx.print_color(
         1,
         sc_y,
-        RGB::from_u8(0,255,0),
+        RGB::named(rltk::YELLOW),
+        RGB::named(rltk::BLACK),
+        "Color Coding",
+    );
+
+    sc_y += 2;
+
+    ctx.print_color(
+        1,
+        sc_y,
+        RGB::from_u8(0, 255, 0),
         RGB::named(rltk::BLACK),
         "Fall Over or Game Over",
     );
 
-    sc_y += 1;
+    sc_y += 2;
 
     let title = "Balance Gradient: ";
     let ds = "Decrease Balance, ";
@@ -84,7 +89,7 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     );
 
     ctx.print_color(
-    title.chars().count() as i32 + 1,
+        title.chars().count() as i32 + 1,
         sc_y,
         RGB::from_u8(0, 0, 255),
         RGB::named(rltk::BLACK),
@@ -99,7 +104,7 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
         is,
     );
 
-    sc_y += 1;
+    sc_y += 2;
 
     ctx.print(1, sc_y, "Esc to Return");
 }
