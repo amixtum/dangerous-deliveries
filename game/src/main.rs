@@ -24,7 +24,6 @@ fn load_game() -> Result<Game, String> {
     let mut game_width = 80;
     let mut game_height = 20;
     let mut lsystem_path = "";
-    let mut table_path = "";
     let mut model_path = "";
     let mut game_conf_path = "";
 
@@ -68,8 +67,6 @@ fn load_game() -> Result<Game, String> {
                         lsystem_path = &words[1];
                     } else if words[0] == "model" {
                         model_path = &words[1];
-                    } else if words[0] == "table" {
-                        table_path = &words[1];
                     } else if words[0] == "game" {
                         game_conf_path = &words[1];
                     }
@@ -84,7 +81,6 @@ fn load_game() -> Result<Game, String> {
                 &format!("{}/config/{}", path, game_conf_path),
                 &format!("{}/config/{}", path, model_path),
                 &format!("{}/config/{}", path, lsystem_path),
-                &format!("{}/config/{}", path, table_path),
             ) {
                 return Ok(g);
             }

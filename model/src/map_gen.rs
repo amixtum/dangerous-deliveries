@@ -274,3 +274,168 @@ pub fn apply_voronoi_n2(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) 
         }
     }
 }
+
+
+
+
+
+
+
+/*
+pub fn set_lsystem(&mut self, lsystem: LSystem) {
+        self.lsystem = lsystem;
+        self.lsystem.update_n(self.lsystem.iterations);
+        self.regen_table();
+}
+
+fn _regen_turtles(&mut self) {
+    self._turtles.clear();
+    self._saved_positions.clear();
+
+    let x_skip = (self.width as i32 - self.width as i32 / 4) / self.lsystem.turtles as i32;
+    let y_skip = (self.height as i32 - self.height as i32 / 4) / self.lsystem.turtles as i32;
+
+    let mut p_x = self.width as i32 / 8;
+    let mut p_y = self.height as i32 / 8;
+    for _ in 0..self.lsystem.turtles {
+        let p_z: i32 = rand::thread_rng().gen_range(-1..=1);
+
+        let mut d_x: i32;
+        let mut d_y: i32;
+
+        let xdiff = p_x - self.width as i32 / 2;
+        let ydiff = p_y - self.height as i32 / 2;
+
+        if xdiff > 0 {
+            d_x = -1;
+        } else if xdiff == 0 {
+            d_x = 0;
+        } else {
+            d_x = 1;
+        }
+
+        if ydiff > 0 {
+            d_y = 1;
+        } else if xdiff == 0 {
+            d_y = 0;
+        } else {
+            d_y = -1;
+        }
+
+        while d_x == 0 && d_y == 0 {
+            d_x = rand::thread_rng().gen_range(-1..=1);
+            d_y = rand::thread_rng().gen_range(-1..=1);
+        }
+
+        self._turtles
+            .push(Turtle::new((p_x as i32, p_y as i32, p_z), (d_x, d_y, 0)));
+        self._saved_positions.push(Vec::new());
+
+        p_x += x_skip as i32;
+        p_y += y_skip as i32;
+    }
+}
+
+fn _compute_turtles(&mut self, letter: Alphabet) {
+    let mut turtle_index = 0;
+    while turtle_index < self._turtles.len() {
+        match letter {
+            Alphabet::Fwd => {
+                self._fwd_turtle(turtle_index);
+            }
+            Alphabet::Left => {
+                let direction = vec_ops::rotate_left((
+                    self._turtles[turtle_index].direction.0,
+                    self._turtles[turtle_index].direction.1,
+                ));
+                self._turtles[turtle_index].direction.0 = direction.0;
+                self._turtles[turtle_index].direction.1 = direction.1;
+            }
+            Alphabet::Right => {
+                let direction = vec_ops::rotate_right((
+                    self._turtles[turtle_index].direction.0,
+                    self._turtles[turtle_index].direction.1,
+                ));
+                self._turtles[turtle_index].direction.0 = direction.0;
+                self._turtles[turtle_index].direction.1 = direction.1;
+            }
+            Alphabet::Up => {
+                self._turtles[turtle_index].direction.2 += 1;
+            }
+            Alphabet::Down => {
+                self._turtles[turtle_index].direction.2 -= 1;
+            }
+            Alphabet::Place => {
+                self._place_turtle(turtle_index);
+            }
+            Alphabet::Save => {
+                self._saved_positions[turtle_index].push(self._turtles[turtle_index].position);
+            }
+            Alphabet::Return => {
+                if let Some(return_to) = self._saved_positions[turtle_index].pop() {
+                    self._turtles[turtle_index].position = return_to;
+                }
+            }
+            Alphabet::None => {}
+        }
+
+        turtle_index += 1;
+    }
+}
+
+fn _fwd_turtle(&mut self, turtle_index: usize) {
+    self._turtles[turtle_index].position.0 += self._turtles[turtle_index].direction.0;
+    self._turtles[turtle_index].position.1 += self._turtles[turtle_index].direction.1;
+    self._turtles[turtle_index].position.2 = 0;
+
+    if self._turtles[turtle_index].position.0 <= 0 {
+        self._turtles[turtle_index].direction.0 = 1;
+    } else if self._turtles[turtle_index].position.0 >= self.width as i32 - 1 {
+        self._turtles[turtle_index].direction.0 = -1;
+    }
+
+    if self._turtles[turtle_index].position.1 <= 0 {
+        self._turtles[turtle_index].direction.1 = 1;
+    } else if self._turtles[turtle_index].position.1 >= self.height as i32 - 1 {
+        self._turtles[turtle_index].direction.1 = -1;
+    }
+
+    self._turtles[turtle_index].position.0 = self._turtles[turtle_index]
+        .position
+        .0
+        .clamp(0, self.width as i32 - 1);
+    self._turtles[turtle_index].position.1 = self._turtles[turtle_index]
+        .position
+        .1
+        .clamp(0, self.height as i32 - 1);
+    self._turtles[turtle_index].position.2 = 0;
+}
+
+fn _place_turtle(&mut self, turtle_index: usize) {
+    if rand::thread_rng().gen_bool(self.pit_gen_p as f64) {
+        self._continue_rail = false;
+        if !(self._turtles[turtle_index].position.0 == self.width as i32 / 2
+            && self._turtles[turtle_index].position.1 == self.height as i32 / 2)
+        {
+            self.table[self._turtles[turtle_index].position.0 as usize]
+                [self._turtles[turtle_index].position.1 as usize] = Obstacle::Wall;
+        }
+    } else if self._continue_rail {
+        self.table[self._turtles[turtle_index].position.0 as usize]
+            [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail(
+            self._turtles[turtle_index].direction.0,
+            self._turtles[turtle_index].direction.1,
+        );
+    } else if rand::thread_rng().gen_bool(self.rail_gen_p as f64) {
+        self._continue_rail = true;
+        self.table[self._turtles[turtle_index].position.0 as usize]
+            [self._turtles[turtle_index].position.1 as usize] = Obstacle::Rail(
+            self._turtles[turtle_index].direction.0,
+            self._turtles[turtle_index].direction.1,
+        );
+    } else {
+        self.table[self._turtles[turtle_index].position.0 as usize]
+            [self._turtles[turtle_index].position.1 as usize] = Obstacle::Platform;
+    }
+}
+*/

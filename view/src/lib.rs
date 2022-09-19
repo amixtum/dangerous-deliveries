@@ -1,4 +1,3 @@
-pub mod file_chooser_viewer;
 pub mod gameover_viewer;
 pub mod help_viewer;
 pub mod main_menu_viewer;

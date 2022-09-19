@@ -1,14 +1,11 @@
 use console_engine::screen::Screen;
 
 use controller::player_controller::PlayerController;
-use util::files;
 
-use super::file_chooser_viewer;
 use super::gameover_viewer;
 use super::help_viewer;
 use super::main_menu_viewer;
 use super::main_viewer::MainViewer;
-use super::options_viewer;
 
 use model::goal_table::GoalTable;
 use model::obstacle_table::ObstacleTable;
@@ -41,22 +38,10 @@ impl ViewManager {
         fallover_threshold: f32,
         window_width: u32,
         window_height: u32,
-        current_lsystem: &str,
     ) -> Screen {
         match state {
             GameState::MainMenu => {
                 return main_menu_viewer::main_menu_screen(window_width, window_height);
-            }
-            GameState::SizeChooser => {
-                return options_viewer::size_chooser_viewer(window_width, window_height);
-            }
-            GameState::LSystemChooser(size_index) => {
-                return file_chooser_viewer::file_chooser_screen(
-                    window_width,
-                    window_height,
-                    &files::get_file_chooser_string(*size_index as u32),
-                    current_lsystem,
-                );
             }
             GameState::Help => {
                 return help_viewer::help_screen(window_width, window_height);

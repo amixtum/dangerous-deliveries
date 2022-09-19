@@ -1,5 +1,0 @@
-# probability the turtle generates a pit when executing Place
-pit_gen_p 0.5
-
-# probability the turtle generates a rail
-rail_gen_p 0.5

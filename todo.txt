@@ -1,39 +1,13 @@
-Weapons
+Weapons - 
   Ranged
 
-Menus
-  Main Menu +
-    map gen options
-      type
-        chooses an lsystem to use
-        options
-          a list of files matching lsystem*.txt in config directory
-      parameters
-        changes the way the lsystem is used in mapgen 
-        options
-          iterations
-            an integer
-          turtles
-            an integer
+Turtle Map Gen - 
 
-      size
-        sets the size of the game world
-        warns the player that they must update their lsystem parameters as well
-        proportionally sets the number of goals
-        options
-          small 
-            32, 16 
-          medium 
-            64, 32
-          large 
-            128, 64
-          very large
-            256, 128 
-        
-    difficulty levels -
-      chooses which model file to load (?)
-      chooses how many opponents to play against
-      options
-        easy
-        medium
-        hard
+Menus
+  Main Menu
+    Help +
+    Play +
+    Load - 
+    Options
+      Window Size -
+    Quit +

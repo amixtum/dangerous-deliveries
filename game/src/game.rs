@@ -6,7 +6,7 @@ use util::heap::Heap;
 
 use std::fs;
 
-use util::{files, vec_ops};
+use util::{vec_ops};
 
 use model::goal_table::GoalTable;
 use model::obstacle::Obstacle;
@@ -61,11 +61,10 @@ impl Game {
         conf_file: &str,
         model_file: &str,
         lsystem_file: &str,
-        table_file: &str,
     ) -> Result<Self, String> {
         if let Ok(engine) = ConsoleEngine::init(window_width, window_height, target_fps) {
             let mut g = Game {
-                obs_table: ObstacleTable::new(table_width, table_height, lsystem_file, table_file),
+                obs_table: ObstacleTable::new(table_width, table_height),
                 goal_table: GoalTable::new(),
 
                 viewer: ViewManager::new(),
@@ -248,7 +247,6 @@ impl Game {
             self.player_control.fallover_threshold,
             self.engine.get_width(),
             self.engine.get_height(),
-            &self.current_lsystem,
         );
         self.engine.print_screen(0, 0, &screen);
     }
@@ -257,12 +255,6 @@ impl Game {
         match self.state {
             GameState::MainMenu => {
                 return self.process_main_menu();
-            }
-            GameState::SizeChooser => {
-                return self.process_size_chooser();
-            }
-            GameState::LSystemChooser(_) => {
-                return self.process_lsystem_chooser();
             }
             GameState::Help => {
                 return self.process_help();
@@ -357,21 +349,6 @@ impl Game {
         } else if self.engine.is_key_pressed(KeyCode::Enter) {
             self.set_state(GameState::Restart);
         }
-        /*else if self.engine.is_key_pressed(KeyCode::Char('g')) {
-            if !self.applied_automata {
-                self.obs_table.apply_automata();
-                let w = self.obs_table.width() / 4;
-                let h = self.obs_table.height() / 4;
-                //apply_voronoi(&mut self.obs_table, w as usize * h as usize);
-                self.obs_table.set_obstacle(
-                    self.player.xy(),
-                    Obstacle::Platform(0),
-                );
-                self.clear_obstacles_at_goals();
-                self.applied_automata = true;
-                self.redraw = true;
-            }
-        }*/
         else {
             let keysv = self.player_control.get_keys();
             for keycode in keysv {
@@ -549,48 +526,6 @@ impl Game {
         self.redraw = true;
     }
 
-    fn process_lsystem_chooser(&mut self) -> bool {
-        if let GameState::LSystemChooser(size_index) = self.state {
-            let filenames =
-                files::get_config_filenames(&files::get_file_chooser_string(size_index as u32));
-            let mut index = 0;
-            while index < filenames.len() {
-                if let Some(c) = index.to_string().chars().nth(0) {
-                    if self.engine.is_key_pressed(KeyCode::Char(c)) {
-                        let mut lsystems =
-                            files::get_lsystems(&files::get_file_chooser_string(size_index as u32));
-                        self.current_lsystem.clear();
-                        self.current_lsystem.push_str(&filenames[index]);
-
-                        let lsystem = lsystems.remove(index);
-                        self.obs_table.set_lsystem(lsystem);
-
-                        self.goal_table.regen_goals(
-                            self.obs_table.width(),
-                            self.obs_table.height(),
-                            self.n_goals,
-                        );
-                        self.clear_obstacles_at_goals();
-                        self.player =
-                            PlayerController::reset_player_gameover(&self.obs_table, &self.player);
-                        self.obs_table
-                            .set_obstacle(self.player.xy(), Obstacle::Platform);
-                        self.opponents.clear();
-                        for _ in 0..self.n_opponents {
-                            self.add_opponent();
-                        }
-                        self.set_state(GameState::Playing);
-                        self.applied_automata = true;
-                        break;
-                    }
-                }
-                index += 1;
-            }
-        }
-
-        return true;
-    }
-
     fn reset_game(&mut self) {
         self.obs_table.regen_table();
         self.goal_table.regen_goals(
@@ -626,29 +561,5 @@ impl Game {
         for goal in self.goal_table.goals() {
             self.obs_table.set_obstacle(*goal, Obstacle::Platform);
         }
-    }
-
-    fn process_size_chooser(&mut self) -> bool {
-        if self.engine.is_key_pressed(KeyCode::Esc) {
-            self.set_state(GameState::MainMenu);
-        } else if self.engine.is_key_pressed(KeyCode::Char('0')) {
-            self.obs_table.resize(40, 20);
-            self.goal_table.regen_goals(
-                self.obs_table.width(),
-                self.obs_table.height(),
-                self.n_goals,
-            );
-            self.set_state(GameState::LSystemChooser(0));
-        } else if self.engine.is_key_pressed(KeyCode::Char('1')) {
-            self.obs_table.resize(80, 40);
-            self.goal_table.regen_goals(
-                self.obs_table.width(),
-                self.obs_table.height(),
-                self.n_goals,
-            );
-            self.set_state(GameState::LSystemChooser(1));
-        }
-
-        return true;
     }
 }
