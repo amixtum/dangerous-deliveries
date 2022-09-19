@@ -1,3 +1,5 @@
+use crate::player::Player;
+
 use super::obstacle::{Obstacle};
 use super::traversability::Traversability;
 
@@ -6,12 +8,14 @@ use util::vec_ops;
 
 use rand::Rng;
 
+use std::collections::{HashSet, HashMap};
 use std::fs;
 
 pub struct ObstacleTable {
     width: u32,
     height: u32,
     table: Vec<Vec<Obstacle>>,
+    pub blocked: HashMap<(i32, i32), Player>,
 
     lsystem: LSystem,
     _turtles: Vec<Turtle>,
@@ -27,6 +31,7 @@ impl ObstacleTable {
             width,
             height,
             table: Vec::new(),
+            blocked: HashMap::new(),
 
             lsystem: LSystem::from_file(lsystem_file),
             _turtles: Vec::new(),
@@ -79,7 +84,7 @@ impl ObstacleTable {
         let x_diff = to_x - from_x;
         let y_diff = to_y - from_y;
 
-        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 {
+        if to_x >= 0 && to_x < self.width as i32 && to_y >= 0 && to_y < self.height as i32 && !self.blocked.contains_key(&(to_x, to_y)){
             return x_diff.abs() <= 1 && y_diff.abs() <= 1;
         }
 

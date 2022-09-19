@@ -193,7 +193,7 @@ impl MainViewer {
         let mut sc_x = 0;
         let mut sc_y = 0;
 
-        let visible = visibility::get_visible(player.xy(), table, table.height() * 2);
+        let visible = visibility::get_visible(player.xy(), table, 160);
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
@@ -253,15 +253,19 @@ impl MainViewer {
                             for p in ai {
                                 if x == p.x() && y == p.y() {
                                     match p.recent_event {
-                                        /*
                                         PlayerEvent::FallOver => {
                                             screen.set_pxl(
                                                 sc_x,
                                                 sc_y,
-                                                pixel::pxl_fg('!', Color::Yellow),
+                                                pixel::pxl_fg('!', 
+                                                    Color::Rgb {
+                                                        r: (255.0f32) as u8,
+                                                        g: (127.0f32) as u8,
+                                                        b: 0,
+                                                    }
+                                                ), 
                                             );
                                         }
-                                        */
                                         _ => {
                                             screen.set_pxl(
                                                 sc_x,
@@ -269,8 +273,8 @@ impl MainViewer {
                                                 pixel::pxl_fg(
                                                     '@',
                                                     Color::Rgb {
-                                                        r: (255.0f32 * inv_dist) as u8,
-                                                        g: (127.0f32 * inv_dist) as u8,
+                                                        r: (255.0f32) as u8,
+                                                        g: (127.0f32) as u8,
                                                         b: 0,
                                                     },
                                                 ),

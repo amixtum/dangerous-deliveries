@@ -13,6 +13,8 @@ use model::player_event::PlayerEvent;
 
 use util::vec_ops;
 
+use crate::collision;
+
 pub struct PlayerController {
     key_map: HashMap<KeyCode, (f32, f32)>,
     pub speed_damp: f32,
@@ -711,7 +713,13 @@ impl PlayerController {
 
         // fallover if we cannot traverse to next_pos
         // and do not update the player's position
-        } else {
+        } 
+        else if let Some(collided) = table.blocked.get(&next_pos) {
+            if collided.x() != clone.x() || collided.y() != clone.y() {
+                clone = collision::collide(table, &clone, collided)
+            }
+        }
+        else {
             clone = PlayerController::fallover(table, player);
         }
 

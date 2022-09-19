@@ -1,4 +1,5 @@
 use console_engine::{ConsoleEngine, KeyCode, KeyModifiers, Color};
+use controller::collision;
 use model::{map_gen};
 use rand::Rng;
 use util::heap::Heap;
@@ -117,6 +118,8 @@ impl Game {
                 g.add_opponent();
             }
 
+            collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents);
+
             return Ok(g);
         }
         Err(format!(
@@ -205,7 +208,7 @@ impl Game {
         let done = self.handle_input();
 
         if self.first_draw {
-            //self.engine.clear_screen();
+            self.engine.clear_screen();
             self.print_screen();
             self.engine.draw();
             self.first_draw = false;
@@ -219,15 +222,8 @@ impl Game {
         if self.engine.is_key_pressed(KeyCode::Char('0')) {
         }
 
-        /*
-        for index in 0..self.opponents.len() {
-            self.process_ai(index);
-            self.redraw = true;
-        }
-        */
-
         if self.redraw {
-            //self.engine.clear_screen();
+            self.engine.clear_screen();
             self.print_screen();
             self.engine.draw();
         }
@@ -406,6 +402,8 @@ impl Game {
                                 self.process_ai(goes_next.0);
                             }
                         }
+
+                        collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents);
                     }
                     break;
                 }
@@ -436,6 +434,7 @@ impl Game {
         }
 
         //self.opponents[index].choose_goal(&self.goal_table);
+
 
         self.redraw = true;
     }
@@ -486,6 +485,7 @@ impl Game {
                 self.applied_automata = false;
             }
         }
+
     }
 
     // dummy state for the purposes of updating the view after process_move

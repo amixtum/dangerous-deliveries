@@ -2,7 +2,7 @@
 n_goals 8
 
 # number of opponents
-opponents 0
+opponents 32
 
 # number of falls before game over
 max_falls 3
