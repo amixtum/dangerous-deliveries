@@ -1,6 +1,6 @@
 use controller::player_controller::PlayerController;
 use model::visibility;
-use rltk::{FontCharType, RGB};
+use rltk::{FontCharType, RGB, Bresenham, Point};
 
 use std::collections::HashMap;
 
@@ -100,12 +100,14 @@ impl MainViewer {
         ai: &Vec<Player>,
         controller: &PlayerController,
         max_falls: u32,
-        _max_speed: f32,
+        max_speed: f32,
         fallover_threshold: f32,
         width: u32,
         height: u32,
     ) {
-        let msg_log_height = 8;
+        let speed_width = 8;
+        let speed_tlx = width - speed_width - 1;
+        let msg_log_height = speed_width as i32;
         let table_view_width = width;
 
         let table_view_height = height as i32 - msg_log_height - 1;
@@ -131,6 +133,8 @@ impl MainViewer {
             width - 1,
             msg_log_height as u32,
         );
+
+        self.draw_speed(ctx, speed_tlx as i32, msg_log_tl_y, player, max_speed, speed_width as u32);
 
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
@@ -374,7 +378,7 @@ impl MainViewer {
             ctx,
             tlx,
             tly,
-            player.balance,
+            player.speed,
             max_speed,
             size,
             RGB::named(rltk::CYAN),
@@ -392,16 +396,26 @@ impl MainViewer {
         color: RGB,
     ) {
         // draw border
-        ctx.draw_box(tlx, tly, size * 2 + 1, size, color, RGB::named(rltk::BLACK));
+        ctx.draw_box(tlx, tly, size, size, color, RGB::named(rltk::BLACK));
 
         // compute position of vector inside the rect
         // is p_x correct?
-        let p_x = (((v.0 / max) * (size as f32 * 2.0)).round() as i32 + (size as i32))
-            .clamp(0, size as i32 * 2);
+        let p_x = (((v.0 / max) * (size as f32)).round() as i32 + (size as i32 / 2))
+            .clamp(0, size as i32 - 1);
         let p_y = (((v.1 / max) * (size as f32)).round() as i32 + (size as i32 / 2))
             .clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
+        let lines = Bresenham::new(Point::new(tlx + (size as i32 / 2), tly + (size as i32 / 2)), Point::new(tlx + p_x, tly + p_y));
+        for point in lines {
+            ctx.set(
+                point.x,
+                point.y,
+                RGB::named(rltk::WHITE),
+                RGB::named(rltk::BLACK),
+                rltk::to_cp437('.'),
+            );
+        }
         ctx.set(
             tlx + p_x,
             tly + p_y,

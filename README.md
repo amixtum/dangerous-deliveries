@@ -8,6 +8,10 @@ It is your first day on the job as a delivery skater. Deliver all the packages, 
 
 If you have Rust installed already just type:
 
+    cargo build --release
+
+then
+
     cargo run
 
 Otherwise install Rust first

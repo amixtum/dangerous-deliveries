@@ -113,9 +113,7 @@ impl GameState for Game {
             ctx.cls();
             self.print_screen(ctx);
             self.first_draw = false;
-        }
-
-        if self.redraw {
+        } else if self.redraw {
             ctx.cls();
             self.print_screen(ctx);
         }
@@ -603,6 +601,8 @@ impl Game {
         }
 
         map_gen::tunnel_position(&mut self.obs_table, self.player.position);
+
+        collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents, &self.waiting_to_respawn_idx);
     }
 
     fn reset_player_continue(&mut self) {

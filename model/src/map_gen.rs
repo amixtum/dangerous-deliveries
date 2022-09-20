@@ -17,10 +17,10 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
     directions.push((0, 1));
     directions.push((-1, 0));
     directions.push((1, 0));
-    directions.push((-1, -1));
-    directions.push((1, -1));
-    directions.push((-1, 1));
-    directions.push((1, 1));
+    //directions.push((-1, -1));
+    //directions.push((1, -1));
+    //directions.push((-1, 1));
+    //directions.push((1, 1));
 
     let mut iters = vec![(x, y); directions.len()];
     let mut one_done = false;
