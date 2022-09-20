@@ -32,7 +32,7 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     right_col.push(String::from("Z or B"));
 
     left_col.push(String::from("Wait"));
-    right_col.push(String::from("Tab or Period"));
+    right_col.push(String::from("1 or Period"));
 
     //left_col.push(String::from("Apply Automata"));
     //right_col.push(String::from("G"));
@@ -43,8 +43,8 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     left_col.push(String::from("Menu"));
     right_col.push(String::from("Esc"));
 
-    left_col.push(String::from("Exit Game"));
-    right_col.push(String::from("Ctrl+C"));
+    //left_col.push(String::from("Exit Game"));
+    //right_col.push(String::from("Ctrl+C"));
 
     let mut col = 0;
     let mut sc_y = 0;

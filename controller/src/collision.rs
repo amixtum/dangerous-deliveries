@@ -1,15 +1,20 @@
+use std::collections::HashSet;
+
 use model::{obstacle::Obstacle, obstacle_table::ObstacleTable, player::Player};
 use util::vec_ops;
 
 use crate::ai_controller::AIController;
 
-pub fn update_blocked(table: &mut ObstacleTable, human: &Player, ai: &Vec<AIController>) {
+pub fn update_blocked(table: &mut ObstacleTable, human: &Player, ai: &Vec<AIController> , dead: &HashSet<u32>) {
     table.blocked.clear();
     table.blocked.insert(human.position, Player::clone(human));
-    for p in ai.iter() {
-        table
-            .blocked
-            .insert(p.player.position, Player::clone(&p.player));
+    for p in ai.iter().enumerate() {
+        if !dead.contains(&(p.0 as u32)) {
+            table
+                .blocked
+                .insert(p.1.player.position, Player::clone(&p.1.player));
+        }
+
     }
 }
 

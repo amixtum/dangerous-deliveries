@@ -8,6 +8,7 @@ pub fn get_visible(
     diameter: u32,
 ) -> HashSet<(i32, i32)> {
     let mut visible = HashSet::new();
+    let mut tries = 0;
 
     let directions = [(0, -1), (0, 1), (-1, 0), (1, 0)];
     let diags = [(1, 1), (1, -1), (-1, 1), (-1, -1)];
@@ -26,7 +27,12 @@ pub fn get_visible(
     for iter in iters.iter_mut() {
         iter.1.insert(center);
     }
-    let iters_done = |iters: &HashMap<(i32, i32), HashSet<(i32, i32)>>| {
+    let mut iters_done = |iters: &HashMap<(i32, i32), HashSet<(i32, i32)>>| {
+        if tries >= diameter * directions.len() as u32 {
+            return true;
+        }
+
+        tries += 1;
         for iter in iters.iter() {
             if iter.1.len() < diameter as usize {
                 return false;

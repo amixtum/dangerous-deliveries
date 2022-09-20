@@ -5,7 +5,8 @@ use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 
-use rltk::RandomNumberGenerator;
+use model::visibility;
+use rltk::{RandomNumberGenerator, Point, DistanceAlg};
 use util::vec_ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -36,8 +37,30 @@ impl AIController {
         self.goal = (-1, -1);
     }
 
-    pub fn choose_goal(&mut self, player: &Player) {
-        self.goal = player.position;
+    pub fn set_goal(&mut self, pos: (i32, i32)) {
+        self.goal = pos;
+    }
+
+    pub fn choose_goal(&mut self, obs_table: &ObstacleTable, sight_radius: u32) {
+        let mut rng = RandomNumberGenerator::new();
+        let ai_player = &self.player;
+        let visible = visibility::get_visible(ai_player.position, obs_table, sight_radius * 2);
+        let visible = visible.iter().filter(|p| {
+            obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
+        }).collect::<Vec<_>>();
+        let potential_goals = visible.iter().filter(|p| {
+            (rltk::DistanceAlg::Pythagoras.distance2d(Point::new(ai_player.x(), ai_player.y()), Point::new(p.0, p.1)) >= sight_radius as f32) &&
+            obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
+        }).collect::<Vec<_>>();
+
+        if let Some(goal) = rng.random_slice_entry(&potential_goals) {
+            self.set_goal(***goal);
+        }
+        else if let Some(goal) = rng.random_slice_entry(&visible) {
+            self.set_goal(**goal);
+        } else {
+            self.set_goal((obs_table.width() as i32 / 2, obs_table.height() as i32 / 2));
+        }
     }
 
     pub fn move_player(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) {
@@ -47,8 +70,8 @@ impl AIController {
         self.player = self.next_move(obs_table, player_control);
     }
 
-    pub fn reached_goal(&self) -> bool {
-        self.player.x() == self.goal.0 && self.player.y() == self.goal.1
+    pub fn reached_goal(&self, radius: f32) -> bool {
+        DistanceAlg::Pythagoras.distance2d(Point::new(self.player.x(), self.player.y()), Point::new(self.goal.0, self.goal.1)) <= radius
     }
 
     pub fn next_move(
@@ -56,14 +79,14 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Player {
-        let mut rng = RandomNumberGenerator::new();
+        //let mut rng = RandomNumberGenerator::new();
         let try_platform = self.next_platform(obs_table, player_control);
 
         // if the only platform is the one the player is standing on,
         // try again, this time including rails
         // dont' exclude the possibility of staying in place indefinitely
         if try_platform.x() == self.player.x() && try_platform.y() == self.player.y() {
-            let mut moves = AIController::get_moves(&self.player, obs_table, player_control);
+            let mut moves = self.get_moves(&self.player, obs_table, player_control);
 
             if moves.len() > 0 {
                 moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
@@ -91,8 +114,7 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Player {
-        let mut rng = RandomNumberGenerator::new();
-        let mut moves = AIController::get_moves_platform(&self.player, obs_table, player_control);
+        let mut moves = self.get_moves_platform(&self.player, obs_table, player_control);
 
         if moves.len() > 0 {
             moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
@@ -103,9 +125,6 @@ impl AIController {
                 match moves[1].0.recent_event {
                     PlayerEvent::FallOver |
                     PlayerEvent::GameOver(_) => {
-                        if rng.roll_dice(1, 100) < 10 {
-                            return moves[1].0;
-                        }
                         return moves[0].0;
                     }
                     _ => {
@@ -121,6 +140,7 @@ impl AIController {
     }
 
     pub fn get_moves(
+        &self,
         player: &Player,
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
@@ -140,9 +160,10 @@ impl AIController {
                     falls.push((mov, 999.0));
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
+                    Obstacle::Wall |
                     Obstacle::Pit => {}
                     _ => {
-                        moves.push((mov, (1.0 / (1.0 + vec_ops::magnitude(mov.speed)))));
+                        moves.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                     }
                 },
             }
@@ -158,6 +179,7 @@ impl AIController {
     }
 
     pub fn get_moves_platform(
+        &self,
         player: &Player,
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
@@ -173,11 +195,11 @@ impl AIController {
             match mov.recent_event {
                 PlayerEvent::GameOver(_) => {}
                 PlayerEvent::FallOver => {
-                    falls.push((mov, (1.0 / (vec_ops::magnitude(mov.speed) + 1.0))));
+                    falls.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
                     Obstacle::Platform => {
-                        moves.push((mov, (1.0 / (vec_ops::magnitude(mov.speed) + 1.0))));
+                        moves.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                     }
                     _ => {}
                 },

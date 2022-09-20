@@ -1,4 +1,4 @@
-use rltk::{RandomNumberGenerator, VirtualKeyCode};
+use rltk::{VirtualKeyCode};
 
 use std::collections::HashMap;
 //use std::f32::consts::PI;
@@ -280,28 +280,9 @@ impl PlayerController {
         clone
     }
 
-    pub fn reset_ai_continue(table: &ObstacleTable, player: &Player) -> Player {
-        let mut rng = RandomNumberGenerator::new();
+    pub fn reset_ai_continue(player: &Player, x: i32, y: i32) -> Player {
         let mut clone = Player::clone(player);
-        let mut x = rng.range(
-            table.width() as i32 / 2 - table.width() as i32 / 8,
-            table.width() as i32 / 2 + table.width() as i32 / 8,
-        );
-        let mut y = rng.range(
-            table.height() as i32 / 2 - table.height() as i32 / 8,
-            table.height() as i32 / 2 + table.height() as i32 / 8,
-        );
 
-        while x == table.width() as i32 / 2 && y == table.height() as i32 / 2 {
-            x = rng.range(
-                table.width() as i32 / 2 - table.width() as i32 / 8,
-                table.width() as i32 / 2 + table.width() as i32 / 8,
-            );
-            y = rng.range(
-                table.height() as i32 / 2 - table.height() as i32 / 8,
-                table.height() as i32 / 2 + table.height() as i32 / 8,
-            );
-        }
         clone.position = (x, y);
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);

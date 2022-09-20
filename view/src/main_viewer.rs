@@ -280,7 +280,7 @@ impl MainViewer {
                         Obstacle::Pit => {}
                         _ => {
                             for p in ai {
-                                if x == p.x() && y == p.y() {
+                                if x == p.x() && y == p.y() && table.blocked.contains_key(&(x, y)) {
                                     match p.recent_event {
                                         PlayerEvent::FallOver => {
                                             ctx.set(

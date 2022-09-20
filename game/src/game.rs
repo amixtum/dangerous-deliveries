@@ -1,5 +1,7 @@
+use std::collections::HashSet;
+
 use controller::collision;
-use model::map_gen;
+use model::{map_gen};
 use rltk::{GameState, RandomNumberGenerator, VirtualKeyCode, RGB};
 use util::heap::Heap;
 
@@ -28,12 +30,15 @@ pub struct Game {
     opponents: Vec<AIController>,
     lookmode: LookMode,
 
-    player: Player,
+    pub player: Player,
 
-    max_falls: u32,
-    n_goals: u32,
-    n_opponents: u32,
-    sight_radius: u32,
+    pub max_falls: u32,
+    pub n_goals: u32,
+    pub n_opponents: u32,
+    pub ai_sight_radius: u32,
+    pub giveup_turns: u32,
+    turns_to_giveup: Vec<u32>,
+    waiting_to_respawn_idx: HashSet<u32>,
 
     state: ProcState,
     last_state: ProcState,
@@ -61,7 +66,10 @@ impl Game {
             max_falls: 4,
             n_goals: 4,
             n_opponents: 2,
-            sight_radius: 8,
+            ai_sight_radius: 8,
+            giveup_turns: 3,
+            turns_to_giveup: Vec::new(),
+            waiting_to_respawn_idx: HashSet::new(),
 
             state: ProcState::MainMenu,
             last_state: ProcState::MainMenu,
@@ -80,8 +88,7 @@ impl Game {
 
 impl GameState for Game {
     fn tick(&mut self, ctx: &mut rltk::BTerm) {
-        // doens't work on web
-        /*
+        // crashes the page on the web 
         match ctx.key {
             None => {}
             Some(key) => match key {
@@ -93,7 +100,6 @@ impl GameState for Game {
                 _ => {}
             }
         }
-        */
 
         let _playing = self.handle_input(ctx);
 
@@ -135,40 +141,31 @@ impl Game {
             g.add_opponent();
         }
 
-        collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents);
+        collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents, &g.waiting_to_respawn_idx);
     }
     // regen opponent
     fn add_opponent(&mut self) {
         let mut rng = RandomNumberGenerator::new();
-        let mut x = (self.obs_table.width() as i32 / 2)
+        let x = (self.obs_table.width() as i32 / 2)
             + rng.range(
                 -(self.obs_table.width() as i32) / 2 + 1,
                 self.obs_table.width() as i32 / 2,
             )
             - 1;
-        let mut y = (self.obs_table.height() as i32 / 2)
+        let y = (self.obs_table.height() as i32 / 2)
             + rng.range(
                 -(self.obs_table.height() as i32) / 2 + 1,
                 self.obs_table.height() as i32 / 2 - 1,
             );
 
-        while x == self.player.x() && y == self.player.y() {
-            x = (self.obs_table.width() as i32 / 2)
-                + rng.range(
-                    -(self.obs_table.width() as i32) / 2 + 1,
-                    self.obs_table.width() as i32 / 2 - 1,
-                );
-            y = (self.obs_table.height() as i32 / 2)
-                + rng.range(
-                    -(self.obs_table.height() as i32) / 2 + 1,
-                    self.obs_table.height() as i32 / 2 - 1,
-                );
+        if !(x == self.player.x() && y == self.player.y()) &&
+            !self.obs_table.blocked.contains_key(&(x, y)) {
+            self.opponents.push(AIController::new(x, y));
+            self.turns_to_giveup.push(self.giveup_turns);
+            self.obs_table.set_obstacle((x, y), Obstacle::Platform);
+
+            map_gen::tunnel_position(&mut self.obs_table, (x, y));
         }
-
-        self.opponents.push(AIController::new(x, y));
-        self.obs_table.set_obstacle((x, y), Obstacle::Platform);
-
-        map_gen::tunnel_position(&mut self.obs_table, (x, y));
     }
 
     pub fn properties_from_file(&mut self) {
@@ -203,9 +200,13 @@ impl Game {
                 if let Ok(num) = words[1].parse::<u32>() {
                     self.n_opponents = num;
                 }
-            } else if words[0] == "sight_radius" {
+            } else if words[0] == "ai_sight_radius" {
                 if let Ok(num) = words[1].parse::<u32>() {
-                    self.sight_radius = num;
+                    self.ai_sight_radius = num;
+                }
+            } else if words[0] == "giveup_turns" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    self.giveup_turns = num;
                 }
             }
         }
@@ -365,14 +366,14 @@ impl Game {
 
                             // insert the human player
                             heap.insert(
-                                (100.0 / vec_ops::magnitude(self.player.speed)) as u32,
+                                (100.0 / (1.0 + vec_ops::magnitude(self.player.speed))) as u32,
                                 (999, PlayerType::Human),
                             );
 
                             // insert the ai opponents
                             for index in 0..self.opponents.len() {
                                 heap.insert(
-                                    (100.0 / vec_ops::magnitude(self.opponents[index].player.speed))
+                                    (100.0 / (1.0 + vec_ops::magnitude(self.opponents[index].player.speed)))
                                         as u32,
                                     (index, PlayerType::AI),
                                 );
@@ -393,6 +394,7 @@ impl Game {
                                     &mut self.obs_table,
                                     &self.player,
                                     &self.opponents,
+                                    &self.waiting_to_respawn_idx
                                 );
                             }
                             break;
@@ -406,27 +408,61 @@ impl Game {
     }
 
     fn process_ai(&mut self, index: usize) {
-        let p = &self.opponents[index].player;
-        if vec_ops::magnitude((
-            (p.x() - self.player.x()) as f32,
-            (p.y() - self.player.y()) as f32,
-        )) <= self.sight_radius as f32
-        {
-            self.opponents[index].choose_goal(&self.player);
-        } else {
-            self.opponents[index].goal = (-1, -1);
+        if self.waiting_to_respawn_idx.contains(&(index as u32)) {
+            let mut rng = RandomNumberGenerator::new();
+            let x = (self.obs_table.width() as i32 / 2)
+                + rng.range(
+                    -(self.obs_table.width() as i32) / 2 + 1,
+                    self.obs_table.width() as i32 / 2,
+                )
+                - 1;
+            let y = (self.obs_table.height() as i32 / 2)
+                + rng.range(
+                    -(self.obs_table.height() as i32) / 2 + 1,
+                    self.obs_table.height() as i32 / 2 - 1,
+                );
+
+            if !self.obs_table.blocked.contains_key(&(x, y)) &&
+                self.obs_table.get_obstacle(x, y) == Obstacle::Platform {
+                // we found an empty space to respawn
+                self.opponents[index].player = PlayerController::reset_ai_continue(&self.opponents[index].player, x, y);
+                self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);
+                self.turns_to_giveup[index] = self.giveup_turns;
+                self.waiting_to_respawn_idx.remove(&(index as u32));
+            }
+            return;
         }
+
+        if self.opponents[index].goal.0 == -1 || self.opponents[index].goal.1 == -1 {
+            self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);
+        }
+        let last_pos = self.opponents[index].player.position;
+
         self.opponents[index].move_player(&self.obs_table, &self.player_control);
+        let new_pos = self.opponents[index].player.position;
+
+        if last_pos.0 == new_pos.0 && last_pos.1 == new_pos.1 {
+            self.turns_to_giveup[index] -= 1;
+        }
+
+        if self.opponents[index].reached_goal(3.0) || self.turns_to_giveup[index] <= 0 {
+            self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);
+            self.turns_to_giveup[index] = self.giveup_turns;
+        }
 
         if self.goal_table.count() <= 0 {
             self.set_state(ProcState::GameOver);
             self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
-        } else if let PlayerEvent::GameOver(_) = self.opponents[index].player.recent_event {
-            self.opponents[index].player =
-                PlayerController::reset_ai_continue(&self.obs_table, &self.opponents[index].player);
-        } else if self.opponents[index].player.n_falls >= self.max_falls as i32 {
-            self.opponents[index].player =
-                PlayerController::reset_ai_continue(&self.obs_table, &self.opponents[index].player);
+        } 
+        else if let PlayerEvent::GameOver(_) = self.opponents[index].player.recent_event {
+            self.waiting_to_respawn_idx.insert(index as u32);
+
+            //self.obs_table.set_obstacle((x, y), Obstacle::Platform);
+            //map_gen::tunnel_position(&mut self.obs_table, (x, y));
+
+        } 
+        else if self.opponents[index].player.n_falls >= self.max_falls as i32 {
+            self.waiting_to_respawn_idx.insert(index as u32);
         }
 
         //self.opponents[index].choose_goal(&self.goal_table);
@@ -561,6 +597,7 @@ impl Game {
             .set_obstacle(self.player.xy(), Obstacle::Platform);
 
         self.opponents.clear();
+        self.turns_to_giveup.clear();
         for _ in 0..self.n_opponents {
             self.add_opponent();
         }
