@@ -176,7 +176,7 @@ impl Game {
         let raw_data = rltk::embedding::EMBED
             .lock()
             .get_resource(
-                "/home/ganiparrott/src/projects/rust_book/roguelike/raws/game.txt".to_string(),
+                "raws/game.txt".to_string(),
             )
             .unwrap();
         let raw_string =
