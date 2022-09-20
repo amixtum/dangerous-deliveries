@@ -8,7 +8,7 @@ game_height 40
 n_goals 8
 
 # number of opponents
-opponents 32
+opponents 8
 
 # number of falls before game over
 max_falls 3

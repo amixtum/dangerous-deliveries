@@ -64,13 +64,21 @@ impl AIController {
         // dont' exclude the possibility of staying in place indefinitely
         if try_platform.x() == self.player.x() && try_platform.y() == self.player.y() {
             let mut moves = AIController::get_moves(&self.player, obs_table, player_control);
-            moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
 
             if moves.len() > 0 {
-                if rng.roll_dice(1, 100) < 77 || moves.len() == 1 {
+                moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
+                if moves.len() == 1 {
                     return moves[0].0;
                 } else if moves.len() > 1 {
-                    return moves[1].0;
+                    match moves[1].0.recent_event {
+                        PlayerEvent::FallOver |
+                        PlayerEvent::GameOver(_) => {
+                            return moves[0].0;
+                        }
+                        _ => {
+                            return moves[1].0;
+                        }
+                    }
                 }
             }
         }
@@ -89,10 +97,21 @@ impl AIController {
         if moves.len() > 0 {
             moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
 
-            if rng.roll_dice(1, 100) < 77 || moves.len() == 1 {
+            if moves.len() == 1 {
                 return moves[0].0;
             } else if moves.len() > 1 {
-                return moves[1].0;
+                match moves[1].0.recent_event {
+                    PlayerEvent::FallOver |
+                    PlayerEvent::GameOver(_) => {
+                        if rng.roll_dice(1, 100) < 10 {
+                            return moves[1].0;
+                        }
+                        return moves[0].0;
+                    }
+                    _ => {
+                        return moves[1].0;
+                    }
+                }
             }
         }
 

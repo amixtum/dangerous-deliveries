@@ -156,7 +156,7 @@ impl PlayerController {
 
         // wait
         pc.key_map.insert(VirtualKeyCode::Period, (0.0, 0.0));
-        pc.key_map.insert(VirtualKeyCode::Tab, (0.0, 0.0));
+        pc.key_map.insert(VirtualKeyCode::Key1, (0.0, 0.0));
 
         pc
     }
