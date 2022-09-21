@@ -8,13 +8,13 @@ game_height 40
 n_goals 16
 
 # number of opponents
-opponents 32
+opponents 16
 
 # number of falls before game over
-max_falls 2
+max_falls 1
 
 # opponents use this to determine where to go next 
-ai_sight_radius 32
+ai_sight_radius 24
 
 # turns before the ai chooses a new goal after stalling
 giveup_turns 3

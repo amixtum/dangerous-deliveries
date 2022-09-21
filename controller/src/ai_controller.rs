@@ -44,7 +44,9 @@ impl AIController {
     pub fn choose_goal(&mut self, obs_table: &ObstacleTable, sight_radius: u32) {
         let mut rng = RandomNumberGenerator::new();
         let ai_player = &self.player;
-        let visible = visibility::get_visible(ai_player.position, obs_table, sight_radius * 2);
+        let speed_units = vec_ops::discrete_jmp(ai_player.speed);
+        let center = (ai_player.x() + (speed_units.0 as f32 * ai_player.speed_x() * sight_radius as f32) as i32, ai_player.y() + (speed_units.1 as f32 * ai_player.speed_y() * sight_radius as f32) as i32);
+        let visible = visibility::get_visible(center, obs_table, sight_radius * 2);
         let visible = visible.iter().filter(|p| {
             obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
         }).collect::<Vec<_>>();

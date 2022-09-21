@@ -62,7 +62,7 @@ impl ObstacleTable {
         let x_diff = to_x - from_x;
         let y_diff = to_y - from_y;
 
-        if self.blocked.contains_key(&(to_x, to_y)) && !(from_x == to_x && from_y == to_y) {
+        if (self.blocked.contains_key(&(to_x, to_y)) && !(from_x == to_x && from_y == to_y)) || self.get_obstacle(to_x, to_y) == Obstacle::Wall {
             return false;
         }
 

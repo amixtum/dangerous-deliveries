@@ -492,7 +492,7 @@ impl PlayerController {
 
             let diff = (last_speed.0 - inst_v.0, last_speed.1 - inst_v.1);
 
-            let dotp = vec_ops::dot(inst_v, last_speed).abs();
+            let dotp = vec_ops::dot(inst_v, last_speed);
 
             let turn = (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed) - dotp)
                 / (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
