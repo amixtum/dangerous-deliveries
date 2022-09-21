@@ -1,5 +1,6 @@
 pub mod game;
 pub mod raws;
+pub mod spawning;
 
 use game::Game;
 use rltk::BError;

@@ -1,7 +1,5 @@
 Dangerous Deliveries:
-  It is your first day on the job as a delivery skater in the Grind Zone
-  Grind, skate, and reshape the world around you to deliver all the packages
-, no matter what.
+
 
   Mechanics:
     The Player can move from one point to another, where each point
@@ -10,7 +8,7 @@ Dangerous Deliveries:
     in order to better simulate running.
 
     Space:
-      Every point has an (x, y, height) position vector
+      Every point has an (x, y) position vector
 
     Movement:
       Pressing a movement key (8 directional) sets the instantaneous

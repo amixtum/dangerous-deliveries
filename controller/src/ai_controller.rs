@@ -97,6 +97,7 @@ impl AIController {
                 } else if moves.len() > 1 {
                     match moves[1].0.recent_event {
                         PlayerEvent::FallOver |
+                        PlayerEvent::Respawn |
                         PlayerEvent::GameOver(_) => {
                             return moves[0].0;
                         }
@@ -126,6 +127,7 @@ impl AIController {
             } else if moves.len() > 1 {
                 match moves[1].0.recent_event {
                     PlayerEvent::FallOver |
+                    PlayerEvent::Respawn |
                     PlayerEvent::GameOver(_) => {
                         return moves[0].0;
                     }
@@ -157,7 +159,7 @@ impl AIController {
             let mov = player_control.move_player(&obs_table, &player, key);
 
             match mov.recent_event {
-                PlayerEvent::GameOver(_) => {}
+                PlayerEvent::GameOver(_) | PlayerEvent::Respawn => {}
                 PlayerEvent::FallOver => {
                     falls.push((mov, 999.0));
                 }
@@ -195,7 +197,7 @@ impl AIController {
         for key in player_control.get_keys() {
             let mov = player_control.move_player(&obs_table, &player, key);
             match mov.recent_event {
-                PlayerEvent::GameOver(_) => {}
+                PlayerEvent::GameOver(_) | PlayerEvent::Respawn => {}
                 PlayerEvent::FallOver => {
                     falls.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                 }

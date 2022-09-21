@@ -130,7 +130,7 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
 
 // tunnels into the nearest open space
 pub fn tunnel_goals(table: &mut ObstacleTable, goals: &GoalTable) {
-    for goal in goals.goals() {
+    for goal in goals.goals.keys() {
         tunnel_position(table, *goal);
     }
 }
@@ -158,6 +158,7 @@ pub fn voronoi_mapgen(obs_table: &mut ObstacleTable, goals: &GoalTable) {
     obstacle_automata::apply_automata(obs_table);
     //obstacle_automata::apply_automata(obs_table);
     tunnel_goals(obs_table, goals);
+
 }
 
 pub fn apply_voronoi_inv(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {

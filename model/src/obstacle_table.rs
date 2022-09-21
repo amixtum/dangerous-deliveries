@@ -1,4 +1,6 @@
+use petgraph::prelude::UnGraphMap;
 use rltk::{Algorithm2D, Point, BaseMap};
+use util::vec_ops;
 
 use crate::player::Player;
 
@@ -11,6 +13,7 @@ pub struct ObstacleTable {
     width: u32,
     height: u32,
     table: Vec<Vec<Obstacle>>,
+    pub graph: UnGraphMap<(i32, i32), i32>,
     pub blocked: HashMap<(i32, i32), Player>,
     pub revelead: HashSet<(i32, i32)>,
 }
@@ -45,6 +48,7 @@ impl ObstacleTable {
             table: Vec::new(),
             blocked: HashMap::new(),
             revelead: HashSet::new(),
+            graph: UnGraphMap::new(),
         };
 
         for x in 0..width {
@@ -118,6 +122,26 @@ impl ObstacleTable {
         }
 
         return Traversability::No;
+    }
+
+    pub fn populate_graph(&mut self) {
+        for x in 0..self.width {
+            for y in 0..self.height {
+                if self.get_obstacle(x as i32, y as i32) == Obstacle::Platform {
+                    self.graph.add_node((x as i32, y as i32));
+                }
+            }
+        } 
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let nbrs = vec_ops::neighbors((x as i32, y as i32), (0, 0), (self.width as i32 - 1, self.height as i32 - 1));
+                for nbr in nbrs.iter() {
+                    if self.get_obstacle(nbr.0, nbr.1) == Obstacle::Platform {
+                        self.graph.add_edge((x as i32, y as i32), *nbr, 1);
+                    }
+                }
+            }
+        } 
     }
 
     pub fn set_obstacle(&mut self, (x, y): (i32, i32), obs: Obstacle) {

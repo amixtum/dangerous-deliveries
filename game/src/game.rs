@@ -20,6 +20,8 @@ use controller::ai_controller::AIController;
 use controller::look_mode::LookMode;
 use controller::player_controller::PlayerController;
 
+use crate::spawning;
+
 pub struct Game {
     obs_table: ObstacleTable,
     goal_table: GoalTable,
@@ -31,14 +33,15 @@ pub struct Game {
     lookmode: LookMode,
 
     pub player: Player,
+    pub recipient_idx: i32,
 
     pub max_falls: u32,
-    pub n_goals: u32,
     pub n_opponents: u32,
     pub ai_sight_radius: u32,
     pub giveup_turns: u32,
     turns_to_giveup: Vec<u32>,
     waiting_to_respawn_idx: HashSet<u32>,
+    shirt_colors: [RGB; 8],
 
     state: ProcState,
     last_state: ProcState,
@@ -62,14 +65,16 @@ impl Game {
             lookmode: LookMode::new(),
 
             player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
+            recipient_idx: -1,
 
             max_falls: 4,
-            n_goals: 4,
             n_opponents: 2,
             ai_sight_radius: 8,
             giveup_turns: 3,
             turns_to_giveup: Vec::new(),
             waiting_to_respawn_idx: HashSet::new(),
+            shirt_colors: [RGB::named(rltk::CYAN), RGB::named(rltk::MAGENTA), RGB::named(rltk::AQUAMARINE), RGB::named(rltk::FORESTGREEN),
+                                    RGB::named(rltk::YELLOWGREEN), RGB::named(rltk::YELLOW), RGB::named(rltk::BROWN1), RGB::named(rltk::GRAY)],
 
             state: ProcState::MainMenu,
             last_state: ProcState::MainMenu,
@@ -124,22 +129,7 @@ impl Game {
     fn init(g: &mut Game) {
         g.properties_from_file();
 
-        g.goal_table
-            .regen_goals(g.obs_table.width(), g.obs_table.height(), g.n_goals);
-
-        map_gen::voronoi_mapgen(&mut g.obs_table, &g.goal_table);
-
-        g.clear_obstacles_at_goals();
-
-        g.obs_table.set_obstacle(g.player.xy(), Obstacle::Platform);
-
-        map_gen::tunnel_position(&mut g.obs_table, g.player.position);
-
-        for _ in 0..g.n_opponents {
-            g.add_opponent();
-        }
-
-        collision::update_blocked(&mut g.obs_table, &g.player, &g.opponents, &g.waiting_to_respawn_idx);
+        g.reset_game();
     }
     // regen opponent
     fn add_opponent(&mut self) {
@@ -186,11 +176,7 @@ impl Game {
             }
 
             let words: Vec<&str> = line.split_ascii_whitespace().collect();
-            if words[0] == "n_goals" {
-                if let Ok(num) = words[1].parse::<u32>() {
-                    self.n_goals = num;
-                }
-            } else if words[0] == "max_falls" {
+            if words[0] == "max_falls" {
                 if let Ok(num) = words[1].parse::<u32>() {
                     self.max_falls = num;
                 }
@@ -215,19 +201,14 @@ impl Game {
         self.process(ctx)
     }
 
-    fn ai_vec(&self) -> Vec<Player> {
-        self.opponents.iter().map(|item| item.player).collect()
-    }
-
     pub fn print_screen(&mut self, ctx: &mut rltk::Rltk) {
-        let aivec = self.ai_vec();
         self.viewer.get_screen(
             ctx,
             &self.state,
             &mut self.obs_table,
             &self.goal_table,
             &self.player,
-            &aivec,
+            &self.opponents,
             &self.player_control,
             self.max_falls,
             self.player_control.max_speed,
@@ -254,8 +235,8 @@ impl Game {
             ProcState::PostMove => {
                 return self.process_post_move();
             }
-            ProcState::DeliveredPackage(x, y) => {
-                return self.process_delivered(x, y);
+            ProcState::GotPackage(x, y) => {
+                return self.process_got_package(x, y);
             }
             ProcState::LookMode => {
                 return self.process_lookmode(ctx);
@@ -448,17 +429,11 @@ impl Game {
             self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);
             self.turns_to_giveup[index] = self.giveup_turns;
         }
-
-        if self.goal_table.count() <= 0 {
-            self.set_state(ProcState::GameOver);
-            self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
-        } 
         else if let PlayerEvent::GameOver(_) = self.opponents[index].player.recent_event {
             self.waiting_to_respawn_idx.insert(index as u32);
-
-            //self.obs_table.set_obstacle((x, y), Obstacle::Platform);
-            //map_gen::tunnel_position(&mut self.obs_table, (x, y));
-
+        } 
+        else if self.opponents[index].player.recent_event == PlayerEvent::Respawn {
+            self.waiting_to_respawn_idx.insert(index as u32);
         } 
         else if self.opponents[index].player.n_falls >= self.max_falls as i32 {
             self.waiting_to_respawn_idx.insert(index as u32);
@@ -477,20 +452,15 @@ impl Game {
         self.player = result;
 
         // check if we reached a goal
-        if self.goal_table.remove_goal_if_reached(self.player.xy()) {
-            self.set_state(ProcState::DeliveredPackage(
+        if self.goal_table.at_goal(self.player.xy()) {
+            self.set_state(ProcState::GotPackage(
                 self.player.x(),
                 self.player.y(),
             ));
         }
 
-        // check if the player has reached all the goals
-        if self.goal_table.count() <= 0 {
-            self.set_state(ProcState::GameOver);
-            self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
-        }
         // check if move player returned a player with a GameOver event
-        else if let PlayerEvent::GameOver(_) = self.player.recent_event {
+        if self.player.recent_event == PlayerEvent::Respawn  {
             self.reset_player_continue();
         }
         // check if the player's hp has reached 0
@@ -501,7 +471,7 @@ impl Game {
         // after computing the result of the turn
         else {
             self.set_state(match self.state {
-                ProcState::DeliveredPackage(x, y) => ProcState::DeliveredPackage(x, y),
+                ProcState::GotPackage(x, y) => ProcState::GotPackage(x, y),
                 _ => ProcState::PostMove,
             });
         }
@@ -520,9 +490,7 @@ impl Game {
     // dummy state for the purposes of updating the view after process_move
     fn process_post_move(&mut self) -> bool {
         self.set_state(ProcState::Playing);
-        self.viewer
-            .main_view
-            .add_message(&self.obs_table, &self.player, &self.player.recent_event);
+
         return true;
     }
 
@@ -530,7 +498,7 @@ impl Game {
         match ctx.key {
             None => {}
             Some(key) => match key {
-                VirtualKeyCode::Return => {
+                VirtualKeyCode::Escape => {
                     self.set_state(ProcState::MainMenu);
                 }
                 _ => {
@@ -562,14 +530,24 @@ impl Game {
         return true;
     }
 
-    fn process_delivered(&mut self, _x: i32, _y: i32) -> bool {
-        self.player.n_delivered += 1;
+    fn process_got_package(&mut self, x: i32, y: i32) -> bool {
+        if let Some(idx_color) = self.goal_table.goals.get(&(x, y)) {
+            let mut rng = RandomNumberGenerator::new();
 
-        self.viewer
-            .main_view
-            .add_string(String::from("Delivered"), RGB::named(rltk::BLUE));
+            self.recipient_idx = idx_color.0 as i32;
+            self.viewer
+                .main_view
+                .add_string(String::from("Picked up package, find the skater wearing this color shirt"), idx_color.1);
+            
+            self.goal_table.add_goal(
+                spawning::random_platform(&self.obs_table), 
+                (rng.range(0, self.opponents.len()), idx_color.1));
 
-        self.set_state(ProcState::Playing);
+            self.set_state(ProcState::Playing);
+        }
+
+        self.goal_table.remove_goal_if_reached((x, y));
+
         return true;
     }
 
@@ -580,18 +558,30 @@ impl Game {
     }
 
     fn reset_game(&mut self) {
+        let mut rng = RandomNumberGenerator::new();
+
+        self.obs_table.revelead.clear();
         self.obs_table.regen_table();
-        self.goal_table.regen_goals(
-            self.obs_table.width(),
-            self.obs_table.height(),
-            self.n_goals,
-        );
 
         map_gen::voronoi_mapgen(&mut self.obs_table, &self.goal_table);
 
+        let mut aiidx = rng.range(0, self.opponents.len());
+        while aiidx == self.recipient_idx as usize {
+            aiidx = rng.range(0, self.opponents.len());
+        }
+        self.recipient_idx = aiidx as i32;
+
+        let coloridx = rng.range(0, self.shirt_colors.len());
+        self.goal_table.add_goal(
+            spawning::tunnel_spawn(&mut self.obs_table), 
+            (aiidx, self.shirt_colors[coloridx]));
+
+
         self.clear_obstacles_at_goals();
 
-        self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player);
+        let (x, y) = spawning::tunnel_spawn(&mut self.obs_table);
+
+        self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player, x, y);
         self.obs_table
             .set_obstacle(self.player.xy(), Obstacle::Platform);
 
@@ -604,17 +594,22 @@ impl Game {
         map_gen::tunnel_position(&mut self.obs_table, self.player.position);
 
         collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents, &self.waiting_to_respawn_idx);
+
+        self.obs_table.populate_graph();
+
+        self.recipient_idx = -1;
     }
 
     fn reset_player_continue(&mut self) {
-        self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player);
+        let spawn_at = spawning::random_platform(&self.obs_table);
+        self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player, spawn_at.0, spawn_at.1);
         self.obs_table
             .set_obstacle(self.player.xy(), Obstacle::Platform);
         self.redraw = true;
     }
 
     fn clear_obstacles_at_goals(&mut self) {
-        for goal in self.goal_table.goals() {
+        for goal in self.goal_table.goals.keys() {
             self.obs_table.set_obstacle(*goal, Obstacle::Platform);
         }
     }

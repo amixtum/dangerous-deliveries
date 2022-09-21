@@ -6,4 +6,5 @@ pub enum PlayerEvent {
     OffRail,
     FallOver,
     GameOver(i32),
+    Respawn,
 }

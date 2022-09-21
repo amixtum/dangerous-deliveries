@@ -254,9 +254,9 @@ impl PlayerController {
         );
     }
 
-    pub fn reset_player_gameover(table: &ObstacleTable, player: &Player) -> Player {
+    pub fn reset_player_gameover(_table: &ObstacleTable, player: &Player, x: i32, y: i32) -> Player {
         let mut clone = Player::clone(player);
-        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2);
+        clone.position = (x, y);
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
@@ -266,10 +266,10 @@ impl PlayerController {
         clone
     }
 
-    pub fn reset_player_continue(table: &ObstacleTable, player: &Player) -> Player {
+    pub fn reset_player_continue(_table: &ObstacleTable, player: &Player, x: i32, y: i32) -> Player {
         let mut clone = Player::clone(player);
         let last_pos = clone.position;
-        clone.position = (table.width() as i32 / 2, table.height() as i32 / 2);
+        clone.position = (x, y);
         clone.speed = (0.0, 0.0);
         clone.balance = (0.0, 0.0);
         clone.n_falls = 0;
@@ -277,6 +277,7 @@ impl PlayerController {
             clone.x() as f32 - last_pos.0 as f32,
             clone.y() as f32 - last_pos.1 as f32,
         )) / 2.0;
+        clone.recent_event = PlayerEvent::Respawn;
         clone
     }
 
@@ -340,7 +341,7 @@ impl PlayerController {
         // fall into a pit. Game Over
         if let Obstacle::Pit = table.get_obstacle(next_pos.0, next_pos.1) {
             // reset the player
-            return PlayerController::reset_player_continue(table, &player);
+            player.recent_event = PlayerEvent::Respawn;
         }
 
         if let Obstacle::Wall = table.get_obstacle(next_pos.0, next_pos.1) {
@@ -389,7 +390,7 @@ impl PlayerController {
                     }
                 }
                 if !found {
-                    clone = PlayerController::reset_player_continue(table, player);
+                    clone.recent_event = PlayerEvent::Respawn;
                 }
             }
             _ => {}
@@ -497,8 +498,8 @@ impl PlayerController {
 
             let dotp = vec_ops::dot(inst_v, last_speed);
 
-            let turn = (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed) - dotp)
-                / (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
+            let turn = (2.0 * vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed) - dotp)
+                / (2.0 * vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
 
             clone.balance.0 += diff.1.signum() as f32 * turn * turn_fact;
 
@@ -678,7 +679,7 @@ impl PlayerController {
                         _ => {}
                     },
                     Obstacle::Pit => {
-                        clone.recent_event = PlayerEvent::GameOver(clone.time.round() as i32);
+                        clone.recent_event = PlayerEvent::Respawn;
                     }
                     Obstacle::Rail(_, _) => {
                         clone.recent_event = PlayerEvent::OnRail;

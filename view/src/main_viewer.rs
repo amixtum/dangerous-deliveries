@@ -1,3 +1,4 @@
+use controller::ai_controller::AIController;
 use controller::player_controller::PlayerController;
 use model::visibility;
 use rltk::{FontCharType, RGB, Bresenham, Point};
@@ -97,7 +98,7 @@ impl MainViewer {
         table: &mut ObstacleTable,
         goals: &GoalTable,
         player: &Player,
-        ai: &Vec<Player>,
+        ai: &Vec<AIController>,
         controller: &PlayerController,
         max_falls: u32,
         max_speed: f32,
@@ -138,8 +139,8 @@ impl MainViewer {
 
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
-        s.push_str(&format!(", Deliveries Left: {}, ", goals.count()));
-        s.push_str(&format!("HP: {}, ", max_falls as i32 - player.n_falls));
+        //s.push_str(&format!(", Deliveries Left: {}, ", goals.count()));
+        s.push_str(&format!(" HP: {}, ", max_falls as i32 - player.n_falls));
         s.push_str("Help: press Esc");
 
         ctx.print_color(
@@ -162,7 +163,7 @@ impl MainViewer {
         table: &mut ObstacleTable,
         goals: &GoalTable,
         player: &Player,
-        ai: &Vec<Player>,
+        ai: &Vec<AIController>,
         controller: &PlayerController,
         width: u32,
         height: u32,
@@ -223,7 +224,7 @@ impl MainViewer {
                     if dist.round() as i32 == 0 {
                         inv_dist = 1.0;
                     } else {
-                        inv_dist = 4.0 / dist;
+                        inv_dist = 4.0 / dist.sqrt();
                     }
                     match mov.recent_event {
                         PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
@@ -246,20 +247,11 @@ impl MainViewer {
                         }
                     }
 
-                    for goal in goals.goals() {
+                    for goal in goals.goals.keys() {
                         if x == goal.0 && y == goal.1 {
-                            match t {
-                                Traversability::No => {
-                                    ctx.set(
-                                        sc_x,
-                                        sc_y,
-                                        RGB::from_f32(inv_dist, inv_dist, inv_dist),
-                                        RGB::named(rltk::BLACK),
-                                        rltk::to_cp437('$'),
-                                    );
-                                }
-                                _ => match mov.recent_event {
-                                    PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
+                            if visible.contains(&Point::new(x, y)) {
+                                match t {
+                                    Traversability::No => {
                                         ctx.set(
                                             sc_x,
                                             sc_y,
@@ -268,17 +260,29 @@ impl MainViewer {
                                             rltk::to_cp437('$'),
                                         );
                                     }
-                                    _ => {
-                                        ctx.set(
-                                            sc_x,
-                                            sc_y,
-                                            RGB::from_f32(1.0, 0.0, 0.0),
-                                            RGB::named(rltk::WHITE),
-                                            rltk::to_cp437('$'),
-                                        );
-                                    }
-                                },
+                                    _ => match mov.recent_event {
+                                        PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {
+                                            ctx.set(
+                                                sc_x,
+                                                sc_y,
+                                                RGB::from_f32(inv_dist, inv_dist, inv_dist),
+                                                RGB::named(rltk::BLACK),
+                                                rltk::to_cp437('$'),
+                                            );
+                                        }
+                                        _ => {
+                                            ctx.set(
+                                                sc_x,
+                                                sc_y,
+                                                RGB::from_f32(1.0, 0.0, 0.0),
+                                                RGB::named(rltk::WHITE),
+                                                rltk::to_cp437('$'),
+                                            );
+                                        }
+                                    },
+                                }
                             }
+
                             break;
                         }
                     }
@@ -286,14 +290,20 @@ impl MainViewer {
                     match obstacle_type {
                         Obstacle::Pit => {}
                         _ => {
-                            for p in ai {
-                                if x == p.x() && y == p.y() && table.blocked.contains_key(&(x, y)) {
-                                    match p.recent_event {
+                            for p in ai.iter().enumerate() {
+                                let mut color = RGB::from_f32(inv_dist, inv_dist * 0.5, 0.0);
+                                for idx_color in goals.goals.values() {
+                                    if idx_color.0 == p.0 {
+                                        color = idx_color.1;
+                                    }
+                                }
+                                if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) && visible.contains(&Point::new(x, y)) {
+                                    match p.1.player.recent_event {
                                         PlayerEvent::FallOver => {
                                             ctx.set(
                                                 sc_x,
                                                 sc_y,
-                                                RGB::from_f32(1.0, 0.5, 0.0),
+                                                color,
                                                 RGB::named(rltk::BLACK),
                                                 rltk::to_cp437('!'),
                                             );
@@ -302,9 +312,9 @@ impl MainViewer {
                                             ctx.set(
                                                 sc_x,
                                                 sc_y,
-                                                RGB::from_f32(1.0, 0.5, 0.0),
+                                                RGB::from_f32(inv_dist, inv_dist * 0.5, 0.0),
                                                 RGB::named(rltk::BLACK),
-                                                rltk::to_cp437('@'),
+                                                rltk::to_cp437('☻'),
                                             );
                                         }
                                     }
@@ -318,7 +328,7 @@ impl MainViewer {
                                         ctx.set(
                                             sc_x,
                                             sc_y,
-                                            RGB::named(rltk::YELLOW),
+                                            RGB::named(rltk::WHITE),
                                             RGB::named(rltk::BLACK),
                                             rltk::to_cp437('!'),
                                         );
@@ -329,7 +339,7 @@ impl MainViewer {
                                             sc_y,
                                             RGB::named(rltk::WHITE),
                                             RGB::named(rltk::BLACK),
-                                            rltk::to_cp437('@'),
+                                            rltk::to_cp437('☺'),
                                         );
                                     }
                                 }
@@ -410,7 +420,14 @@ impl MainViewer {
 
         // indicate speed with this symbol
         let lines = Bresenham::new(Point::new(tlx + (size as i32 / 2), tly + (size as i32 / 2)), Point::new(tlx + p_x, tly + p_y));
-        for point in lines {
+        ctx.set(
+            tlx + (size as i32 / 2),
+            tly + (size as i32 / 2),
+            RGB::named(rltk::WHITE),
+            RGB::named(rltk::BLACK),
+            rltk::to_cp437('o'),
+        );
+        for point in lines.skip(1) {
             ctx.set(
                 point.x,
                 point.y,
@@ -442,23 +459,14 @@ impl MainViewer {
         let mut scr_y = tly + height as i32 - 2;
 
         while scr_y > tly && l_index >= 0 {
-            if scr_y == tly + height as i32 - 2 {
-                ctx.print_color(
-                    tlx + 1,
-                    scr_y,
-                    self.message_log[l_index as usize].1,
-                    RGB::named(rltk::BLACK),
-                    &self.message_log[l_index as usize].0,
-                );
-            } else {
-                ctx.print_color(
-                    tlx + 1,
-                    scr_y,
-                    RGB::named(rltk::DARKGREY),
-                    RGB::named(rltk::BLACK),
-                    &self.message_log[l_index as usize].0,
-                );
-            }
+            ctx.print_color(
+                tlx + 1,
+                scr_y,
+                self.message_log[l_index as usize].1,
+                RGB::named(rltk::BLACK),
+                &self.message_log[l_index as usize].0,
+            );
+
             scr_y -= 1;
             l_index -= 1;
         }
@@ -467,92 +475,6 @@ impl MainViewer {
     pub fn add_string(&mut self, s: String, c: RGB) {
         self.message_log.push((s, c));
         if self.message_log.len() > self.log_length {
-            self.message_log.remove(0);
-        }
-    }
-
-    pub fn add_message(&mut self, table: &ObstacleTable, player: &Player, event: &PlayerEvent) {
-        let mut message = String::new();
-        let mut color = RGB::named(rltk::WHITE);
-        match event {
-            PlayerEvent::Move => match table.get_obstacle(player.x(), player.y()) {
-                Obstacle::Platform => message.push_str("On Platform"),
-                Obstacle::Pit => {
-                    message.push_str("Restart");
-                    color = RGB::named(rltk::RED);
-                }
-                Obstacle::Rail(xdir, ydir) => {
-                    message.push_str("Grinding ");
-                    message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                    color = RGB::named(rltk::CYAN);
-                }
-                _ => {}
-            },
-            PlayerEvent::Wait => match table.get_obstacle(player.x(), player.y()) {
-                Obstacle::Platform => message.push_str("Waiting"),
-                Obstacle::Pit => {
-                    message.push_str("Restart");
-                    color = RGB::named(rltk::RED);
-                }
-                Obstacle::Rail(xdir, ydir) => {
-                    message.push_str("Stalled ");
-                    message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                    color = RGB::named(rltk::MAGENTA);
-                }
-                _ => {}
-            },
-            PlayerEvent::FallOver => match table.get_obstacle(player.x(), player.y()) {
-                Obstacle::Platform => {
-                    message.push_str("Fell over");
-                    color = RGB::named(rltk::RED);
-                }
-                Obstacle::Pit => {
-                    message.push_str("Restart");
-                }
-                Obstacle::Rail(_, _) => {
-                    message.push_str("Fell over");
-                    color = RGB::named(rltk::RED);
-                }
-                _ => {}
-            },
-            PlayerEvent::OffRail => {
-                match table.get_obstacle(player.x(), player.y()) {
-                    Obstacle::Platform => message.push_str("On Platform"),
-                    Obstacle::Pit => {
-                        message.push_str("Restart");
-                    }
-                    Obstacle::Rail(xdir, ydir) => {
-                        message.push_str("Grinding ");
-                        message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                        color = RGB::named(rltk::CYAN);
-                    }
-                    _ => {}
-                }
-                //Obstacle::Rail(_, _) => message.push_str("Rail hop!"),
-            }
-            PlayerEvent::OnRail => match table.get_obstacle(player.x(), player.y()) {
-                Obstacle::Platform => message.push_str("On Platform"),
-                Obstacle::Pit => {
-                    message.push_str("Restart");
-                    color = RGB::named(rltk::RED);
-                }
-                Obstacle::Rail(xdir, ydir) => {
-                    message.push_str("Grinding ");
-                    message.push_str(&MainViewer::direction_string((xdir, ydir)));
-                    color = RGB::named(rltk::CYAN);
-                }
-                _ => {}
-            },
-
-            PlayerEvent::GameOver(_) => {
-                message.push_str("Restart");
-                color = RGB::named(rltk::RED);
-            }
-        }
-
-        self.message_log.push((message, color));
-
-        if self.message_log.len() >= self.log_length {
             self.message_log.remove(0);
         }
     }

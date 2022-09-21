@@ -6,7 +6,8 @@ pub enum ProcState {
     Playing,
     PostMove,
     Restart,
-    DeliveredPackage(i32, i32),
+    GotPackage(i32, i32),
+    DeliveredPackage, // ???
     LookMode,
     LookedAt(String),
 }

@@ -1,28 +1,25 @@
-use std::collections::HashSet;
+use std::{collections::{HashMap}};
 
-use rltk::RandomNumberGenerator;
+use rltk::RGB;
 
 pub struct GoalTable {
-    goals: HashSet<(i32, i32)>,
-    rng: RandomNumberGenerator,
+    pub goals: HashMap<(i32, i32), (usize, RGB)>,
+    index_map: HashMap<usize, (i32, i32)>,
 }
 
 impl GoalTable {
     pub fn new() -> Self {
         GoalTable {
-            goals: HashSet::new(),
-            rng: RandomNumberGenerator::new(),
+            goals: HashMap::new(),
+            index_map: HashMap::new(),
         }
     }
 }
 
 impl GoalTable {
-    pub fn goals(&self) -> &HashSet<(i32, i32)> {
-        &self.goals
-    }
-
-    pub fn add_goal(&mut self, goal: (i32, i32)) {
-        self.goals.insert(goal);
+    pub fn add_goal(&mut self, goal: (i32, i32), dest: (usize, RGB)) {
+        self.goals.insert(goal, dest);
+        self.index_map.insert(dest.0, goal);
     }
 
     pub fn count(&self) -> usize {
@@ -36,18 +33,23 @@ impl GoalTable {
         return false;
     }
 
-    pub fn remove_goal_if_reached(&mut self, (x, y): (i32, i32)) -> bool {
-        self.goals.remove(&(x, y))
+    pub fn remove_goal_index(&mut self, index: usize) -> bool {
+        if let Some(entry) = self.index_map.remove(&index) {
+            match self.goals.remove(&entry) {
+                    None => return false,
+                    Some(_) => return true,
+            }
+        }
+        false
     }
 
-    pub fn regen_goals(&mut self, width: u32, height: u32, count: u32) {
-        self.goals.clear();
-
-        for _ in 0..count {
-            let p_x = width as i32 / 2 + self.rng.range(-(width as i32 / 2) + 1, width as i32 / 2 - 1);
-            let p_y = height as i32 / 2 + self.rng.range(-(height as i32 / 2) + 1, height as i32 / 2 - 1);
-
-            self.goals.insert((p_x, p_y));
+    pub fn remove_goal_if_reached(&mut self, (x, y): (i32, i32)) -> bool {
+        match self.goals.remove(&(x, y)) {
+            None => false,
+            Some(entry) => match self.index_map.remove(&entry.0) {
+                None => false,
+                Some(_) => true,
+            }
         }
     }
 }

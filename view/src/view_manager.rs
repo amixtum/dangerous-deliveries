@@ -1,3 +1,4 @@
+use controller::ai_controller::AIController;
 use controller::player_controller::PlayerController;
 
 use super::gameover_viewer;
@@ -30,7 +31,7 @@ impl ViewManager {
         obs_table: &mut ObstacleTable,
         goal_table: &GoalTable,
         player: &Player,
-        ai: &Vec<Player>,
+        ai: &Vec<AIController>,
         controller: &PlayerController,
         max_falls: u32,
         max_speed: f32,
@@ -57,7 +58,7 @@ impl ViewManager {
             }
             ProcState::Playing
             | ProcState::PostMove
-            | ProcState::DeliveredPackage(..)
+            | ProcState::GotPackage(..)
             | ProcState::LookedAt(_)
             | ProcState::LookMode
             | ProcState::Restart => {
