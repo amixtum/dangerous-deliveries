@@ -1,3 +1,5 @@
+use rltk::{Algorithm2D, Point, BaseMap};
+
 use crate::player::Player;
 
 use super::obstacle::Obstacle;
@@ -10,6 +12,28 @@ pub struct ObstacleTable {
     height: u32,
     table: Vec<Vec<Obstacle>>,
     pub blocked: HashMap<(i32, i32), Player>,
+}
+
+impl BaseMap for ObstacleTable {
+    fn is_opaque(&self, idx: usize) -> bool {
+        let pt = self.index_to_point2d(idx);
+        self.get_obstacle(pt.x, pt.y) != Obstacle::Platform ||
+        self.blocked.contains_key(&(pt.x, pt.y)) 
+    }
+}
+
+impl Algorithm2D for ObstacleTable {
+    fn dimensions(&self) -> rltk::Point {
+        Point::new(self.width, self.height)
+    }
+
+    fn index_to_point2d(&self, idx: usize) -> Point {
+        Point::new(idx % self.width as usize, idx / self.width as usize)
+    }
+
+    fn point2d_to_index(&self, pt: Point) -> usize {
+        (pt.y * self.width as i32 + pt.x) as usize
+    }
 }
 
 impl ObstacleTable {

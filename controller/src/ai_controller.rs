@@ -46,8 +46,8 @@ impl AIController {
         let ai_player = &self.player;
         let speed_units = vec_ops::discrete_jmp(ai_player.speed);
         let center = (ai_player.x() + (speed_units.0 as f32 * ai_player.speed_x() * sight_radius as f32) as i32, ai_player.y() + (speed_units.1 as f32 * ai_player.speed_y() * sight_radius as f32) as i32);
-        let visible = visibility::get_visible(center, obs_table, sight_radius * 2);
-        let visible = visible.iter().filter(|p| {
+        let visible = visibility::get_fov(center, obs_table, sight_radius as i32);
+        let visible = visible.iter().map(|p| {(p.x, p.y)}).filter(|p| {
             obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
         }).collect::<Vec<_>>();
         let potential_goals = visible.iter().filter(|p| {
@@ -56,10 +56,10 @@ impl AIController {
         }).collect::<Vec<_>>();
 
         if let Some(goal) = rng.random_slice_entry(&potential_goals) {
-            self.set_goal(***goal);
+            self.set_goal(**goal);
         }
         else if let Some(goal) = rng.random_slice_entry(&visible) {
-            self.set_goal(**goal);
+            self.set_goal(*goal);
         } else {
             self.set_goal((obs_table.width() as i32 / 2, obs_table.height() as i32 / 2));
         }

@@ -401,9 +401,9 @@ impl PlayerController {
     fn get_scaled((inst_x, inst_y): (f32, f32), inst_length: f32) -> (f32, f32) {
         let norm_inst = vec_ops::normalize((inst_x, inst_y));
         if !f32::is_nan(norm_inst.0) {
-            let units = vec_ops::discrete_jmp(norm_inst);
+            let units = vec_ops::discrete_jmp((inst_x, inst_y));
             if inst_length.abs() < 1.0 {
-                if units.0 == 1 && units.1 == 1 {
+                if units.0.abs() == 1 && units.1.abs() == 1 {
                     return (
                         norm_inst.0 * inst_length.sqrt(),
                         norm_inst.1 * inst_length.sqrt(),
@@ -412,7 +412,7 @@ impl PlayerController {
                     return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
                 }
             } else {
-                if units.0 == 1 && units.1 == 1 {
+                if units.0.abs() == 1 && units.1.abs() == 1 {
                     return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
                 } else {
                     return (
@@ -480,12 +480,15 @@ impl PlayerController {
         if vec_ops::magnitude(clone.speed) >= max_speed {
             clone.speed.0 *= max_speed / vec_ops::magnitude(clone.speed);
             clone.speed.1 *= max_speed / vec_ops::magnitude(clone.speed);
-        } else if vec_ops::magnitude(clone.speed) <= 0.25 {
+        } else if vec_ops::magnitude(clone.speed) < 0.5 {
             clone.speed.0 = 0.0;
             clone.speed.1 = 0.0;
         }
 
         let norm_last_speed = vec_ops::normalize(last_speed);
+
+        clone.balance.0 = clone.balance.0 * balance_damp;
+        clone.balance.1 = clone.balance.1 * balance_damp;
 
         if !f32::is_nan(norm_inst.0) && !f32::is_nan(norm_last_speed.0) {
             let inst_v = PlayerController::get_scaled((inst_x, inst_y), inst_length);
@@ -497,27 +500,15 @@ impl PlayerController {
             let turn = (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed) - dotp)
                 / (vec_ops::magnitude(inst_v) * vec_ops::magnitude(last_speed));
 
-            clone.balance.0 =
-                clone.balance.0 * balance_damp + diff.1.signum() as f32 * turn * turn_fact;
+            clone.balance.0 += diff.1.signum() as f32 * turn * turn_fact;
 
-            clone.balance.1 =
-                clone.balance.1 * balance_damp - diff.0.signum() as f32 * turn * turn_fact;
+            clone.balance.1 += diff.0.signum() as f32 * turn * turn_fact;
 
             //clone.balance.0 += norm_inst.0 * turn_fact;
             //clone.balance.1 += norm_inst.1 * turn_fact;
-        } else {
-            clone.balance.0 = clone.balance.0 * balance_damp;
-            clone.balance.1 = clone.balance.1 * balance_damp;
-
-            /*
-            if !f32::is_nan(norm_inst.0) {
-                clone.balance.0 += norm_inst.0 * turn_fact;
-                clone.balance.1 += norm_inst.1 * turn_fact;
-            }
-            */
         }
 
-        if vec_ops::magnitude(clone.balance) <= 0.25 {
+        if vec_ops::magnitude(clone.balance) <= 0.33 {
             clone.balance = (0.0, 0.0);
         }
 

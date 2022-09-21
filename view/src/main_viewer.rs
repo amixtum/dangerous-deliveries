@@ -196,11 +196,11 @@ impl MainViewer {
         let mut sc_x = sc_tlx;
         let mut sc_y = sc_tly;
 
-        let visible = visibility::get_visible(player.xy(), table, 512);
+        let visible = visibility::get_fov(player.xy(), table, 16);
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                if visible.contains(&(x, y)) || (player.x() == x && player.y() == y) {
+                if visible.contains(&Point::new(x, y)) || (player.x() == x && player.y() == y) {
                     let obstacle_type = table.get_obstacle(x, y);
 
                     let t = table.traversability((player.x(), player.y()), (x, y));
