@@ -27,7 +27,7 @@ impl ViewManager {
         &mut self,
         ctx: &mut rltk::Rltk,
         state: &ProcState,
-        obs_table: &ObstacleTable,
+        obs_table: &mut ObstacleTable,
         goal_table: &GoalTable,
         player: &Player,
         ai: &Vec<Player>,
@@ -50,7 +50,7 @@ impl ViewManager {
                 gameover_viewer::game_over_screen(
                     ctx,
                     obs_table,
-                    &player,
+                    player,
                     window_width,
                     window_height,
                 );
@@ -65,9 +65,9 @@ impl ViewManager {
 
                 return self.main_view.draw_layout(
                     ctx,
-                    &obs_table,
-                    &goal_table,
-                    &player,
+                    obs_table,
+                    goal_table,
+                    player,
                     ai,
                     controller,
                     max_falls,

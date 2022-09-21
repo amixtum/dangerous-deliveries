@@ -14,7 +14,7 @@ opponents 16
 max_falls 1
 
 # opponents use this to determine where to go next 
-ai_sight_radius 24
+ai_sight_radius 16
 
 # turns before the ai chooses a new goal after stalling
 giveup_turns 3

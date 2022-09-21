@@ -94,7 +94,7 @@ impl MainViewer {
     pub fn draw_layout(
         &self,
         ctx: &mut rltk::Rltk,
-        table: &ObstacleTable,
+        table: &mut ObstacleTable,
         goals: &GoalTable,
         player: &Player,
         ai: &Vec<Player>,
@@ -159,7 +159,7 @@ impl MainViewer {
         ctx: &mut rltk::Rltk,
         sc_tlx: i32,
         sc_tly: i32,
-        table: &ObstacleTable,
+        table: &mut ObstacleTable,
         goals: &GoalTable,
         player: &Player,
         ai: &Vec<Player>,
@@ -178,18 +178,18 @@ impl MainViewer {
 
         if br_x == table.width() as i32 - 1 {
             tl_x -= (middle.0 + width as i32 / 2) - br_x;
-            tl_x = tl_x.clamp(0, table.width() as i32 - 2);
+            tl_x = tl_x.clamp(0, table.width() as i32 - 1);
         } else if tl_x == 0 {
             br_x += (middle.0 + width as i32 / 2) - tl_x;
-            br_x = br_x.clamp(0, table.width() as i32 - 2);
+            br_x = br_x.clamp(0, table.width() as i32 - 1);
         }
 
         if br_y == table.height() as i32 - 1 {
             tl_y -= (middle.1 + height as i32 / 2) - br_y;
-            tl_y = tl_y.clamp(0, table.height() as i32 - 2)
+            tl_y = tl_y.clamp(0, table.height() as i32 - 1)
         } else if tl_y == 0 {
             br_y += (middle.1 + height as i32 / 2) - tl_y;
-            br_y = br_y.clamp(0, table.height() as i32 - 2);
+            br_y = br_y.clamp(0, table.height() as i32 - 1);
         }
 
         // screen coords
@@ -197,10 +197,13 @@ impl MainViewer {
         let mut sc_y = sc_tly;
 
         let visible = visibility::get_fov(player.xy(), table, 16);
+        for p in visible.iter() {
+            table.revelead.insert((p.x, p.y));
+        }
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                if visible.contains(&Point::new(x, y)) || (player.x() == x && player.y() == y) {
+                if table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y) {
                     let obstacle_type = table.get_obstacle(x, y);
 
                     let t = table.traversability((player.x(), player.y()), (x, y));
@@ -236,7 +239,7 @@ impl MainViewer {
                             ctx.set(
                                 sc_x,
                                 sc_y,
-                                RGB::from_f32(1.0 - balance_amount, 0.0, balance_amount),
+                                RGB::from_f32((1.0 - balance_amount) * inv_dist, 0.0, balance_amount * inv_dist),
                                 RGB::named(rltk::BLACK),
                                 symbol,
                             );
@@ -315,7 +318,7 @@ impl MainViewer {
                                         ctx.set(
                                             sc_x,
                                             sc_y,
-                                            RGB::named(rltk::WHITE),
+                                            RGB::named(rltk::YELLOW),
                                             RGB::named(rltk::BLACK),
                                             rltk::to_cp437('!'),
                                         );

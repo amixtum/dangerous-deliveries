@@ -5,13 +5,14 @@ use crate::player::Player;
 use super::obstacle::Obstacle;
 use super::traversability::Traversability;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct ObstacleTable {
     width: u32,
     height: u32,
     table: Vec<Vec<Obstacle>>,
     pub blocked: HashMap<(i32, i32), Player>,
+    pub revelead: HashSet<(i32, i32)>,
 }
 
 impl BaseMap for ObstacleTable {
@@ -43,6 +44,7 @@ impl ObstacleTable {
             height,
             table: Vec::new(),
             blocked: HashMap::new(),
+            revelead: HashSet::new(),
         };
 
         for x in 0..width {

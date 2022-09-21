@@ -220,13 +220,14 @@ impl Game {
     }
 
     pub fn print_screen(&mut self, ctx: &mut rltk::Rltk) {
+        let aivec = self.ai_vec();
         self.viewer.get_screen(
             ctx,
             &self.state,
-            &self.obs_table,
+            &mut self.obs_table,
             &self.goal_table,
             &self.player,
-            &self.ai_vec(),
+            &aivec,
             &self.player_control,
             self.max_falls,
             self.player_control.max_speed,
