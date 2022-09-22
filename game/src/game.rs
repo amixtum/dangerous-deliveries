@@ -29,8 +29,11 @@ pub struct Game {
     viewer: ViewManager,
 
     player_control: PlayerController,
+
     opponents: Vec<AIController>,
-    lookmode: LookMode,
+
+    _lookmode: LookMode,
+    lookmode_string: (String, RGB),
 
     pub player: Player,
     pub recipient_idx: i32,
@@ -60,7 +63,8 @@ impl Game {
 
             player_control: PlayerController::new(),
             opponents: Vec::new(),
-            lookmode: LookMode::new(),
+            _lookmode: LookMode::new(),
+            lookmode_string: ("Find the package".to_string(), RGB::named(rltk::WHITE)),
 
             player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
             recipient_idx: -1,
@@ -256,6 +260,12 @@ impl Game {
 
     fn process_delivered(&mut self) -> bool {
         let mut rng = RandomNumberGenerator::new();
+
+
+        self.lookmode_string = ("Find the package".to_string(), RGB::named(rltk::WHITE));
+
+        self.viewer.main_view.add_string("Package delivered!".to_string(), RGB::named(rltk::CYAN));
+
         // for computing the player's score
         self.player.n_delivered += 1;
 
@@ -355,9 +365,6 @@ impl Game {
                     self.set_state(ProcState::MainMenu);
                 }
                 VirtualKeyCode::Semicolon => {
-                    self.viewer
-                        .main_view
-                        .add_string(String::from("Look Where?"), RGB::named(rltk::YELLOW));
                     self.set_state(ProcState::LookMode);
                 }
                 VirtualKeyCode::Key5 => {
@@ -505,28 +512,10 @@ impl Game {
         return true;
     }
 
-    fn process_lookmode(&mut self, ctx: &mut rltk::Rltk) -> bool {
-        match ctx.key {
-            None => {}
-            Some(key) => match key {
-                VirtualKeyCode::Escape => {
-                    self.set_state(ProcState::MainMenu);
-                }
-                _ => {
-                    for keycode in self.lookmode.get_keys() {
-                        if *keycode == key {
-                            let result = self.lookmode.describe_direction(
-                                &self.obs_table,
-                                &self.player,
-                                *keycode,
-                            );
-                            self.set_state(ProcState::LookedAt(result));
-                            break;
-                        }
-                    }
-                }
-            },
-        }
+    fn process_lookmode(&mut self, _ctx: &mut rltk::Rltk) -> bool {
+        self.viewer.main_view.add_string(String::clone(&self.lookmode_string.0), self.lookmode_string.1);
+
+        self.set_state(ProcState::Playing);
 
         return true;
     }
@@ -547,7 +536,8 @@ impl Game {
             self.viewer
                 .main_view
                 .add_string(String::from("Picked up package, find the skater wearing this color shirt"), idx_color.1);
-            
+
+            self.lookmode_string = ("Find the skater wearing this color shirt".to_string(), idx_color.1);           
         }
 
         self.goal_table.remove_goal_if_reached((x, y));
@@ -565,6 +555,8 @@ impl Game {
 
     fn reset_game(&mut self) {
         let mut rng = RandomNumberGenerator::new();
+
+        self.lookmode_string = ("Find the package".to_string(), RGB::named(rltk::WHITE));
 
         self.obs_table.revelead.clear();
         self.obs_table.regen_table();
@@ -603,7 +595,6 @@ impl Game {
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player, x, y);
 
         collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents, &self.waiting_to_respawn_idx);
-
 
         self.recipient_idx = -1;
     }
