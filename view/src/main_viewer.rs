@@ -100,7 +100,6 @@ impl MainViewer {
         player: &Player,
         ai: &Vec<AIController>,
         controller: &PlayerController,
-        max_falls: u32,
         max_speed: f32,
         fallover_threshold: f32,
         width: u32,
@@ -140,8 +139,7 @@ impl MainViewer {
         let mut s = String::from("Time: ");
         s.push_str(&(player.time.round()).to_string());
         //s.push_str(&format!(", Deliveries Left: {}, ", goals.count()));
-        s.push_str(&format!(" HP: {}, ", max_falls as i32 - player.n_falls));
-        s.push_str("Help: press Esc");
+        s.push_str(" Help: press Esc");
 
         ctx.print_color(
             0,

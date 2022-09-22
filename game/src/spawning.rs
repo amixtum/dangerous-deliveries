@@ -1,5 +1,5 @@
 use model::{obstacle_table::ObstacleTable, obstacle::Obstacle, map_gen};
-use rltk::{RandomNumberGenerator, Point};
+use rltk::{RandomNumberGenerator};
 
 
 pub fn tunnel_spawn(obs_table: &mut ObstacleTable) -> (i32, i32) {

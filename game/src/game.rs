@@ -35,7 +35,6 @@ pub struct Game {
     pub player: Player,
     pub recipient_idx: i32,
 
-    pub max_falls: u32,
     pub n_opponents: u32,
     pub ai_sight_radius: u32,
     pub giveup_turns: u32,
@@ -67,7 +66,6 @@ impl Game {
             player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
             recipient_idx: -1,
 
-            max_falls: 4,
             n_opponents: 2,
             ai_sight_radius: 8,
             giveup_turns: 3,
@@ -156,7 +154,7 @@ impl Game {
         }
     }
 
-    fn add_opponent_platform(&mut self) {
+    fn _add_opponent_platform(&mut self) {
         let (x, y) = spawning::random_platform(&self.obs_table);
        
         self.opponents.push(AIController::new(x, y));
@@ -186,11 +184,7 @@ impl Game {
             }
 
             let words: Vec<&str> = line.split_ascii_whitespace().collect();
-            if words[0] == "max_falls" {
-                if let Ok(num) = words[1].parse::<u32>() {
-                    self.max_falls = num;
-                }
-            } else if words[0] == "opponents" {
+            if words[0] == "opponents" {
                 if let Ok(num) = words[1].parse::<u32>() {
                     self.n_opponents = num;
                 }
@@ -220,7 +214,6 @@ impl Game {
             &self.player,
             &self.opponents,
             &self.player_control,
-            self.max_falls,
             self.player_control.max_speed,
             self.player_control.fallover_threshold,
             ctx.get_char_size().0,
@@ -467,9 +460,6 @@ impl Game {
         else if self.opponents[index].player.recent_event == PlayerEvent::Respawn {
             self.waiting_to_respawn_idx.insert(index as u32);
         } 
-        else if self.opponents[index].player.n_falls >= self.max_falls as i32 {
-            self.waiting_to_respawn_idx.insert(index as u32);
-        }
 
         //self.opponents[index].choose_goal(&self.goal_table);
 
@@ -491,15 +481,13 @@ impl Game {
             ));
         }
 
-        // check if move player returned a player with a GameOver event
+        // check if move player returned a player with a Respawn event
+        // and respawn them
         if self.player.recent_event == PlayerEvent::Respawn  {
             self.reset_player_continue();
         }
-        // check if the player's hp has reached 0
-        else if self.player.n_falls >= self.max_falls as i32 {
-            self.reset_player_continue();
-        }
-        // otherwise go to the state where we update the message log
+
+        // go to the state where we update the message log
         // after computing the result of the turn
         else {
             self.set_state(match self.state {

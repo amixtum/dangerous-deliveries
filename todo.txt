@@ -2,9 +2,7 @@ Turtle Map Gen
 
 Pure automata with tunneling
 
-use petgraph to find spawn points?
-
-Game::process_post_move() needs a new add_message
+Game::process_post_move() needs a new add_message?
 
 messages should help the player:
   1. find the package
