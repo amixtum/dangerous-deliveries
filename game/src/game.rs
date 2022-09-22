@@ -130,7 +130,7 @@ impl Game {
         g.reset_game();
     }
     // regen opponent
-    fn add_opponent_tunnel(&mut self) {
+    fn _add_opponent_tunnel(&mut self) {
         let mut rng = RandomNumberGenerator::new();
         let x = (self.obs_table.width() as i32 / 2)
             + rng.range(
@@ -154,14 +154,11 @@ impl Game {
         }
     }
 
-    fn _add_opponent_platform(&mut self) {
+    fn add_opponent_platform(&mut self) {
         let (x, y) = spawning::random_platform(&self.obs_table);
        
         self.opponents.push(AIController::new(x, y));
         self.turns_to_giveup.push(self.giveup_turns);
-        self.obs_table.set_obstacle((x, y), Obstacle::Platform);
-
-        map_gen::tunnel_position(&mut self.obs_table, (x, y));
     }
 
     pub fn properties_from_file(&mut self) {
@@ -273,7 +270,7 @@ impl Game {
 
         let coloridx = rng.range(0, self.shirt_colors.len());
         self.goal_table.add_goal(
-            spawning::tunnel_spawn(&mut self.obs_table), 
+            spawning::random_platform(&mut self.obs_table), 
             (aiidx, self.shirt_colors[coloridx]));
         return true;
     }
@@ -583,12 +580,20 @@ impl Game {
         self.obs_table.revelead.clear();
         self.obs_table.regen_table();
 
-        map_gen::voronoi_mapgen(&mut self.obs_table, &self.goal_table);
+        map_gen::voronoi_mapgen(&mut self.obs_table);
+
+        self.obs_table.update_platforms();
+
+        self.obs_table.compute_unions();
+
+        map_gen::tunnel_pockets(&mut self.obs_table);
+
+        self.obs_table.update_platforms();
 
         self.opponents.clear();
         self.turns_to_giveup.clear();
         for _ in 0..self.n_opponents {
-            self.add_opponent_tunnel();
+            self.add_opponent_platform();
         }
 
         let mut aiidx = rng.range(0, self.opponents.len()) as i32;
@@ -599,23 +604,16 @@ impl Game {
 
         let coloridx = rng.range(0, self.shirt_colors.len());
         self.goal_table.add_goal(
-            spawning::tunnel_spawn(&mut self.obs_table), 
+            spawning::random_platform(&mut self.obs_table), 
             (aiidx as usize, self.shirt_colors[coloridx]));
 
-
-        self.clear_obstacles_at_goals();
 
         let (x, y) = spawning::tunnel_spawn(&mut self.obs_table);
 
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player, x, y);
-        self.obs_table
-            .set_obstacle(self.player.xy(), Obstacle::Platform);
-
-        map_gen::tunnel_position(&mut self.obs_table, self.player.position);
 
         collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents, &self.waiting_to_respawn_idx);
 
-        self.obs_table.populate_graph();
 
         self.recipient_idx = -1;
     }
@@ -623,14 +621,6 @@ impl Game {
     fn reset_player_continue(&mut self) {
         let spawn_at = spawning::random_platform(&self.obs_table);
         self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player, spawn_at.0, spawn_at.1);
-        self.obs_table
-            .set_obstacle(self.player.xy(), Obstacle::Platform);
         self.redraw = true;
-    }
-
-    fn clear_obstacles_at_goals(&mut self) {
-        for goal in self.goal_table.goals.keys() {
-            self.obs_table.set_obstacle(*goal, Obstacle::Platform);
-        }
     }
 }

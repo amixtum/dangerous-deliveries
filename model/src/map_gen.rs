@@ -1,6 +1,6 @@
 use std::{collections::HashSet, f32::consts::PI};
 
-use rltk::RandomNumberGenerator;
+use rltk::{RandomNumberGenerator, Algorithm2D};
 use util::{
     vec_ops::{self, neighbors},
     voronoi,
@@ -135,7 +135,30 @@ pub fn tunnel_goals(table: &mut ObstacleTable, goals: &GoalTable) {
     }
 }
 
-pub fn voronoi_mapgen(obs_table: &mut ObstacleTable, goals: &GoalTable) {
+pub fn tunnel_pockets(table: &mut ObstacleTable) {
+    let mut pockets = Vec::new();
+    for pos in table.platforms.iter() {
+        let leader = table.ufind.find(table.xy_flat(pos.0, pos.1));
+        let pt = table.index_to_point2d(leader as usize);
+        let nbrs = vec_ops::neighbors((pt.x, pt.y), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+        let mut count_platforms = 0;
+        for n in nbrs {
+            if table.get_obstacle(n.0, n.1) == Obstacle::Platform {
+                count_platforms += 1;
+            }
+        }
+
+        if count_platforms <= 2 {
+            pockets.push((pt.x, pt.y));
+        }
+    }
+
+    for p in pockets.iter() {
+        tunnel_position(table, *p);
+    }
+}
+
+pub fn voronoi_mapgen(obs_table: &mut ObstacleTable) {
     let a = obs_table.width() / 6;
     let b = obs_table.height() / 6;
 
@@ -152,13 +175,9 @@ pub fn voronoi_mapgen(obs_table: &mut ObstacleTable, goals: &GoalTable) {
     );
     for _ in 0..1 {
         apply_voronoi(obs_table, &seeds);
-        //apply_voronoi_n2(obs_table, &seeds);
     }
 
     obstacle_automata::apply_automata(obs_table);
-    //obstacle_automata::apply_automata(obs_table);
-    tunnel_goals(obs_table, goals);
-
 }
 
 pub fn apply_voronoi_inv(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {

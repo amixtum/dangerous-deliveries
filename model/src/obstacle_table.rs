@@ -1,4 +1,4 @@
-use petgraph::prelude::UnGraphMap;
+use petgraph::{unionfind::UnionFind};
 use rltk::{Algorithm2D, Point, BaseMap};
 use util::vec_ops;
 
@@ -13,7 +13,8 @@ pub struct ObstacleTable {
     width: u32,
     height: u32,
     table: Vec<Vec<Obstacle>>,
-    pub graph: UnGraphMap<(i32, i32), i32>,
+    pub platforms: Vec<(i32, i32)>,
+    pub ufind: UnionFind<u32>,
     pub blocked: HashMap<(i32, i32), Player>,
     pub revelead: HashSet<(i32, i32)>,
 }
@@ -46,9 +47,10 @@ impl ObstacleTable {
             width,
             height,
             table: Vec::new(),
+            platforms: Vec::new(),
             blocked: HashMap::new(),
             revelead: HashSet::new(),
-            graph: UnGraphMap::new(),
+            ufind: UnionFind::new(width as usize * height as usize),
         };
 
         for x in 0..width {
@@ -67,6 +69,10 @@ impl ObstacleTable {
 }
 
 impl ObstacleTable {
+    pub fn xy_flat(&self, x: i32, y: i32) -> u32 {
+        y as u32 * self.width + x as u32
+    }
+
     pub fn width(&self) -> u32 {
         self.width
     }
@@ -124,20 +130,26 @@ impl ObstacleTable {
         return Traversability::No;
     }
 
-    pub fn populate_graph(&mut self) {
+    pub fn update_platforms(&mut self) {
+        self.platforms.clear();
         for x in 0..self.width {
             for y in 0..self.height {
                 if self.get_obstacle(x as i32, y as i32) == Obstacle::Platform {
-                    self.graph.add_node((x as i32, y as i32));
+                    self.platforms.push((x as i32, y as i32));
                 }
             }
-        } 
+        }
+    }
+
+    pub fn compute_unions(&mut self) {
         for x in 0..self.width {
             for y in 0..self.height {
-                let nbrs = vec_ops::neighbors((x as i32, y as i32), (0, 0), (self.width as i32 - 1, self.height as i32 - 1));
-                for nbr in nbrs.iter() {
-                    if self.get_obstacle(nbr.0, nbr.1) == Obstacle::Platform {
-                        self.graph.add_edge((x as i32, y as i32), *nbr, 1);
+                if self.get_obstacle(x as i32, y as i32) == Obstacle::Platform {
+                    let nbrs = vec_ops::neighbors((x as i32, y as i32), (0, 0), (self.width as i32 - 1, self.height as i32 - 1));
+                    for nbr in nbrs.iter() {
+                        if self.get_obstacle(nbr.0, nbr.1) == Obstacle::Platform {
+                            self.ufind.union(self.xy_flat(x as i32, y as i32), self.xy_flat(nbr.0, nbr.1));
+                        }
                     }
                 }
             }

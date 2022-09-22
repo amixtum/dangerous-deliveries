@@ -4,7 +4,7 @@ use rltk::RGB;
 
 pub struct GoalTable {
     pub goals: HashMap<(i32, i32), (usize, RGB)>,
-    index_map: HashMap<usize, (i32, i32)>,
+    pub index_map: HashMap<usize, (i32, i32)>,
 }
 
 impl GoalTable {

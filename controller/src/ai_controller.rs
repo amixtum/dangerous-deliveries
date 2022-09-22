@@ -51,7 +51,7 @@ impl AIController {
             obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
         }).collect::<Vec<_>>();
         let potential_goals = visible.iter().filter(|p| {
-            (rltk::DistanceAlg::Pythagoras.distance2d(Point::new(ai_player.x(), ai_player.y()), Point::new(p.0, p.1)) >= sight_radius as f32) &&
+            (rltk::DistanceAlg::Manhattan.distance2d(Point::new(ai_player.x(), ai_player.y()), Point::new(p.0, p.1)) >= sight_radius as f32) &&
             obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
         }).collect::<Vec<_>>();
 
@@ -73,7 +73,7 @@ impl AIController {
     }
 
     pub fn reached_goal(&self, radius: f32) -> bool {
-        DistanceAlg::Pythagoras.distance2d(Point::new(self.player.x(), self.player.y()), Point::new(self.goal.0, self.goal.1)) <= radius
+        DistanceAlg::Manhattan.distance2d(Point::new(self.player.x(), self.player.y()), Point::new(self.goal.0, self.goal.1)) <= radius
     }
 
     pub fn next_move(
@@ -99,9 +99,28 @@ impl AIController {
                         PlayerEvent::FallOver |
                         PlayerEvent::Respawn |
                         PlayerEvent::GameOver(_) => {
+                            if moves.len() > 2 {
+                                if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
+                                    return moves[2].0;
+                                }
+                            }
                             return moves[0].0;
                         }
                         _ => {
+                            if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
+                                if moves.len() > 2 {
+                                    if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
+                                        return moves[2].0;
+                                    }
+                                }
+                                return moves[0].0;
+                            }
+
+                            if moves.len() > 2 {
+                                if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
+                                    return moves[2].0;
+                                }
+                            }
                             return moves[1].0;
                         }
                     }
@@ -120,7 +139,7 @@ impl AIController {
         let mut moves = self.get_moves_platform(&self.player, obs_table, player_control);
 
         if moves.len() > 0 {
-            moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
+            moves.sort_by(|l, r| l.1.partial_cmp(&r.1).unwrap());
 
             if moves.len() == 1 {
                 return moves[0].0;
@@ -129,9 +148,28 @@ impl AIController {
                     PlayerEvent::FallOver |
                     PlayerEvent::Respawn |
                     PlayerEvent::GameOver(_) => {
+                        if moves.len() > 2 {
+                            if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
+                                return moves[2].0;
+                            }
+                        }
                         return moves[0].0;
                     }
                     _ => {
+                        if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
+                            if moves.len() > 2 {
+                                if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
+                                    return moves[2].0;
+                                }
+                            }
+                            return moves[0].0;
+                        }
+
+                        if moves.len() > 2 {
+                            if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
+                                return moves[2].0;
+                            }
+                        }
                         return moves[1].0;
                     }
                 }
@@ -167,7 +205,7 @@ impl AIController {
                     Obstacle::Wall |
                     Obstacle::Pit => {}
                     _ => {
-                        moves.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
+                        moves.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                     }
                 },
             }
@@ -199,11 +237,11 @@ impl AIController {
             match mov.recent_event {
                 PlayerEvent::GameOver(_) | PlayerEvent::Respawn => {}
                 PlayerEvent::FallOver => {
-                    falls.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
+                    falls.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
                     Obstacle::Platform => {
-                        moves.push((mov, DistanceAlg::Pythagoras.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
+                        moves.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
                     }
                     _ => {}
                 },

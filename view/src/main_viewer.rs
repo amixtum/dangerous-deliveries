@@ -290,9 +290,9 @@ impl MainViewer {
                         _ => {
                             for p in ai.iter().enumerate() {
                                 let mut color = RGB::from_f32(inv_dist, inv_dist * 0.5, 0.0);
-                                for idx_color in goals.goals.values() {
-                                    if idx_color.0 == p.0 {
-                                        color = idx_color.1;
+                                if let Some(key) = goals.index_map.get(&p.0) {
+                                    if let Some((_idx, c)) = goals.goals.get(key) {
+                                        color = *c;
                                     }
                                 }
                                 if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) && visible.contains(&Point::new(x, y)) {
@@ -310,7 +310,7 @@ impl MainViewer {
                                             ctx.set(
                                                 sc_x,
                                                 sc_y,
-                                                RGB::from_f32(inv_dist, inv_dist * 0.5, 0.0),
+                                                color,
                                                 RGB::named(rltk::BLACK),
                                                 rltk::to_cp437('☻'),
                                             );

@@ -1,6 +1,6 @@
 Turtle Map Gen
 
-Pure automata with tunneling
+Pure automata with tunneling (already have tunnel_pockets)
 
 Game::process_post_move() needs a new add_message?
 

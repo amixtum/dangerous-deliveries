@@ -5,10 +5,7 @@ game_width 80
 game_height 40
 
 # number of opponents
-opponents 16
-
-# number of falls before game over
-max_falls 10
+opponents 32
 
 # opponents use this to determine where to go next 
 ai_sight_radius 16
