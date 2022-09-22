@@ -61,7 +61,8 @@ impl ViewManager {
             | ProcState::GotPackage(..)
             | ProcState::LookedAt(_)
             | ProcState::LookMode
-            | ProcState::Restart => {
+            | ProcState::Restart 
+            | ProcState::DeliveredPackage => {
                 //self.main_view.clear_log();
 
                 return self.main_view.draw_layout(

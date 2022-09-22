@@ -132,7 +132,7 @@ impl Game {
         g.reset_game();
     }
     // regen opponent
-    fn add_opponent(&mut self) {
+    fn add_opponent_tunnel(&mut self) {
         let mut rng = RandomNumberGenerator::new();
         let x = (self.obs_table.width() as i32 / 2)
             + rng.range(
@@ -154,6 +154,16 @@ impl Game {
 
             map_gen::tunnel_position(&mut self.obs_table, (x, y));
         }
+    }
+
+    fn add_opponent_platform(&mut self) {
+        let (x, y) = spawning::random_platform(&self.obs_table);
+       
+        self.opponents.push(AIController::new(x, y));
+        self.turns_to_giveup.push(self.giveup_turns);
+        self.obs_table.set_obstacle((x, y), Obstacle::Platform);
+
+        map_gen::tunnel_position(&mut self.obs_table, (x, y));
     }
 
     pub fn properties_from_file(&mut self) {
@@ -238,6 +248,9 @@ impl Game {
             ProcState::GotPackage(x, y) => {
                 return self.process_got_package(x, y);
             }
+            ProcState::DeliveredPackage => {
+                return self.process_delivered();
+            }
             ProcState::LookMode => {
                 return self.process_lookmode(ctx);
             }
@@ -251,6 +264,25 @@ impl Game {
                   return false;
               },*/
         }
+    }
+
+    fn process_delivered(&mut self) -> bool {
+        let mut rng = RandomNumberGenerator::new();
+        // for computing the player's score
+        self.player.n_delivered += 1;
+
+        // spawn a new package
+        let mut aiidx = rng.range(0, self.opponents.len());
+        while aiidx == self.recipient_idx as usize {
+            aiidx = rng.range(0, self.opponents.len());
+        }
+        self.recipient_idx = aiidx as i32;
+
+        let coloridx = rng.range(0, self.shirt_colors.len());
+        self.goal_table.add_goal(
+            spawning::tunnel_spawn(&mut self.obs_table), 
+            (aiidx, self.shirt_colors[coloridx]));
+        return true;
     }
 
     fn process_main_menu(&mut self, ctx: &mut rltk::Rltk) -> bool {
@@ -565,16 +597,22 @@ impl Game {
 
         map_gen::voronoi_mapgen(&mut self.obs_table, &self.goal_table);
 
-        let mut aiidx = rng.range(0, self.opponents.len());
-        while aiidx == self.recipient_idx as usize {
-            aiidx = rng.range(0, self.opponents.len());
+        self.opponents.clear();
+        self.turns_to_giveup.clear();
+        for _ in 0..self.n_opponents {
+            self.add_opponent_tunnel();
         }
-        self.recipient_idx = aiidx as i32;
+
+        let mut aiidx = rng.range(0, self.opponents.len()) as i32;
+        while aiidx == self.recipient_idx {
+            aiidx = rng.range(0, self.opponents.len() as i32);
+        }
+        self.recipient_idx = aiidx;
 
         let coloridx = rng.range(0, self.shirt_colors.len());
         self.goal_table.add_goal(
             spawning::tunnel_spawn(&mut self.obs_table), 
-            (aiidx, self.shirt_colors[coloridx]));
+            (aiidx as usize, self.shirt_colors[coloridx]));
 
 
         self.clear_obstacles_at_goals();
@@ -584,12 +622,6 @@ impl Game {
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player, x, y);
         self.obs_table
             .set_obstacle(self.player.xy(), Obstacle::Platform);
-
-        self.opponents.clear();
-        self.turns_to_giveup.clear();
-        for _ in 0..self.n_opponents {
-            self.add_opponent();
-        }
 
         map_gen::tunnel_position(&mut self.obs_table, self.player.position);
 
