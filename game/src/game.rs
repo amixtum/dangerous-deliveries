@@ -585,6 +585,7 @@ impl Game {
             self.add_opponent_platform();
         }
 
+        self.goal_table.clear();
         let mut aiidx = rng.range(0, self.opponents.len()) as i32;
         while aiidx == self.recipient_idx {
             aiidx = rng.range(0, self.opponents.len() as i32);

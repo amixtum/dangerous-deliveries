@@ -222,7 +222,7 @@ impl MainViewer {
                     if dist.round() as i32 == 0 {
                         inv_dist = 1.0;
                     } else {
-                        inv_dist = 4.0 / dist.sqrt();
+                        inv_dist = 6.0 / (1.0 + dist);
                     }
                     match mov.recent_event {
                         PlayerEvent::FallOver | PlayerEvent::GameOver(_) => {

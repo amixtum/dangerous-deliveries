@@ -17,6 +17,11 @@ impl GoalTable {
 }
 
 impl GoalTable {
+    pub fn clear(&mut self) {
+        self.goals.clear();
+        self.index_map.clear();
+    }
+
     pub fn add_goal(&mut self, goal: (i32, i32), dest: (usize, RGB)) {
         self.goals.insert(goal, dest);
         self.index_map.insert(dest.0, goal);

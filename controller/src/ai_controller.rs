@@ -15,7 +15,7 @@ struct Pos(i32, i32);
 pub struct AIController {
     pub player: Player,
     pub goal: (i32, i32),
-    rng: RandomNumberGenerator,
+    _rng: RandomNumberGenerator,
 }
 
 impl AIController {
@@ -23,7 +23,7 @@ impl AIController {
         AIController {
             player: Player::new(start_x, start_y),
             goal: (-1, -1),
-            rng: RandomNumberGenerator::new(),
+            _rng: RandomNumberGenerator::new(),
         }
     }
 }
@@ -46,12 +46,12 @@ impl AIController {
     pub fn choose_goal(&mut self, obs_table: &ObstacleTable, sight_radius: u32) {
         let mut rng = RandomNumberGenerator::new();
         let ai_player = &self.player;
-        let norm_speed = vec_ops::normalize(ai_player.speed);
+        //let norm_speed = vec_ops::normalize(ai_player.speed);
 
         let mut center = (ai_player.x() + rng.range(-(sight_radius as i32), sight_radius as i32), ai_player.y() + rng.range(-(sight_radius as i32), sight_radius as i32));
-        if !f32::is_nan(norm_speed.0) {
+        /*if !f32::is_nan(norm_speed.0) {
             center = (ai_player.x() + (norm_speed.0 * sight_radius as f32) as i32, ai_player.y() + (norm_speed.1 * sight_radius as f32) as i32);
-        }
+        }*/
         center.0 = center.0.clamp(0, obs_table.width() as i32 - 1);
         center.1 = center.0.clamp(0, obs_table.height() as i32 - 1);
         let visible = visibility::get_fov(center, obs_table, sight_radius as i32);
