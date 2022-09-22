@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
 use controller::collision;
+use model::direction::Direction;
 use model::{map_gen};
-use rltk::{GameState, RandomNumberGenerator, VirtualKeyCode, RGB};
+use rltk::{GameState, RandomNumberGenerator, VirtualKeyCode, RGB, Point};
 use util::heap::Heap;
 
 use util::vec_ops;
@@ -37,6 +38,7 @@ pub struct Game {
 
     pub player: Player,
     pub recipient_idx: i32,
+    pub score: i32,
 
     pub n_opponents: u32,
     pub ai_sight_radius: u32,
@@ -68,6 +70,7 @@ impl Game {
 
             player: Player::new(table_width as i32 / 2, table_height as i32 / 2),
             recipient_idx: -1,
+            score: 0,
 
             n_opponents: 2,
             ai_sight_radius: 8,
@@ -217,6 +220,7 @@ impl Game {
             self.player_control.fallover_threshold,
             ctx.get_char_size().0,
             ctx.get_char_size().1,
+            self.score,
         );
     }
 
@@ -237,6 +241,9 @@ impl Game {
             ProcState::PostMove => {
                 return self.process_post_move();
             }
+            ProcState::Chat => {
+                return self.process_chat();
+            }
             ProcState::GotPackage(x, y) => {
                 return self.process_got_package(x, y);
             }
@@ -245,9 +252,6 @@ impl Game {
             }
             ProcState::LookMode => {
                 return self.process_lookmode(ctx);
-            }
-            ProcState::LookedAt(_) => {
-                return self.process_looked_at();
             }
             ProcState::Restart => {
                 return self.process_restart();
@@ -258,13 +262,100 @@ impl Game {
         }
     }
 
+    fn process_chat(&mut self) -> bool {
+        let chat_radius = 1;
+        let fov = rltk::field_of_view(Point::new(self.player.x(), self.player.y()), chat_radius, &self.obs_table);
+        let chat_str = "Stick it to the man".to_string();
+        let mut alone = true;
+        let mut next_state = ProcState::Playing;
+        for p in fov.iter() {
+            if p.x == self.player.x() && p.y == self.player.y() {
+                continue;
+            }
+
+            if self.obs_table.blocked.contains_key(&(p.x, p.y)) {
+                alone = false;
+                if self.recipient_idx != -1 {
+                    if let Some(pack_pos) = self.goal_table.index_map.get(&(self.recipient_idx as usize)) {
+                        if !self.goal_table.picked_up.contains(pack_pos) {
+                            let dir = vec_to_direction(pack_pos.0 - p.x, pack_pos.1 - p.y);
+                            let mut message = "There's a job ".to_string();
+                            let dirstr = self.direction_string(dir);
+                            match &dirstr.1 {
+                                None => {
+                                    message.push_str(&dirstr.0);
+                                    self.viewer.main_view.add_string(message, RGB::named(rltk::GREEN));
+                                }
+                                Some(_) => {
+                                    message.push_str("here");
+                                    self.viewer.main_view.add_string(message, RGB::named(rltk::GREEN));
+                                }
+                            }
+                        }
+                        else {
+                            let recv_pos = self.opponents[self.recipient_idx as usize].player.position;
+                            let dir = vec_to_direction(recv_pos.0 - p.x, recv_pos.1 - p.y);
+                            let mut message = "Last saw them ".to_string();
+                            let dirstr = self.direction_string(dir);
+                            match &dirstr.1 {
+                                None => {
+                                    message.push_str(&dirstr.0);
+                                    self.viewer.main_view.add_string(message, RGB::named(rltk::GREEN));
+                                }
+                                Some(score) => {
+                                    self.score += score;
+                                    self.viewer.main_view.add_string(dirstr.0, RGB::named(rltk::GREEN));
+                                    next_state = ProcState::DeliveredPackage;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if alone {
+            self.viewer.main_view.add_string(chat_str, RGB::named(rltk::DARKGRAY));
+        }
+
+        self.set_state(next_state);
+
+        return true;
+    }
+
+
+
+    fn direction_string(&self, dir: Direction) -> (String, Option<i32>) {
+        match dir {
+            Direction::Center => {
+                let score = (((self.obs_table.width() as f32 * self.obs_table.height() as f32) / self.player.time as f32))
+                .round() as i32;
+                return (format!("Thanks. Here's ${} for your hard work", score), Some(score));
+            }
+            Direction::Down => ("to the south".to_string(), None),
+            Direction::Up => ("to the north".to_string(), None),
+            Direction::Left => ("to the west".to_string(), None),
+            Direction::Right => ("to the east".to_string(), None),
+            Direction::NorthEast => ("to the northeast".to_string(), None),
+            Direction::NorthWest => ("to the northwest".to_string(), None),
+            Direction::SouthEast => ("to the southeast".to_string(), None),
+            Direction::SouthWest => ("to the southwest".to_string(), None),
+        }
+    }
+
     fn process_delivered(&mut self) -> bool {
         let mut rng = RandomNumberGenerator::new();
 
+        let pos = self.goal_table.index_map.get(&(self.recipient_idx as usize));
+        match pos {
+            None => {}
+            Some(pos) => {
+                self.goal_table.picked_up.remove(&*pos);
+                self.goal_table.remove_goal_if_reached((pos.0, pos.1));
+            }
+        }
 
         self.lookmode_string = ("Find the package".to_string(), RGB::named(rltk::WHITE));
-
-        self.viewer.main_view.add_string("Package delivered!".to_string(), RGB::named(rltk::CYAN));
 
         // for computing the player's score
         self.player.n_delivered += 1;
@@ -281,9 +372,6 @@ impl Game {
         self.goal_table.add_goal(
             spawning::random_platform(&mut self.obs_table), 
             (aiidx, self.shirt_colors[coloridx]));
-
-        // unclutter the log
-        self.viewer.main_view.clear_log();
 
         self.set_state(ProcState::Playing);
 
@@ -366,6 +454,9 @@ impl Game {
                 }
                 VirtualKeyCode::Semicolon => {
                     self.set_state(ProcState::LookMode);
+                }
+                VirtualKeyCode::G => {
+                    self.set_state(ProcState::Chat);
                 }
                 VirtualKeyCode::Key5 => {
                     self.set_state(ProcState::Restart);
@@ -482,7 +573,7 @@ impl Game {
         self.player = result;
 
         // check if we reached a goal
-        if self.goal_table.at_goal(self.player.xy()) {
+        if self.goal_table.at_goal(self.player.xy()) && !self.goal_table.picked_up.contains(&self.player.xy()) {
             self.set_state(ProcState::GotPackage(
                 self.player.x(),
                 self.player.y(),
@@ -520,16 +611,6 @@ impl Game {
         return true;
     }
 
-    fn process_looked_at(&mut self) -> bool {
-        if let ProcState::LookedAt(s) = &self.state {
-            self.viewer
-                .main_view
-                .add_string(String::from(s), RGB::named(rltk::GREEN));
-        }
-        self.set_state(ProcState::Playing);
-        return true;
-    }
-
     fn process_got_package(&mut self, x: i32, y: i32) -> bool {
         if let Some(idx_color) = self.goal_table.goals.get(&(x, y)) {
             self.recipient_idx = idx_color.0 as i32;
@@ -538,9 +619,10 @@ impl Game {
                 .add_string(String::from("Picked up package, find the skater wearing this color shirt"), idx_color.1);
 
             self.lookmode_string = ("Find the skater wearing this color shirt".to_string(), idx_color.1);           
+
+            self.goal_table.picked_up.insert((x, y));
         }
 
-        self.goal_table.remove_goal_if_reached((x, y));
 
         self.set_state(ProcState::Playing);
 
@@ -586,22 +668,48 @@ impl Game {
 
         let coloridx = rng.range(0, self.shirt_colors.len());
         self.goal_table.add_goal(
-            spawning::random_platform(&mut self.obs_table), 
+            spawning::random_platform(&self.obs_table), 
             (aiidx as usize, self.shirt_colors[coloridx]));
 
 
         let (x, y) = spawning::tunnel_spawn(&mut self.obs_table);
 
+        self.obs_table.update_platforms();
+
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player, x, y);
 
         collision::update_blocked(&mut self.obs_table, &self.player, &self.opponents, &self.waiting_to_respawn_idx);
-
-        self.recipient_idx = -1;
     }
 
     fn reset_player_continue(&mut self) {
         let spawn_at = spawning::random_platform(&self.obs_table);
         self.player = PlayerController::reset_player_continue(&self.obs_table, &self.player, spawn_at.0, spawn_at.1);
         self.redraw = true;
+    }
+}
+
+
+fn vec_to_direction(x: i32, y: i32,) -> Direction {
+    if x.abs() >= y.abs() {
+        if x < 0 {
+            return Direction::Left;
+        }
+        else if x > 0 {
+            return Direction::Right;
+        }
+        else {
+            return Direction::Center;
+        }
+    } 
+    else {
+        if y < 0 {
+            return Direction::Up;
+        }
+        else if y > 0 {
+            return Direction::Down;
+        }
+        else {
+            return Direction::Center;
+        }
     }
 }

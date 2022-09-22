@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum ProcState {
     MainMenu,
     Help,
@@ -6,8 +6,8 @@ pub enum ProcState {
     Playing,
     PostMove,
     Restart,
+    Chat,
     GotPackage(i32, i32),
-    DeliveredPackage, // ???
+    DeliveredPackage,
     LookMode,
-    LookedAt(String),
 }

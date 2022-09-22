@@ -104,6 +104,7 @@ impl MainViewer {
         fallover_threshold: f32,
         width: u32,
         height: u32,
+        score: i32,
     ) {
         let speed_width = 8;
         let speed_tlx = width - speed_width - 1;
@@ -136,10 +137,9 @@ impl MainViewer {
 
         self.draw_speed(ctx, speed_tlx as i32, msg_log_tl_y, player, max_speed, speed_width as u32);
 
-        let mut s = String::from("Time: ");
-        s.push_str(&(player.time.round()).to_string());
-        //s.push_str(&format!(", Deliveries Left: {}, ", goals.count()));
-        s.push_str(" Help: press Esc");
+        let mut s = String::new();
+        s.push_str(&format!("${}, ", score));
+        s.push_str("Help: press Esc");
 
         ctx.print_color(
             0,
@@ -202,7 +202,7 @@ impl MainViewer {
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                if true/*table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y)*/ {
+                if table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y) {
                     let obstacle_type = table.get_obstacle(x, y);
 
                     let t = table.traversability((player.x(), player.y()), (x, y));
@@ -246,8 +246,8 @@ impl MainViewer {
                     }
 
                     for goal in goals.goals.keys() {
-                        if x == goal.0 && y == goal.1 {
-                            if true/*visible.contains(&Point::new(x, y))*/ {
+                        if x == goal.0 && y == goal.1 && !goals.picked_up.contains(&(x, y)) {
+                            if visible.contains(&Point::new(x, y)) {
                                 match t {
                                     Traversability::No => {
                                         ctx.set(
@@ -295,7 +295,7 @@ impl MainViewer {
                                         color = *c;
                                     }
                                 }
-                                if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) /*&& visible.contains(&Point::new(x, y))*/ {
+                                if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) && visible.contains(&Point::new(x, y)) {
                                     match p.1.player.recent_event {
                                         PlayerEvent::FallOver => {
                                             ctx.set(
@@ -454,9 +454,9 @@ impl MainViewer {
         );
 
         let mut l_index = (self.message_log.len() as i32 - 1) as i32;
-        let mut scr_y = tly + height as i32 - 2;
+        let mut scr_y = tly + 1;
 
-        while scr_y > tly && l_index >= 0 {
+        while scr_y < tly + height as i32 - 2 && l_index >= 0 {
             ctx.print_color(
                 tlx + 1,
                 scr_y,
@@ -465,7 +465,7 @@ impl MainViewer {
                 &self.message_log[l_index as usize].0,
             );
 
-            scr_y -= 1;
+            scr_y += 1;
             l_index -= 1;
         }
     }

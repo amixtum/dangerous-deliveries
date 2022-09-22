@@ -37,6 +37,7 @@ impl ViewManager {
         fallover_threshold: f32,
         window_width: u32,
         window_height: u32,
+        score: i32,
     ) {
         match state {
             ProcState::MainMenu => {
@@ -58,12 +59,10 @@ impl ViewManager {
             ProcState::Playing
             | ProcState::PostMove
             | ProcState::GotPackage(..)
-            | ProcState::LookedAt(_)
             | ProcState::LookMode
+            | ProcState::Chat
             | ProcState::Restart 
             | ProcState::DeliveredPackage => {
-                //self.main_view.clear_log();
-
                 return self.main_view.draw_layout(
                     ctx,
                     obs_table,
@@ -75,6 +74,7 @@ impl ViewManager {
                     fallover_threshold,
                     window_width,
                     window_height,
+                    score,
                 );
             }
         }

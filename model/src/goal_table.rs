@@ -1,10 +1,11 @@
-use std::{collections::{HashMap}};
+use std::{collections::{HashMap, HashSet}};
 
 use rltk::RGB;
 
 pub struct GoalTable {
     pub goals: HashMap<(i32, i32), (usize, RGB)>,
     pub index_map: HashMap<usize, (i32, i32)>,
+    pub picked_up: HashSet<(i32, i32)>,
 }
 
 impl GoalTable {
@@ -12,6 +13,7 @@ impl GoalTable {
         GoalTable {
             goals: HashMap::new(),
             index_map: HashMap::new(),
+            picked_up: HashSet::new(),
         }
     }
 }
@@ -20,6 +22,7 @@ impl GoalTable {
     pub fn clear(&mut self) {
         self.goals.clear();
         self.index_map.clear();
+        self.picked_up.clear();
     }
 
     pub fn add_goal(&mut self, goal: (i32, i32), dest: (usize, RGB)) {

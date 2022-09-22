@@ -1,25 +1,6 @@
 Turtle Map Gen
 
-Pure automata with tunneling (already have tunnel_pockets)
-
-Game::process_post_move() needs a new add_message?
-
-messages should help the player:
-  1. find the package
-    -> change lookmode to chat
-    -> when no one is near you, add a message to the log like "stick it to the man" 
-    -> when another skater is nearby, they respond with a message telling the player where the package is 
-  2. find the recipient
-    -> same as above, with:
-      -> nearby skaters that have seen the recipient will respond with a message that colors a noun with the color of the
-      recipient (recipient will only be colored once the player has found a skater who has seen them)
-
-Game Loop
-  1. Find package
-    spawn player
-    spawn package
-  2. Deliver package to ai
-    spawn many ai's
+Pure automata with tunneling (already have tunnel_pockets fn that tunnels small pockets)
 
 Menus
   Main Menu

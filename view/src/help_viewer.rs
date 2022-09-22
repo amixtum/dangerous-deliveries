@@ -36,8 +36,8 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     left_col.push(String::from("Help Message"));
     right_col.push(String::from("Semicolon"));
 
-    //left_col.push(String::from("Apply Automata"));
-    //right_col.push(String::from("G"));
+    left_col.push(String::from("Get Information or Give Package"));
+    right_col.push(String::from("G"));
 
     left_col.push(String::from("Restart"));
     right_col.push(String::from("5"));
