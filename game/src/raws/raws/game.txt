@@ -5,10 +5,10 @@ game_width 80
 game_height 40
 
 # number of opponents
-opponents 32
+opponents 24
 
 # opponents use this to determine where to go next 
-ai_sight_radius 16
+ai_sight_radius 8
 
 # turns before the ai chooses a new goal after stalling
 giveup_turns 3

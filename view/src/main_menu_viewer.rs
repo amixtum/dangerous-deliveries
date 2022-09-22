@@ -8,10 +8,10 @@ pub fn main_menu_screen(ctx: &mut rltk::Rltk, width: u32, height: u32) {
     right_col.push("");
 
     left_col.push(("How to Play", RGB::named(rltk::GREEN)));
-    right_col.push("Press 0");
+    right_col.push("Press Esc");
 
     left_col.push(("Play", RGB::named(rltk::CYAN)));
-    right_col.push("Press 1 or Esc");
+    right_col.push("Press Enter");
 
     //left_col.push(("Set Level", Color::Magenta));
     //right_col.push("Press 2");

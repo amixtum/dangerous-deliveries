@@ -1,5 +1,5 @@
 use petgraph::{unionfind::UnionFind};
-use rltk::{Algorithm2D, Point, BaseMap};
+use rltk::{Algorithm2D, Point, BaseMap, DistanceAlg};
 use util::vec_ops;
 
 use crate::player::Player;
@@ -24,6 +24,31 @@ impl BaseMap for ObstacleTable {
         let pt = self.index_to_point2d(idx);
         self.get_obstacle(pt.x, pt.y) != Obstacle::Platform ||
         self.blocked.contains_key(&(pt.x, pt.y)) 
+    }
+
+    fn get_available_exits(&self, idx: usize) -> rltk::SmallVec<[(usize, f32); 10]> {
+        let mut exits = rltk::SmallVec::new();
+        let x = idx as i32 % self.width as i32;
+        let y = idx as i32 / self.width as i32;
+        let w = self.width as usize;
+
+        // Cardinal directions
+        if self.is_exit_valid(x-1, y) { exits.push((idx-1, 1.0)) };
+        if self.is_exit_valid(x+1, y) { exits.push((idx+1, 1.0)) };
+        if self.is_exit_valid(x, y-1) { exits.push((idx-w, 1.0)) };
+        if self.is_exit_valid(x, y+1) { exits.push((idx+w, 1.0)) };
+        if self.is_exit_valid(x-1, y-1) { exits.push((idx-1-w, 1.45)) };
+        if self.is_exit_valid(x+1, y-1) { exits.push((idx+1-w, 1.45)) };
+        if self.is_exit_valid(x-1, y+1) { exits.push((idx-1+w, 1.45)) };
+        if self.is_exit_valid(x+1, y+1) { exits.push((idx+1+w, 1.45)) };
+
+        exits
+    }
+
+    fn get_pathing_distance(&self, idx1: usize, idx2: usize) -> f32 {
+        let p1 = self.index_to_point2d(idx1);
+        let p2 = self.index_to_point2d(idx2);
+        DistanceAlg::Manhattan.distance2d(p1, p2)
     }
 }
 
@@ -69,6 +94,13 @@ impl ObstacleTable {
 }
 
 impl ObstacleTable {
+    fn is_exit_valid(&self, x: i32, y: i32) -> bool {
+        if x < 0 || x > self.width as i32 - 1 || y < 0 || y > self.height as i32 - 1 {
+            return false;
+        }
+        self.get_obstacle(x, y) == Obstacle::Platform
+    }
+
     pub fn xy_flat(&self, x: i32, y: i32) -> u32 {
         y as u32 * self.width + x as u32
     }

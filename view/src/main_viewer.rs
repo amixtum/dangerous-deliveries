@@ -110,7 +110,7 @@ impl MainViewer {
         let msg_log_height = speed_width as i32;
         let table_view_width = width;
 
-        let table_view_height = height as i32 - msg_log_height - 1;
+        let table_view_height = height as i32 - msg_log_height - 3;
         let msg_log_tl_y = height as i32 - msg_log_height - 1;
 
         self.draw_table(
@@ -202,7 +202,7 @@ impl MainViewer {
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                if table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y) {
+                if true/*table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y)*/ {
                     let obstacle_type = table.get_obstacle(x, y);
 
                     let t = table.traversability((player.x(), player.y()), (x, y));
@@ -247,7 +247,7 @@ impl MainViewer {
 
                     for goal in goals.goals.keys() {
                         if x == goal.0 && y == goal.1 {
-                            if visible.contains(&Point::new(x, y)) {
+                            if true/*visible.contains(&Point::new(x, y))*/ {
                                 match t {
                                     Traversability::No => {
                                         ctx.set(
@@ -295,7 +295,7 @@ impl MainViewer {
                                         color = *c;
                                     }
                                 }
-                                if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) && visible.contains(&Point::new(x, y)) {
+                                if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) /*&& visible.contains(&Point::new(x, y))*/ {
                                     match p.1.player.recent_event {
                                         PlayerEvent::FallOver => {
                                             ctx.set(

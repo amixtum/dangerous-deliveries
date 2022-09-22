@@ -48,7 +48,6 @@ pub struct Game {
     redraw: bool,
     first_draw: bool,
     gameover_done: bool,
-    applied_automata: bool,
 }
 
 impl Game {
@@ -72,7 +71,7 @@ impl Game {
             turns_to_giveup: Vec::new(),
             waiting_to_respawn_idx: HashSet::new(),
             shirt_colors: [RGB::named(rltk::CYAN), RGB::named(rltk::MAGENTA), RGB::named(rltk::AQUAMARINE), RGB::named(rltk::FORESTGREEN),
-                                    RGB::named(rltk::YELLOWGREEN), RGB::named(rltk::YELLOW), RGB::named(rltk::BROWN1), RGB::named(rltk::GRAY)],
+                                    RGB::named(rltk::TEAL), RGB::named(rltk::BURLYWOOD), RGB::named(rltk::BROWN1), RGB::named(rltk::GRAY)],
 
             state: ProcState::MainMenu,
             last_state: ProcState::MainMenu,
@@ -80,7 +79,6 @@ impl Game {
             redraw: true,
             first_draw: true,
             gameover_done: false,
-            applied_automata: true,
         };
 
         Game::init(&mut g);
@@ -269,9 +267,16 @@ impl Game {
         self.recipient_idx = aiidx as i32;
 
         let coloridx = rng.range(0, self.shirt_colors.len());
+
         self.goal_table.add_goal(
             spawning::random_platform(&mut self.obs_table), 
             (aiidx, self.shirt_colors[coloridx]));
+
+        // unclutter the log
+        self.viewer.main_view.clear_log();
+
+        self.set_state(ProcState::Playing);
+
         return true;
     }
 
@@ -282,10 +287,10 @@ impl Game {
                 VirtualKeyCode::Q => {
                     return false;
                 }
-                VirtualKeyCode::Key0 => {
+                VirtualKeyCode::Escape => {
                     self.set_state(ProcState::Help);
                 }
-                VirtualKeyCode::Escape | VirtualKeyCode::Key1 => {
+                VirtualKeyCode::Return => {
                     self.set_state(match self.last_state {
                         ProcState::LookMode => ProcState::LookMode,
                         _ => ProcState::Playing,
@@ -338,7 +343,6 @@ impl Game {
     fn process_restart(&mut self) -> bool {
         self.reset_game();
         self.set_state(ProcState::Playing);
-        self.applied_automata = true;
         self.viewer.main_view.clear_log();
         return true;
     }
@@ -356,7 +360,7 @@ impl Game {
                         .add_string(String::from("Look Where?"), RGB::named(rltk::YELLOW));
                     self.set_state(ProcState::LookMode);
                 }
-                VirtualKeyCode::Return => {
+                VirtualKeyCode::Key5 => {
                     self.set_state(ProcState::Restart);
                 }
                 _ => {
@@ -447,7 +451,7 @@ impl Game {
             self.turns_to_giveup[index] -= 1;
         }
 
-        if self.opponents[index].reached_goal(3.0) || self.turns_to_giveup[index] <= 0 {
+        if self.opponents[index].reached_goal(self.ai_sight_radius as f32 - self.ai_sight_radius as f32 / 3.0) || self.turns_to_giveup[index] <= 0 {
             self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);
             self.turns_to_giveup[index] = self.giveup_turns;
         }
@@ -491,16 +495,6 @@ impl Game {
                 ProcState::GotPackage(x, y) => ProcState::GotPackage(x, y),
                 _ => ProcState::PostMove,
             });
-        }
-
-        match self.player.recent_event {
-            PlayerEvent::OnRail | PlayerEvent::OffRail => {
-                self.applied_automata = true;
-            }
-            PlayerEvent::Wait => {}
-            _ => {
-                self.applied_automata = false;
-            }
         }
     }
 
@@ -549,21 +543,16 @@ impl Game {
 
     fn process_got_package(&mut self, x: i32, y: i32) -> bool {
         if let Some(idx_color) = self.goal_table.goals.get(&(x, y)) {
-            let mut rng = RandomNumberGenerator::new();
-
             self.recipient_idx = idx_color.0 as i32;
             self.viewer
                 .main_view
                 .add_string(String::from("Picked up package, find the skater wearing this color shirt"), idx_color.1);
             
-            self.goal_table.add_goal(
-                spawning::random_platform(&self.obs_table), 
-                (rng.range(0, self.opponents.len()), idx_color.1));
-
-            self.set_state(ProcState::Playing);
         }
 
         self.goal_table.remove_goal_if_reached((x, y));
+
+        self.set_state(ProcState::Playing);
 
         return true;
     }

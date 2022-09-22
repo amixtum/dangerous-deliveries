@@ -6,7 +6,7 @@ use model::player::Player;
 use model::player_event::PlayerEvent;
 
 use model::visibility;
-use rltk::{RandomNumberGenerator, Point, DistanceAlg};
+use rltk::{RandomNumberGenerator, Point, DistanceAlg, Algorithm2D};
 use util::vec_ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -15,6 +15,7 @@ struct Pos(i32, i32);
 pub struct AIController {
     pub player: Player,
     pub goal: (i32, i32),
+    rng: RandomNumberGenerator,
 }
 
 impl AIController {
@@ -22,6 +23,7 @@ impl AIController {
         AIController {
             player: Player::new(start_x, start_y),
             goal: (-1, -1),
+            rng: RandomNumberGenerator::new(),
         }
     }
 }
@@ -44,14 +46,20 @@ impl AIController {
     pub fn choose_goal(&mut self, obs_table: &ObstacleTable, sight_radius: u32) {
         let mut rng = RandomNumberGenerator::new();
         let ai_player = &self.player;
-        let speed_units = vec_ops::discrete_jmp(ai_player.speed);
-        let center = (ai_player.x() + (speed_units.0 as f32 * ai_player.speed_x() * sight_radius as f32) as i32, ai_player.y() + (speed_units.1 as f32 * ai_player.speed_y() * sight_radius as f32) as i32);
+        let norm_speed = vec_ops::normalize(ai_player.speed);
+
+        let mut center = (ai_player.x() + rng.range(-(sight_radius as i32), sight_radius as i32), ai_player.y() + rng.range(-(sight_radius as i32), sight_radius as i32));
+        if !f32::is_nan(norm_speed.0) {
+            center = (ai_player.x() + (norm_speed.0 * sight_radius as f32) as i32, ai_player.y() + (norm_speed.1 * sight_radius as f32) as i32);
+        }
+        center.0 = center.0.clamp(0, obs_table.width() as i32 - 1);
+        center.1 = center.0.clamp(0, obs_table.height() as i32 - 1);
         let visible = visibility::get_fov(center, obs_table, sight_radius as i32);
         let visible = visible.iter().map(|p| {(p.x, p.y)}).filter(|p| {
             obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
         }).collect::<Vec<_>>();
         let potential_goals = visible.iter().filter(|p| {
-            (rltk::DistanceAlg::Manhattan.distance2d(Point::new(ai_player.x(), ai_player.y()), Point::new(p.0, p.1)) >= sight_radius as f32) &&
+            (rltk::DistanceAlg::Manhattan.distance2d(Point::new(ai_player.x(), ai_player.y()), Point::new(p.0, p.1)) >= sight_radius as f32 - 1.0) &&
             obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
         }).collect::<Vec<_>>();
 
@@ -69,6 +77,7 @@ impl AIController {
         if self.goal.0 == -1 || self.goal.1 == -1 {
             return;
         }
+
         self.player = self.next_move(obs_table, player_control);
     }
 
@@ -81,104 +90,25 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Player {
-        //let mut rng = RandomNumberGenerator::new();
-        let try_platform = self.next_platform(obs_table, player_control);
+        let mut moves = self.get_moves(&self.player, obs_table, player_control);
+        if moves.len() == 0 {
+            return self.player;
+        }
+        if moves.len() == 1 {
+            return moves[0].0;
+        }
+        moves.sort_by(|a, b| {
+            a.1.partial_cmp(&b.1).unwrap()
+        });
 
-        // if the only platform is the one the player is standing on,
-        // try again, this time including rails
-        // dont' exclude the possibility of staying in place indefinitely
-        if try_platform.x() == self.player.x() && try_platform.y() == self.player.y() {
-            let mut moves = self.get_moves(&self.player, obs_table, player_control);
-
-            if moves.len() > 0 {
-                moves.sort_by(|l, r| self.dist_to_goal(&l.0).cmp(&self.dist_to_goal(&r.0)));
-                if moves.len() == 1 {
-                    return moves[0].0;
-                } else if moves.len() > 1 {
-                    match moves[1].0.recent_event {
-                        PlayerEvent::FallOver |
-                        PlayerEvent::Respawn |
-                        PlayerEvent::GameOver(_) => {
-                            if moves.len() > 2 {
-                                if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
-                                    return moves[2].0;
-                                }
-                            }
-                            return moves[0].0;
-                        }
-                        _ => {
-                            if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
-                                if moves.len() > 2 {
-                                    if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
-                                        return moves[2].0;
-                                    }
-                                }
-                                return moves[0].0;
-                            }
-
-                            if moves.len() > 2 {
-                                if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
-                                    return moves[2].0;
-                                }
-                            }
-                            return moves[1].0;
-                        }
-                    }
+        if moves[0].0.x() == self.player.x() && moves[0].0.y() == self.player.y() {
+            for index in (0..moves.len()).rev() {
+                if moves[index].0.x() != self.player.x() || moves[index].0.y() != self.player.y() {
+                    return moves[index].0
                 }
             }
         }
-
-        return try_platform;
-    }
-
-    pub fn next_platform(
-        &mut self,
-        obs_table: &ObstacleTable,
-        player_control: &PlayerController,
-    ) -> Player {
-        let mut moves = self.get_moves_platform(&self.player, obs_table, player_control);
-
-        if moves.len() > 0 {
-            moves.sort_by(|l, r| l.1.partial_cmp(&r.1).unwrap());
-
-            if moves.len() == 1 {
-                return moves[0].0;
-            } else if moves.len() > 1 {
-                match moves[1].0.recent_event {
-                    PlayerEvent::FallOver |
-                    PlayerEvent::Respawn |
-                    PlayerEvent::GameOver(_) => {
-                        if moves.len() > 2 {
-                            if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
-                                return moves[2].0;
-                            }
-                        }
-                        return moves[0].0;
-                    }
-                    _ => {
-                        if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
-                            if moves.len() > 2 {
-                                if self.player.x() == moves[0].0.x() && self.player.y() == moves[0].0.y() {
-                                    return moves[2].0;
-                                }
-                            }
-                            return moves[0].0;
-                        }
-
-                        if moves.len() > 2 {
-                            if self.player.x() == moves[1].0.x() && self.player.y() == moves[1].0.y() {
-                                return moves[2].0;
-                            }
-                        }
-                        return moves[1].0;
-                    }
-                }
-            }
-        }
-
-        self.player.recent_event = PlayerEvent::GameOver(self.player.time.round() as i32);
-
-        return self.player;
+        return moves[0].0
     }
 
     pub fn get_moves(
@@ -191,6 +121,8 @@ impl AIController {
         let mut falls: Vec<(Player, f32)> = Vec::new();
         let mut rng = RandomNumberGenerator::new();
 
+        let path = rltk::a_star_search(obs_table.point2d_to_index(Point::new(self.player.x(), self.player.y())), obs_table.point2d_to_index(Point::new(self.goal.0, self.goal.1)), obs_table);
+
         // iterate through all possible inputs to the player controller
         // and push the new player with the time the move took
         for key in player_control.get_keys() {
@@ -199,13 +131,21 @@ impl AIController {
             match mov.recent_event {
                 PlayerEvent::GameOver(_) | PlayerEvent::Respawn => {}
                 PlayerEvent::FallOver => {
-                    falls.push((mov, 999.0));
+                    falls.push((mov, 1024.0));
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
                     Obstacle::Wall |
                     Obstacle::Pit => {}
                     _ => {
-                        moves.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
+                        if path.success && path.steps.len() > 1 {
+                            let mut step = obs_table.index_to_point2d(path.steps[1]);
+                            for s in path.steps.iter().skip(2) {
+                                if rng.roll_dice(1, 2) == 1 {
+                                    step = obs_table.index_to_point2d(*s);
+                                }
+                            }
+                            moves.push((mov, DistanceAlg::Manhattan.distance2d(step, Point::new(mov.x(), mov.y()))));
+                        }
                     }
                 },
             }
@@ -237,11 +177,11 @@ impl AIController {
             match mov.recent_event {
                 PlayerEvent::GameOver(_) | PlayerEvent::Respawn => {}
                 PlayerEvent::FallOver => {
-                    falls.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
+                    falls.push((mov, 99999.0));
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
                     Obstacle::Platform => {
-                        moves.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(mov.x(), mov.y()), Point::new(self.goal.0, self.goal.1))));
+                        moves.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(self.player.x(), self.player.y()), Point::new(mov.x(), mov.y()))));
                     }
                     _ => {}
                 },
