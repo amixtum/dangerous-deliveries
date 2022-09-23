@@ -97,6 +97,7 @@ impl Game {
 impl GameState for Game {
     fn tick(&mut self, ctx: &mut rltk::BTerm) {
         // crashes the page on the web 
+        /*
         match ctx.key {
             None => {}
             Some(key) => match key {
@@ -108,6 +109,7 @@ impl GameState for Game {
                 _ => {}
             }
         }
+        */
 
         let _playing = self.handle_input(ctx);
 

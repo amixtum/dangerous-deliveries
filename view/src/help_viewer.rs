@@ -1,10 +1,11 @@
-use rltk::RGB;
+use rltk::{RGB, Bresenham, Point};
 
 pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     let mut left_col = Vec::new();
     let mut right_col = Vec::new();
 
-
+    left_col.push(String::from("Movement"));
+    right_col.push(String::from(""));
 
     left_col.push(String::from("Up"));
     right_col.push(String::from("W or K"));
@@ -30,8 +31,11 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     left_col.push(String::from("SouthEast"));
     right_col.push(String::from("C or N"));
 
-    left_col.push(String::from("Wait"));
+    left_col.push(String::from("Wait (don't increase speed or turn)"));
     right_col.push(String::from("1 or Period"));
+
+    left_col.push(String::from("Messages"));
+    right_col.push(String::from(""));
 
     left_col.push(String::from("Help Message"));
     right_col.push(String::from("Semicolon"));
@@ -39,7 +43,10 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     left_col.push(String::from("Get Information or Give Package"));
     right_col.push(String::from("G"));
 
-    left_col.push(String::from("Restart"));
+    left_col.push(String::from("Game Functions"));
+    right_col.push(String::from(""));
+
+    left_col.push(String::from("New Game"));
     right_col.push(String::from("5"));
 
     left_col.push(String::from("Menu"));
@@ -54,7 +61,11 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     while col < left_col.len() && col < right_col.len() {
         ctx.print(1, sc_y, &left_col[col]);
         ctx.print(width as i32 / 2, sc_y, &right_col[col]);
-        sc_y += 2;
+        sc_y += 1;
+        for x in 0..width {
+            ctx.set(x, sc_y, RGB::named(rltk::DARKGRAY), RGB::named(rltk::BLACK), rltk::to_cp437('─'));
+        }
+        sc_y += 1;
         col += 1;
     }
 
@@ -105,6 +116,14 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
         RGB::named(rltk::BLACK),
         is,
     );
+
+    sc_y += 2;
+
+    ctx.print_color(1, sc_y, RGB::named(rltk::GRAY), RGB::named(rltk::BLACK), "You are on a skateboard. Press a movement key to increase speed or turn.");
+
+    sc_y += 2;
+
+    ctx.print_color(1, sc_y, RGB::named(rltk::GRAY), RGB::named(rltk::BLACK), "Press G when near another skater to talk to them");
 
     sc_y += 2;
 
