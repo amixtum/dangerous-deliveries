@@ -209,7 +209,7 @@ impl MainViewer {
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                if true/*table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y)*/ {
+                if table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y) {
                     let obstacle_type = table.get_obstacle(x, y);
 
                     let t = table.traversability((player.x(), player.y()), (x, y));
@@ -308,10 +308,8 @@ impl MainViewer {
                                 }
                                 if x == p.1.player.x()
                                     && y == p.1.player.y()
-                                    /*
                                     && table.blocked.contains_key(&(x, y))
                                     && visible.contains(&Point::new(x, y))
-                                    */
                                 {
                                     match p.1.player.recent_event {
                                         PlayerEvent::FallOver => {

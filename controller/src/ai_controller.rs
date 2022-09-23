@@ -5,7 +5,6 @@ use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 
-use model::visibility;
 use rltk::{Algorithm2D, DistanceAlg, Point, RandomNumberGenerator};
 use util::vec_ops;
 
@@ -43,7 +42,7 @@ impl AIController {
         self.goal = pos;
     }
 
-    pub fn choose_goal(&mut self, obs_table: &ObstacleTable, sight_radius: u32) {
+    pub fn choose_goal(&mut self, obs_table: &ObstacleTable, _sight_radius: u32) {
         let mut rng = RandomNumberGenerator::new();
         //let ai_player = &self.player;
         //let norm_speed = vec_ops::normalize(ai_player.speed);
