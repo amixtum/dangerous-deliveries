@@ -1,5 +1,5 @@
-use petgraph::{unionfind::UnionFind};
-use rltk::{Algorithm2D, Point, BaseMap, DistanceAlg};
+use petgraph::unionfind::UnionFind;
+use rltk::{Algorithm2D, BaseMap, DistanceAlg, Point};
 use util::vec_ops;
 
 use crate::player::Player;
@@ -22,8 +22,8 @@ pub struct ObstacleTable {
 impl BaseMap for ObstacleTable {
     fn is_opaque(&self, idx: usize) -> bool {
         let pt = self.index_to_point2d(idx);
-        self.get_obstacle(pt.x, pt.y) != Obstacle::Platform ||
-        self.blocked.contains_key(&(pt.x, pt.y)) 
+        self.get_obstacle(pt.x, pt.y) != Obstacle::Platform
+            || self.blocked.contains_key(&(pt.x, pt.y))
     }
 
     fn get_available_exits(&self, idx: usize) -> rltk::SmallVec<[(usize, f32); 10]> {
@@ -33,14 +33,30 @@ impl BaseMap for ObstacleTable {
         let w = self.width as usize;
 
         // Cardinal directions
-        if self.is_exit_valid(x-1, y) { exits.push((idx-1, 1.0)) };
-        if self.is_exit_valid(x+1, y) { exits.push((idx+1, 1.0)) };
-        if self.is_exit_valid(x, y-1) { exits.push((idx-w, 1.0)) };
-        if self.is_exit_valid(x, y+1) { exits.push((idx+w, 1.0)) };
-        if self.is_exit_valid(x-1, y-1) { exits.push((idx-1-w, 1.45)) };
-        if self.is_exit_valid(x+1, y-1) { exits.push((idx+1-w, 1.45)) };
-        if self.is_exit_valid(x-1, y+1) { exits.push((idx-1+w, 1.45)) };
-        if self.is_exit_valid(x+1, y+1) { exits.push((idx+1+w, 1.45)) };
+        if self.is_exit_valid(x - 1, y) {
+            exits.push((idx - 1, 1.0))
+        };
+        if self.is_exit_valid(x + 1, y) {
+            exits.push((idx + 1, 1.0))
+        };
+        if self.is_exit_valid(x, y - 1) {
+            exits.push((idx - w, 1.0))
+        };
+        if self.is_exit_valid(x, y + 1) {
+            exits.push((idx + w, 1.0))
+        };
+        if self.is_exit_valid(x - 1, y - 1) {
+            exits.push((idx - 1 - w, 1.45))
+        };
+        if self.is_exit_valid(x + 1, y - 1) {
+            exits.push((idx + 1 - w, 1.45))
+        };
+        if self.is_exit_valid(x - 1, y + 1) {
+            exits.push((idx - 1 + w, 1.45))
+        };
+        if self.is_exit_valid(x + 1, y + 1) {
+            exits.push((idx + 1 + w, 1.45))
+        };
 
         exits
     }
@@ -130,7 +146,9 @@ impl ObstacleTable {
         let x_diff = to_x - from_x;
         let y_diff = to_y - from_y;
 
-        if (self.blocked.contains_key(&(to_x, to_y)) && !(from_x == to_x && from_y == to_y)) || self.get_obstacle(to_x, to_y) == Obstacle::Wall {
+        if (self.blocked.contains_key(&(to_x, to_y)) && !(from_x == to_x && from_y == to_y))
+            || self.get_obstacle(to_x, to_y) == Obstacle::Wall
+        {
             return false;
         }
 
@@ -177,15 +195,22 @@ impl ObstacleTable {
         for x in 0..self.width {
             for y in 0..self.height {
                 if self.get_obstacle(x as i32, y as i32) == Obstacle::Platform {
-                    let nbrs = vec_ops::neighbors((x as i32, y as i32), (0, 0), (self.width as i32 - 1, self.height as i32 - 1));
+                    let nbrs = vec_ops::neighbors(
+                        (x as i32, y as i32),
+                        (0, 0),
+                        (self.width as i32 - 1, self.height as i32 - 1),
+                    );
                     for nbr in nbrs.iter() {
                         if self.get_obstacle(nbr.0, nbr.1) == Obstacle::Platform {
-                            self.ufind.union(self.xy_flat(x as i32, y as i32), self.xy_flat(nbr.0, nbr.1));
+                            self.ufind.union(
+                                self.xy_flat(x as i32, y as i32),
+                                self.xy_flat(nbr.0, nbr.1),
+                            );
                         }
                     }
                 }
             }
-        } 
+        }
     }
 
     pub fn set_obstacle(&mut self, (x, y): (i32, i32), obs: Obstacle) {

@@ -1,7 +1,7 @@
 use controller::ai_controller::AIController;
 use controller::player_controller::PlayerController;
 use model::visibility;
-use rltk::{FontCharType, RGB, Bresenham, Point};
+use rltk::{Bresenham, FontCharType, Point, RGB};
 
 use std::collections::HashMap;
 
@@ -135,7 +135,14 @@ impl MainViewer {
             msg_log_height as u32,
         );
 
-        self.draw_speed(ctx, speed_tlx as i32, msg_log_tl_y, player, max_speed, speed_width as u32);
+        self.draw_speed(
+            ctx,
+            speed_tlx as i32,
+            msg_log_tl_y,
+            player,
+            max_speed,
+            speed_width as u32,
+        );
 
         let mut s = String::new();
         s.push_str(&format!("${}, ", score));
@@ -238,7 +245,11 @@ impl MainViewer {
                             ctx.set(
                                 sc_x,
                                 sc_y,
-                                RGB::from_f32((1.0 - balance_amount) * inv_dist, 0.0, balance_amount * inv_dist),
+                                RGB::from_f32(
+                                    (1.0 - balance_amount) * inv_dist,
+                                    0.0,
+                                    balance_amount * inv_dist,
+                                ),
                                 RGB::named(rltk::BLACK),
                                 symbol,
                             );
@@ -295,7 +306,11 @@ impl MainViewer {
                                         color = *c;
                                     }
                                 }
-                                if x == p.1.player.x() && y == p.1.player.y() && table.blocked.contains_key(&(x, y)) && visible.contains(&Point::new(x, y)) {
+                                if x == p.1.player.x()
+                                    && y == p.1.player.y()
+                                    && table.blocked.contains_key(&(x, y))
+                                    && visible.contains(&Point::new(x, y))
+                                {
                                     match p.1.player.recent_event {
                                         PlayerEvent::FallOver => {
                                             ctx.set(
@@ -417,7 +432,10 @@ impl MainViewer {
             .clamp(0, size as i32 - 1);
 
         // indicate speed with this symbol
-        let lines = Bresenham::new(Point::new(tlx + (size as i32 / 2), tly + (size as i32 / 2)), Point::new(tlx + p_x, tly + p_y));
+        let lines = Bresenham::new(
+            Point::new(tlx + (size as i32 / 2), tly + (size as i32 / 2)),
+            Point::new(tlx + p_x, tly + p_y),
+        );
         ctx.set(
             tlx + (size as i32 / 2),
             tly + (size as i32 / 2),

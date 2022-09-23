@@ -6,7 +6,7 @@ use model::player::Player;
 use model::player_event::PlayerEvent;
 
 use model::visibility;
-use rltk::{RandomNumberGenerator, Point, DistanceAlg, Algorithm2D};
+use rltk::{Algorithm2D, DistanceAlg, Point, RandomNumberGenerator};
 use util::vec_ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -48,25 +48,35 @@ impl AIController {
         let ai_player = &self.player;
         //let norm_speed = vec_ops::normalize(ai_player.speed);
 
-        let mut center = (ai_player.x() + rng.range(-(sight_radius as i32), sight_radius as i32), ai_player.y() + rng.range(-(sight_radius as i32), sight_radius as i32));
+        let mut center = (
+            ai_player.x() + rng.range(-(sight_radius as i32), sight_radius as i32),
+            ai_player.y() + rng.range(-(sight_radius as i32), sight_radius as i32),
+        );
         /*if !f32::is_nan(norm_speed.0) {
             center = (ai_player.x() + (norm_speed.0 * sight_radius as f32) as i32, ai_player.y() + (norm_speed.1 * sight_radius as f32) as i32);
         }*/
         center.0 = center.0.clamp(0, obs_table.width() as i32 - 1);
         center.1 = center.0.clamp(0, obs_table.height() as i32 - 1);
         let visible = visibility::get_fov(center, obs_table, sight_radius as i32);
-        let visible = visible.iter().map(|p| {(p.x, p.y)}).filter(|p| {
-            obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
-        }).collect::<Vec<_>>();
-        let potential_goals = visible.iter().filter(|p| {
-            (rltk::DistanceAlg::Manhattan.distance2d(Point::new(ai_player.x(), ai_player.y()), Point::new(p.0, p.1)) >= sight_radius as f32 - 1.0) &&
-            obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
-        }).collect::<Vec<_>>();
+        let visible = visible
+            .iter()
+            .map(|p| (p.x, p.y))
+            .filter(|p| obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform)
+            .collect::<Vec<_>>();
+        let potential_goals = visible
+            .iter()
+            .filter(|p| {
+                (rltk::DistanceAlg::Manhattan.distance2d(
+                    Point::new(ai_player.x(), ai_player.y()),
+                    Point::new(p.0, p.1),
+                ) >= sight_radius as f32 - 1.0)
+                    && obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
+            })
+            .collect::<Vec<_>>();
 
         if let Some(goal) = rng.random_slice_entry(&potential_goals) {
             self.set_goal(**goal);
-        }
-        else if let Some(goal) = rng.random_slice_entry(&visible) {
+        } else if let Some(goal) = rng.random_slice_entry(&visible) {
             self.set_goal(*goal);
         } else {
             self.set_goal((obs_table.width() as i32 / 2, obs_table.height() as i32 / 2));
@@ -82,7 +92,10 @@ impl AIController {
     }
 
     pub fn reached_goal(&self, radius: f32) -> bool {
-        DistanceAlg::Manhattan.distance2d(Point::new(self.player.x(), self.player.y()), Point::new(self.goal.0, self.goal.1)) <= radius
+        DistanceAlg::Manhattan.distance2d(
+            Point::new(self.player.x(), self.player.y()),
+            Point::new(self.goal.0, self.goal.1),
+        ) <= radius
     }
 
     pub fn next_move(
@@ -97,18 +110,16 @@ impl AIController {
         if moves.len() == 1 {
             return moves[0].0;
         }
-        moves.sort_by(|a, b| {
-            a.1.partial_cmp(&b.1).unwrap()
-        });
+        moves.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
         if moves[0].0.x() == self.player.x() && moves[0].0.y() == self.player.y() {
             for index in (0..moves.len()).rev() {
                 if moves[index].0.x() != self.player.x() || moves[index].0.y() != self.player.y() {
-                    return moves[index].0
+                    return moves[index].0;
                 }
             }
         }
-        return moves[0].0
+        return moves[0].0;
     }
 
     pub fn get_moves(
@@ -121,7 +132,11 @@ impl AIController {
         let mut falls: Vec<(Player, f32)> = Vec::new();
         let mut rng = RandomNumberGenerator::new();
 
-        let path = rltk::a_star_search(obs_table.point2d_to_index(Point::new(self.player.x(), self.player.y())), obs_table.point2d_to_index(Point::new(self.goal.0, self.goal.1)), obs_table);
+        let path = rltk::a_star_search(
+            obs_table.point2d_to_index(Point::new(self.player.x(), self.player.y())),
+            obs_table.point2d_to_index(Point::new(self.goal.0, self.goal.1)),
+            obs_table,
+        );
 
         // iterate through all possible inputs to the player controller
         // and push the new player with the time the move took
@@ -134,8 +149,7 @@ impl AIController {
                     falls.push((mov, 1024.0));
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
-                    Obstacle::Wall |
-                    Obstacle::Pit => {}
+                    Obstacle::Wall | Obstacle::Pit => {}
                     _ => {
                         if path.success && path.steps.len() > 1 {
                             let mut step = obs_table.index_to_point2d(path.steps[1]);
@@ -144,7 +158,11 @@ impl AIController {
                                     step = obs_table.index_to_point2d(*s);
                                 }
                             }
-                            moves.push((mov, DistanceAlg::Manhattan.distance2d(step, Point::new(mov.x(), mov.y()))));
+                            moves.push((
+                                mov,
+                                DistanceAlg::Manhattan
+                                    .distance2d(step, Point::new(mov.x(), mov.y())),
+                            ));
                         }
                     }
                 },
@@ -181,7 +199,13 @@ impl AIController {
                 }
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
                     Obstacle::Platform => {
-                        moves.push((mov, DistanceAlg::Manhattan.distance2d(Point::new(self.player.x(), self.player.y()), Point::new(mov.x(), mov.y()))));
+                        moves.push((
+                            mov,
+                            DistanceAlg::Manhattan.distance2d(
+                                Point::new(self.player.x(), self.player.y()),
+                                Point::new(mov.x(), mov.y()),
+                            ),
+                        ));
                     }
                     _ => {}
                 },

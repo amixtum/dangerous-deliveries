@@ -61,7 +61,7 @@ impl ViewManager {
             | ProcState::GotPackage(..)
             | ProcState::LookMode
             | ProcState::Chat
-            | ProcState::Restart 
+            | ProcState::Restart
             | ProcState::DeliveredPackage => {
                 return self.main_view.draw_layout(
                     ctx,

@@ -5,7 +5,12 @@ use util::vec_ops;
 
 use crate::ai_controller::AIController;
 
-pub fn update_blocked(table: &mut ObstacleTable, human: &Player, ai: &Vec<AIController> , dead: &HashSet<u32>) {
+pub fn update_blocked(
+    table: &mut ObstacleTable,
+    human: &Player,
+    ai: &Vec<AIController>,
+    dead: &HashSet<u32>,
+) {
     table.blocked.clear();
     table.blocked.insert(human.position, Player::clone(human));
     for p in ai.iter().enumerate() {
@@ -14,7 +19,6 @@ pub fn update_blocked(table: &mut ObstacleTable, human: &Player, ai: &Vec<AICont
                 .blocked
                 .insert(p.1.player.position, Player::clone(&p.1.player));
         }
-
     }
 }
 

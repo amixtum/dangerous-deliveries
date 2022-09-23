@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}};
+use std::collections::{HashMap, HashSet};
 
 use rltk::RGB;
 
@@ -44,8 +44,8 @@ impl GoalTable {
     pub fn remove_goal_index(&mut self, index: usize) -> bool {
         if let Some(entry) = self.index_map.remove(&index) {
             match self.goals.remove(&entry) {
-                    None => return false,
-                    Some(_) => return true,
+                None => return false,
+                Some(_) => return true,
             }
         }
         false
@@ -57,7 +57,7 @@ impl GoalTable {
             Some(entry) => match self.index_map.remove(&entry.0) {
                 None => false,
                 Some(_) => true,
-            }
+            },
         }
     }
 }

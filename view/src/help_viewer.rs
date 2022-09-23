@@ -1,4 +1,4 @@
-use rltk::{RGB, Bresenham, Point};
+use rltk::RGB;
 
 pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
     let mut left_col = Vec::new();
@@ -63,7 +63,13 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
         ctx.print(width as i32 / 2, sc_y, &right_col[col]);
         sc_y += 1;
         for x in 0..width {
-            ctx.set(x, sc_y, RGB::named(rltk::DARKGRAY), RGB::named(rltk::BLACK), rltk::to_cp437('─'));
+            ctx.set(
+                x,
+                sc_y,
+                RGB::named(rltk::DARKGRAY),
+                RGB::named(rltk::BLACK),
+                rltk::to_cp437('─'),
+            );
         }
         sc_y += 1;
         col += 1;
@@ -119,11 +125,23 @@ pub fn help_screen(ctx: &mut rltk::Rltk, width: u32, _height: u32) {
 
     sc_y += 2;
 
-    ctx.print_color(1, sc_y, RGB::named(rltk::GRAY), RGB::named(rltk::BLACK), "You are on a skateboard. Press a movement key to increase speed or turn.");
+    ctx.print_color(
+        1,
+        sc_y,
+        RGB::named(rltk::GRAY),
+        RGB::named(rltk::BLACK),
+        "You are on a skateboard. Press a movement key to increase speed or turn.",
+    );
 
     sc_y += 2;
 
-    ctx.print_color(1, sc_y, RGB::named(rltk::GRAY), RGB::named(rltk::BLACK), "Press G when near another skater to talk to them");
+    ctx.print_color(
+        1,
+        sc_y,
+        RGB::named(rltk::GRAY),
+        RGB::named(rltk::BLACK),
+        "Press G when near another skater to talk to them",
+    );
 
     sc_y += 2;
 

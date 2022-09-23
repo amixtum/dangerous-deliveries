@@ -1,6 +1,6 @@
 use std::{collections::HashSet, f32::consts::PI};
 
-use rltk::{RandomNumberGenerator, Algorithm2D};
+use rltk::{Algorithm2D, RandomNumberGenerator};
 use util::{
     vec_ops::{self, neighbors},
     voronoi,
@@ -140,7 +140,11 @@ pub fn tunnel_pockets(table: &mut ObstacleTable) {
     for pos in table.platforms.iter() {
         let leader = table.ufind.find(table.xy_flat(pos.0, pos.1));
         let pt = table.index_to_point2d(leader as usize);
-        let nbrs = vec_ops::neighbors((pt.x, pt.y), (0, 0), (table.width() as i32 - 1, table.height() as i32 - 1));
+        let nbrs = vec_ops::neighbors(
+            (pt.x, pt.y),
+            (0, 0),
+            (table.width() as i32 - 1, table.height() as i32 - 1),
+        );
         let mut count_platforms = 0;
         for n in nbrs {
             if table.get_obstacle(n.0, n.1) == Obstacle::Platform {

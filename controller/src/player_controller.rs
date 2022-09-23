@@ -1,4 +1,4 @@
-use rltk::{VirtualKeyCode};
+use rltk::VirtualKeyCode;
 
 use std::collections::HashMap;
 //use std::f32::consts::PI;
@@ -44,9 +44,7 @@ impl PlayerController {
         // read conf file
         let raw_data = rltk::embedding::EMBED
             .lock()
-            .get_resource(
-                "raws/model.txt".to_string(),
-            )
+            .get_resource("raws/model.txt".to_string())
             .unwrap();
         let raw_string =
             std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
@@ -254,7 +252,12 @@ impl PlayerController {
         );
     }
 
-    pub fn reset_player_gameover(_table: &ObstacleTable, player: &Player, x: i32, y: i32) -> Player {
+    pub fn reset_player_gameover(
+        _table: &ObstacleTable,
+        player: &Player,
+        x: i32,
+        y: i32,
+    ) -> Player {
         let mut clone = Player::clone(player);
         clone.position = (x, y);
         clone.speed = (0.0, 0.0);
@@ -266,7 +269,12 @@ impl PlayerController {
         clone
     }
 
-    pub fn reset_player_continue(_table: &ObstacleTable, player: &Player, x: i32, y: i32) -> Player {
+    pub fn reset_player_continue(
+        _table: &ObstacleTable,
+        player: &Player,
+        x: i32,
+        y: i32,
+    ) -> Player {
         let mut clone = Player::clone(player);
         let last_pos = clone.position;
         clone.position = (x, y);

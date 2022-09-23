@@ -1,6 +1,5 @@
-use model::{obstacle_table::ObstacleTable, obstacle::Obstacle, map_gen};
-use rltk::{RandomNumberGenerator};
-
+use model::{map_gen, obstacle::Obstacle, obstacle_table::ObstacleTable};
+use rltk::RandomNumberGenerator;
 
 pub fn tunnel_spawn(obs_table: &mut ObstacleTable) -> (i32, i32) {
     let mut rng = RandomNumberGenerator::new();
@@ -41,5 +40,5 @@ pub fn random_platform(obs_table: &ObstacleTable) -> (i32, i32) {
         }
         return (pos.0, pos.1);
     }
-     (-1, -1)
+    (-1, -1)
 }
