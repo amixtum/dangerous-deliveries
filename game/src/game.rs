@@ -586,9 +586,12 @@ impl Game {
         if last_pos.0 == new_pos.0 && last_pos.1 == new_pos.1 {
             self.turns_to_giveup[index] -= 1;
         }
+        else {
+            self.turns_to_giveup[index] += self.giveup_turns;
+        }
 
         if self.opponents[index]
-            .reached_goal(self.ai_sight_radius as f32 - self.ai_sight_radius as f32 / 3.0)
+            .reached_goal(1.0)
             || self.turns_to_giveup[index] <= 0
         {
             self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);

@@ -45,40 +45,17 @@ impl AIController {
 
     pub fn choose_goal(&mut self, obs_table: &ObstacleTable, sight_radius: u32) {
         let mut rng = RandomNumberGenerator::new();
-        let ai_player = &self.player;
+        //let ai_player = &self.player;
         //let norm_speed = vec_ops::normalize(ai_player.speed);
 
-        let mut center = (
-            ai_player.x() + rng.range(-(sight_radius as i32), sight_radius as i32),
-            ai_player.y() + rng.range(-(sight_radius as i32), sight_radius as i32),
-        );
+        let center = rng.random_slice_entry(&obs_table.platforms); 
         /*if !f32::is_nan(norm_speed.0) {
             center = (ai_player.x() + (norm_speed.0 * sight_radius as f32) as i32, ai_player.y() + (norm_speed.1 * sight_radius as f32) as i32);
         }*/
-        center.0 = center.0.clamp(0, obs_table.width() as i32 - 1);
-        center.1 = center.0.clamp(0, obs_table.height() as i32 - 1);
-        let visible = visibility::get_fov(center, obs_table, sight_radius as i32);
-        let visible = visible
-            .iter()
-            .map(|p| (p.x, p.y))
-            .filter(|p| obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform)
-            .collect::<Vec<_>>();
-        let potential_goals = visible
-            .iter()
-            .filter(|p| {
-                (rltk::DistanceAlg::Manhattan.distance2d(
-                    Point::new(ai_player.x(), ai_player.y()),
-                    Point::new(p.0, p.1),
-                ) >= sight_radius as f32 - 1.0)
-                    && obs_table.get_obstacle(p.0, p.1) == Obstacle::Platform
-            })
-            .collect::<Vec<_>>();
-
-        if let Some(goal) = rng.random_slice_entry(&potential_goals) {
-            self.set_goal(**goal);
-        } else if let Some(goal) = rng.random_slice_entry(&visible) {
-            self.set_goal(*goal);
-        } else {
+        if let Some(center) = center {
+            self.set_goal(*center);
+        }
+        else {
             self.set_goal((obs_table.width() as i32 / 2, obs_table.height() as i32 / 2));
         }
     }
@@ -152,12 +129,7 @@ impl AIController {
                     Obstacle::Wall | Obstacle::Pit => {}
                     _ => {
                         if path.success && path.steps.len() > 1 {
-                            let mut step = obs_table.index_to_point2d(path.steps[1]);
-                            for s in path.steps.iter().skip(2) {
-                                if rng.roll_dice(1, 2) == 1 {
-                                    step = obs_table.index_to_point2d(*s);
-                                }
-                            }
+                            let step = obs_table.index_to_point2d(path.steps[1]);
                             moves.push((
                                 mov,
                                 DistanceAlg::Manhattan
