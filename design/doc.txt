@@ -59,10 +59,11 @@ Dangerous Deliveries:
     Obstacles
       Platform:
         * x y position
-        * height 
+      Wall:
+        * x y position
+        * blocks movement
       Rail: CURRENTLY UNUSED 
         * x y position
-        * height
         * +/- x y direction (normal vectors)
         * moving onto the rail "grinds" the rail,
           * moves the Player along the rail, dampening the other
