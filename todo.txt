@@ -1,6 +1,8 @@
+new tunneling algos 
+
 Turtle Map Gen
 
-Pure automata with tunneling (already have tunnel_pockets fn that tunnels small pockets)
+Pure automata with tunneling 
 
 Menus
   Main Menu

@@ -665,6 +665,7 @@ impl Game {
             );
 
             self.goal_table.picked_up.insert((x, y));
+            self.player.time = 0.0;
         }
 
         self.set_state(ProcState::Playing);

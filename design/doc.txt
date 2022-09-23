@@ -1,6 +1,4 @@
 Dangerous Deliveries:
-
-
   Mechanics:
     The Player can move from one point to another, where each point
     contains an Obstacle that may or may not be traversable by the player.
@@ -21,7 +19,7 @@ Dangerous Deliveries:
 
       Only adjacent points are traversable:
         i.e. a point p is traversable iff p_x in [x - 1, x + 1],
-        p_y in [y - 1, y + 1], and p_height in [height - 1, height + 1]
+        p_y in [y - 1, y + 1],
 
     Speed 
       a 2d vector that determines how much time 
@@ -46,44 +44,23 @@ Dangerous Deliveries:
         with:
           balance_damp = a number in (0, 1)
 
-      A Balance vector is modified when (1) a player moves perpendicularly
-      (in any axis) to their current Speed vector, (2) moves opposite
-      to their current Speed vector or (3) encounters an obstacle.
-      In the first two cases, the Balance vector is further
-      modified by the equation:
-        Balance_x_t += sign of inst_y * 
-                       (1 - dot(normalize(inst_v), 
-                                normalize(Speed_[i - 1]))) * turn_factor
-        with:
-          turn_factor = a number in (0, 1)
+      A Balance vector is modified by the equation:
+        Balance_x_t += sign of (Speed_y_[t-1] - inst_y) * 
+                       (2*mag(inst_v)*mag(Speed_[t-1]) - dot(inst_v, Speed_[t-1])) / 2*mag(inst_v)*mag(Speed_[t-1]) * turn_factor
+
         and the same for Balance_y_t with x and y switched
+      in order to simulate leaning in the direction an entity was last moving if they moved orthogonally to their last speed
 
     Falling Over:
       sets:
         Speed = (0, 0)
         Balance = (0, 0)
 
-    Obstacles 
-      affect a player's Balance, Speed and their ability to move 
-      around the cartesian plane (e.g. an obstacle only allows movement in 
-      one direction) All obstacles have an (x, y, height) position. Moving
-      up one height reduces Speed by up_speed_factor, and moving down one height
-      increases speed by down_speed_factor
-      i.e.
-        Moving up a level:
-          Speed_i_t *= up_speed_factor
-          with:
-            up_speed_factor in (0, 1)
-        Moving down a level:
-          Speed_i_t *= down_speed_factor
-          with:
-            down_speed_factor in (1, 2)
-      Attempting to move into an obstacle that has height 
-
+    Obstacles
       Platform:
         * x y position
         * height 
-      Rail:
+      Rail: CURRENTLY UNUSED 
         * x y position
         * height
         * +/- x y direction (normal vectors)
@@ -95,19 +72,29 @@ Dangerous Deliveries:
             since grinding the rail, then the player falls over to whichever side their Balance
             vector is most aligned with
           * if a player's speed reaches (0, 0) they fall off the rail
-        Pit:
+        Pit: CURRENTLY UNUSED 
           * x y position
           * falling into a pit is game over
 
+    Chat
+      The player can chat with other entities they are adjacent to
+      1. When a player is alone, they print a random message to the screen 
+      2. When a player is adjacent to another entity, a helpful message about the direction of the 
+         goal is printed to the screen
+
     Score
       A function that maps the amount of time the delivery took to a number
+        (table_width * table_height) / delivery_time
 
     Goals
-      Objectives for the player to reach (a fixed position)
-      When all the goals have been reached, the game ends
-
-    Opponents
-      Platformers
-        they only move when on Platforms
-        otherwise they let the Rails move them
-        always move towards a fixed objective until it is reached
+      Job
+        * fixed position, spawns one at a time
+        * upon reaching a Job, the player is then
+          given a Recipient
+        * the Job is removed when the player reaches it
+      Recipient
+        * moving entity, is assigned to a Job before the player
+          reaches a Job
+        * after the player reaches a Job they can Chat with a Recipient
+          to add to their Score, which spawns a new Job/Recipient pair 
+      

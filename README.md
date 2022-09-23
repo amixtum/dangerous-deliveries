@@ -5,3 +5,5 @@
 A text-graphics skateboarding game.
 
 Play it [here](https://amixtum.github.io)
+
+Most of the concepts in the game are detailed in [design/doc.txt](https://github.com/amixtum/dangerous-deliveries/blob/main/design/doc.txt)

@@ -10,6 +10,7 @@ use crate::{
     goal_table::GoalTable, obstacle::Obstacle, obstacle_automata, obstacle_table::ObstacleTable,
 };
 
+// will loop infinitely if the platform density of table is too low
 pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
     let mut rng = RandomNumberGenerator::new();
     let mut directions = Vec::new();
