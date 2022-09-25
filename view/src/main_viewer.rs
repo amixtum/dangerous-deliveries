@@ -175,7 +175,7 @@ impl MainViewer {
         fallover_threshold: f32,
     ) {
         // set to true to reveal the map and all entities
-        let testing = false;
+        let testing = true;
 
         // compute ObstacleTable coordinates
         let middle = player.xy();

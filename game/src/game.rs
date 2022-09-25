@@ -603,11 +603,11 @@ impl Game {
             self.turns_to_giveup[index] -= 1;
         }
         else {
-            self.turns_to_giveup[index] += self.giveup_turns;
+            self.turns_to_giveup[index] = self.giveup_turns;
         }
 
         if self.opponents[index]
-            .reached_goal(4.0)
+            .reached_goal(5.0)
             || self.turns_to_giveup[index] <= 0
         {
             self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);

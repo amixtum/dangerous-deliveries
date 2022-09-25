@@ -66,6 +66,8 @@ impl AIController {
             obs_table.point2d_to_index(Point::new(self.goal.0, self.goal.1)),
             obs_table,
         );
+
+        self.path_idx = 1;
     }
 
     pub fn move_player(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) {
@@ -90,6 +92,7 @@ impl AIController {
     ) -> Player {
         let clone = Player::clone(&self.player);
         let mut moves = self.get_moves(&clone, obs_table, player_control);
+        let next_step = obs_table.index_to_point2d(self.path.steps[self.path_idx]);
 
         if moves.len() == 0 {
             return self.player;
@@ -97,9 +100,11 @@ impl AIController {
 
 
         if moves.len() == 1 {
-            self.path_idx += 1;
-            if self.path_idx >= self.path.steps.len() {
-                self.path_idx = 1;
+            if moves[0].0.x() == next_step.x && moves[0].0.y() == next_step.y {
+                self.path_idx += 1;
+                if self.path_idx >= self.path.steps.len() {
+                    self.path_idx = 1;
+                }
             }
             return moves[0].0;
         }
@@ -109,16 +114,32 @@ impl AIController {
         
         for index in 0..moves.len() {
             if moves[index].0.x() != self.player.x() || moves[index].0.y() != self.player.y() {
-                self.path_idx += 1;
-                if self.path_idx >= self.path.steps.len() {
-                    self.path_idx = 1;
+                if moves[index].0.x() == next_step.x && moves[index].0.y() == next_step.y {
+                    self.path_idx += 1;
+                    if self.path_idx >= self.path.steps.len() {
+                        self.path_idx = 1;
+                    }
                 }
+
                 return moves[index].0;
             }
             else {
-                if self.rng.roll_dice(1, 6) == 1 {
+                if self.rng.roll_dice(1, 3) == 1 {
+                    if moves[index].0.x() == next_step.x && moves[index].0.y() == next_step.y {
+                        self.path_idx += 1;
+                        if self.path_idx >= self.path.steps.len() {
+                            self.path_idx = 1;
+                        }
+                    }
                     return moves[index].0;
                 }
+            }
+        }
+
+        if moves[0].0.x() == next_step.x && moves[0].0.y() == next_step.y {
+            self.path_idx += 1;
+            if self.path_idx >= self.path.steps.len() {
+                self.path_idx = 1;
             }
         }
 
