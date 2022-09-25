@@ -2,7 +2,7 @@
 
 <h1>Dangerous Deliveries</h1>
 
-A text-graphics skateboarding game.
+A (WIP) text-graphics skateboarding game.
 
 Play it [here](https://amixtum.github.io)
 
