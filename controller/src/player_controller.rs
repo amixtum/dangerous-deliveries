@@ -62,8 +62,8 @@ impl PlayerController {
                     }
                 }
                 if words[0] == "speed_damp" {
-                    if let Ok(num) = words[1].parse::<f32>() {
-                        speed_damp = num;
+                    if let Ok(_num) = words[1].parse::<f32>() {
+                        //speed_damp = num;
                     }
                 } else if words[0] == "balance_damp" {
                     if let Ok(num) = words[1].parse::<f32>() {
@@ -105,6 +105,34 @@ impl PlayerController {
                 }
             }
         }
+
+        let k = 64;
+        let search_fn = |damp: f32| {
+            (damp.powf(k as f32 + 1.0) - 1.0) / 
+            (damp  - 1.0)
+        };
+
+        let radius = 0.05;
+        let mut l = 0.0;
+        let mut r = 1.0;
+        let mut mid = (l + r) / 2.0;
+        let mut check = search_fn(mid);
+        while (check - (max_speed / inst_length)).abs() > radius && l < r {
+            if check - (max_speed / inst_length) > 0.0 {
+                r = mid;
+            }
+            else {
+                l = mid;
+            }
+
+            mid = (l + r) / 2.0;
+            check = search_fn(mid);
+        }
+
+        speed_damp = mid * 0.66;
+        //rltk::console::log(format!("speed damp: {}", speed_damp));
+
+
         let mut pc = PlayerController {
             key_map: HashMap::new(),
             speed_damp,
@@ -410,26 +438,7 @@ impl PlayerController {
     fn get_scaled((inst_x, inst_y): (f32, f32), inst_length: f32) -> (f32, f32) {
         let norm_inst = vec_ops::normalize((inst_x, inst_y));
         if !f32::is_nan(norm_inst.0) {
-            let units = vec_ops::discrete_jmp((inst_x, inst_y));
-            if inst_length.abs() < 1.0 {
-                if units.0.abs() == 1 && units.1.abs() == 1 {
-                    return (
-                        norm_inst.0 * inst_length.sqrt(),
-                        norm_inst.1 * inst_length.sqrt(),
-                    );
-                } else {
-                    return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
-                }
-            } else {
-                if units.0.abs() == 1 && units.1.abs() == 1 {
-                    return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
-                } else {
-                    return (
-                        norm_inst.0 * inst_length.sqrt(),
-                        norm_inst.1 * inst_length.sqrt(),
-                    );
-                }
-            }
+            return (norm_inst.0 * inst_length, norm_inst.1 * inst_length);
         }
         (0.0, 0.0)
     }
