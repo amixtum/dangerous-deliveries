@@ -174,6 +174,9 @@ impl MainViewer {
         height: u32,
         fallover_threshold: f32,
     ) {
+        // set to true to reveal the map and all entities
+        let testing = false;
+
         // compute ObstacleTable coordinates
         let middle = player.xy();
         let mut tl_x = (middle.0 - (width / 2) as i32).clamp(0, table.width() as i32 - 1);
@@ -202,14 +205,22 @@ impl MainViewer {
         let mut sc_x = sc_tlx;
         let mut sc_y = sc_tly;
 
+        // put this somewhere else
         let visible = visibility::get_fov(player.xy(), table, 16);
         for p in visible.iter() {
-            table.revelead.insert((p.x, p.y));
+            let idx = table.xy_flat(p.x, p.y) as usize;
+            table.revealed[idx] = true;
+            table.memory.push((p.x, p.y));
+            if table.memory.len() > table.memory_size {
+                let notvis = table.memory.remove(0);
+                let idx = table.xy_flat(notvis.0, notvis.1) as usize;
+                table.revealed[idx] = false;
+            }
         }
 
         for x in tl_x..=br_x {
             for y in tl_y..=br_y {
-                if table.revelead.contains(&(x, y)) || (player.x() == x && player.y() == y) {
+                if testing || table.revealed[table.xy_flat(x, y)] || (player.x() == x && player.y() == y) || visible.contains(&Point::new(x, y)) {
                     let obstacle_type = table.get_obstacle(x, y);
 
                     let t = table.traversability((player.x(), player.y()), (x, y));
@@ -309,7 +320,7 @@ impl MainViewer {
                                 if x == p.1.player.x()
                                     && y == p.1.player.y()
                                     && table.blocked.contains_key(&(x, y))
-                                    && visible.contains(&Point::new(x, y))
+                                    && (testing || visible.contains(&Point::new(x, y)))
                                 {
                                     match p.1.player.recent_event {
                                         PlayerEvent::FallOver => {
@@ -427,9 +438,9 @@ impl MainViewer {
         // compute position of vector inside the rect
         // is p_x correct?
         let p_x = (((v.0 / max) * (size as f32)).round() as i32 + (size as i32 / 2))
-            .clamp(0, size as i32 - 1);
+            .clamp(0, size as i32);
         let p_y = (((v.1 / max) * (size as f32)).round() as i32 + (size as i32 / 2))
-            .clamp(0, size as i32 - 1);
+            .clamp(0, size as i32);
 
         // indicate speed with this symbol
         let lines = Bresenham::new(

@@ -29,7 +29,7 @@ pub struct PlayerController {
 
 impl PlayerController {
     pub fn new() -> Self {
-        let mut speed_damp: f32 = 0.66;
+        let speed_damp: f32;
         let mut inst_length: f32 = 0.66;
         let mut rail_boost: f32 = 2.0;
         let mut balance_damp: f32 = 0.5;
@@ -56,16 +56,12 @@ impl PlayerController {
                         rail_boost = num;
                     }
                 }
-                if words[0] == "inst_length" {
+                else if words[0] == "inst_length" {
                     if let Ok(num) = words[1].parse::<f32>() {
                         inst_length = num;
                     }
                 }
-                if words[0] == "speed_damp" {
-                    if let Ok(_num) = words[1].parse::<f32>() {
-                        //speed_damp = num;
-                    }
-                } else if words[0] == "balance_damp" {
+                else if words[0] == "balance_damp" {
                     if let Ok(num) = words[1].parse::<f32>() {
                         balance_damp = num;
                     }
@@ -129,8 +125,8 @@ impl PlayerController {
             check = search_fn(mid);
         }
 
-        speed_damp = mid * 0.66;
-        //rltk::console::log(format!("speed damp: {}", speed_damp));
+        speed_damp = mid;
+        rltk::console::log(format!("speed damp: {}", speed_damp));
 
 
         let mut pc = PlayerController {

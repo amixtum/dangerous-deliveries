@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::vec;
 
 use controller::collision;
 use model::direction::Direction;
@@ -687,18 +688,11 @@ impl Game {
 
         self.lookmode_string = ("Find the package".to_string(), RGB::named(rltk::WHITE));
 
-        self.obs_table.revelead.clear();
+        self.obs_table.revealed = vec![false; self.obs_table.width() as usize * self.obs_table.height() as usize];
         self.obs_table.regen_table();
 
         map_gen::voronoi_mapgen(&mut self.obs_table);
-
-        self.obs_table.update_platforms();
-
-        self.obs_table.compute_unions();
-
         map_gen::tunnel_pockets(&mut self.obs_table);
-
-        self.obs_table.update_platforms();
 
         self.opponents.clear();
         self.turns_to_giveup.clear();
@@ -722,6 +716,7 @@ impl Game {
         let (x, y) = spawning::tunnel_spawn(&mut self.obs_table);
 
         self.obs_table.update_platforms();
+        self.obs_table.compute_unions();
 
         self.player = PlayerController::reset_player_gameover(&self.obs_table, &self.player, x, y);
 

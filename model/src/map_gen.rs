@@ -139,7 +139,7 @@ pub fn tunnel_goals(table: &mut ObstacleTable, goals: &GoalTable) {
 pub fn tunnel_pockets(table: &mut ObstacleTable) {
     let mut pockets = Vec::new();
     for pos in table.platforms.iter() {
-        let leader = table.ufind.find(table.xy_flat(pos.0, pos.1));
+        let leader = table.ufind.find(table.xy_flat(pos.0, pos.1) as u32);
         let pt = table.index_to_point2d(leader as usize);
         let nbrs = vec_ops::neighbors(
             (pt.x, pt.y),
@@ -161,6 +161,9 @@ pub fn tunnel_pockets(table: &mut ObstacleTable) {
     for p in pockets.iter() {
         tunnel_position(table, *p);
     }
+
+    table.update_platforms();
+    table.compute_unions();
 }
 
 pub fn voronoi_mapgen(obs_table: &mut ObstacleTable) {
@@ -183,6 +186,9 @@ pub fn voronoi_mapgen(obs_table: &mut ObstacleTable) {
     }
 
     obstacle_automata::apply_automata(obs_table);
+
+    obs_table.update_platforms();
+    obs_table.compute_unions();
 }
 
 pub fn apply_voronoi_inv(table: &mut ObstacleTable, seeds: &HashSet<(i32, i32)>) {

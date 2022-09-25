@@ -5,7 +5,7 @@ use model::obstacle_table::ObstacleTable;
 use model::player::Player;
 use model::player_event::PlayerEvent;
 
-use rltk::{Algorithm2D, DistanceAlg, Point, RandomNumberGenerator};
+use rltk::{Algorithm2D, DistanceAlg, Point, RandomNumberGenerator, NavigationPath};
 use util::vec_ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -14,7 +14,9 @@ struct Pos(i32, i32);
 pub struct AIController {
     pub player: Player,
     pub goal: (i32, i32),
-    _rng: RandomNumberGenerator,
+    path: NavigationPath,
+    path_idx: usize,
+    rng: RandomNumberGenerator,
 }
 
 impl AIController {
@@ -22,7 +24,9 @@ impl AIController {
         AIController {
             player: Player::new(start_x, start_y),
             goal: (-1, -1),
-            _rng: RandomNumberGenerator::new(),
+            path: NavigationPath::new(),
+            path_idx: 1,
+            rng: RandomNumberGenerator::new(),
         }
     }
 }
@@ -43,11 +47,10 @@ impl AIController {
     }
 
     pub fn choose_goal(&mut self, obs_table: &ObstacleTable, _sight_radius: u32) {
-        let mut rng = RandomNumberGenerator::new();
         //let ai_player = &self.player;
         //let norm_speed = vec_ops::normalize(ai_player.speed);
 
-        let center = rng.random_slice_entry(&obs_table.platforms); 
+        let center = self.rng.random_slice_entry(&obs_table.platforms); 
         /*if !f32::is_nan(norm_speed.0) {
             center = (ai_player.x() + (norm_speed.0 * sight_radius as f32) as i32, ai_player.y() + (norm_speed.1 * sight_radius as f32) as i32);
         }*/
@@ -57,6 +60,12 @@ impl AIController {
         else {
             self.set_goal((obs_table.width() as i32 / 2, obs_table.height() as i32 / 2));
         }
+
+        self.path = rltk::a_star_search(
+            obs_table.point2d_to_index(Point::new(self.player.x(), self.player.y())),
+            obs_table.point2d_to_index(Point::new(self.goal.0, self.goal.1)),
+            obs_table,
+        );
     }
 
     pub fn move_player(&mut self, obs_table: &ObstacleTable, player_control: &PlayerController) {
@@ -79,7 +88,12 @@ impl AIController {
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Player {
-        let mut moves = self.get_moves(&self.player, obs_table, player_control);
+        let clone = Player::clone(&self.player);
+        let mut moves = self.get_moves(&clone, obs_table, player_control);
+        self.path_idx += 1;
+        if self.path_idx >= self.path.steps.len() {
+            self.path_idx = 1;
+        }
         if moves.len() == 0 {
             return self.player;
         }
@@ -99,23 +113,17 @@ impl AIController {
     }
 
     pub fn get_moves(
-        &self,
+        &mut self,
         player: &Player,
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Vec<(Player, f32)> {
         let mut moves = Vec::new();
         let mut falls: Vec<(Player, f32)> = Vec::new();
-        let mut rng = RandomNumberGenerator::new();
-
-        let path = rltk::a_star_search(
-            obs_table.point2d_to_index(Point::new(self.player.x(), self.player.y())),
-            obs_table.point2d_to_index(Point::new(self.goal.0, self.goal.1)),
-            obs_table,
-        );
 
         // iterate through all possible inputs to the player controller
-        // and push the new player with the time the move took
+        // and push the new player that is closest to the next
+        // step in this controller's path (computed in choose_goal)
         for key in player_control.get_keys() {
             let mov = player_control.move_player(&obs_table, &player, key);
 
@@ -127,8 +135,8 @@ impl AIController {
                 _ => match obs_table.get_obstacle(mov.x(), mov.y()) {
                     Obstacle::Wall | Obstacle::Pit => {}
                     _ => {
-                        if path.success && path.steps.len() > 1 {
-                            let step = obs_table.index_to_point2d(path.steps[1]);
+                        if self.path.success && self.path_idx < self.path.steps.len() {
+                            let step = obs_table.index_to_point2d(self.path.steps[self.path_idx]);
                             moves.push((
                                 mov,
                                 DistanceAlg::Manhattan
@@ -141,7 +149,7 @@ impl AIController {
         }
 
         if moves.len() == 0 {
-            if let Some(choice) = rng.random_slice_entry(&falls) {
+            if let Some(choice) = self.rng.random_slice_entry(&falls) {
                 moves.push(*choice);
             }
         }
@@ -150,12 +158,11 @@ impl AIController {
     }
 
     pub fn get_moves_platform(
-        &self,
+        &mut self,
         player: &Player,
         obs_table: &ObstacleTable,
         player_control: &PlayerController,
     ) -> Vec<(Player, f32)> {
-        let mut rng = RandomNumberGenerator::new();
         let mut moves = Vec::new();
         let mut falls = Vec::new();
 
@@ -184,7 +191,7 @@ impl AIController {
         }
 
         if moves.len() == 0 {
-            if let Some(choice) = rng.random_slice_entry(&falls) {
+            if let Some(choice) = self.rng.random_slice_entry(&falls) {
                 moves.push(*choice);
             }
         }

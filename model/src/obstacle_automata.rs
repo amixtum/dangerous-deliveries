@@ -25,6 +25,9 @@ pub fn apply_automata(table: &mut ObstacleTable) {
             }
         }
     }
+
+    table.update_platforms();
+    table.compute_unions();
 }
 
 pub fn compute_next(obs_table: &ObstacleTable, x: i32, y: i32) -> Obstacle {

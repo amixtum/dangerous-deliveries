@@ -7,7 +7,7 @@ use crate::player::Player;
 use super::obstacle::Obstacle;
 use super::traversability::Traversability;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
 pub struct ObstacleTable {
     width: u32,
@@ -16,7 +16,9 @@ pub struct ObstacleTable {
     pub platforms: Vec<(i32, i32)>,
     pub ufind: UnionFind<u32>,
     pub blocked: HashMap<(i32, i32), Player>,
-    pub revelead: HashSet<(i32, i32)>,
+    pub revealed: Vec<bool>,
+    pub memory: Vec<(i32, i32)>,
+    pub memory_size: usize,
 }
 
 impl BaseMap for ObstacleTable {
@@ -90,8 +92,10 @@ impl ObstacleTable {
             table: Vec::new(),
             platforms: Vec::new(),
             blocked: HashMap::new(),
-            revelead: HashSet::new(),
             ufind: UnionFind::new(width as usize * height as usize),
+            revealed: vec![false; width as usize * height as usize],
+            memory: Vec::new(),
+            memory_size: 4096,
         };
 
         for x in 0..width {
@@ -103,7 +107,7 @@ impl ObstacleTable {
 
         //ct.lsystem.update_n(ct.lsystem.iterations);
 
-        ct.regen_table();
+        //ct.regen_table();
 
         ct
     }
@@ -117,8 +121,8 @@ impl ObstacleTable {
         self.get_obstacle(x, y) == Obstacle::Platform
     }
 
-    pub fn xy_flat(&self, x: i32, y: i32) -> u32 {
-        y as u32 * self.width + x as u32
+    pub fn xy_flat(&self, x: i32, y: i32) -> usize {
+        y as usize * self.width as usize + x as usize 
     }
 
     pub fn width(&self) -> u32 {
@@ -203,8 +207,8 @@ impl ObstacleTable {
                     for nbr in nbrs.iter() {
                         if self.get_obstacle(nbr.0, nbr.1) == Obstacle::Platform {
                             self.ufind.union(
-                                self.xy_flat(x as i32, y as i32),
-                                self.xy_flat(nbr.0, nbr.1),
+                                self.xy_flat(x as i32, y as i32) as u32,
+                                self.xy_flat(nbr.0, nbr.1) as u32,
                             );
                         }
                     }
