@@ -54,6 +54,8 @@ pub struct Game {
     redraw: bool,
     first_draw: bool,
     gameover_done: bool,
+
+    rng: RandomNumberGenerator,
 }
 
 impl Game {
@@ -95,6 +97,8 @@ impl Game {
             redraw: true,
             first_draw: true,
             gameover_done: false,
+
+            rng: RandomNumberGenerator::new(),
         };
 
         Game::init(&mut g);
@@ -147,15 +151,14 @@ impl Game {
     }
     // regen opponent
     fn _add_opponent_tunnel(&mut self) {
-        let mut rng = RandomNumberGenerator::new();
         let x = (self.obs_table.width() as i32 / 2)
-            + rng.range(
+            + self.rng.range(
                 -(self.obs_table.width() as i32) / 2 + 1,
                 self.obs_table.width() as i32 / 2,
             )
             - 1;
         let y = (self.obs_table.height() as i32 / 2)
-            + rng.range(
+            + self.rng.range(
                 -(self.obs_table.height() as i32) / 2 + 1,
                 self.obs_table.height() as i32 / 2 - 1,
             );
@@ -167,18 +170,20 @@ impl Game {
             self.turns_to_giveup.push(self.giveup_turns);
             self.obs_table.set_obstacle((x, y), Obstacle::Platform);
 
-            map_gen::tunnel_position(&mut self.obs_table, (x, y));
+            map_gen::tunnel_position(&mut self.obs_table, (x, y), &mut self.rng);
         }
     }
 
     fn add_opponent_platform(&mut self) {
-        let (x, y) = spawning::random_platform(&self.obs_table);
+        let (x, y) = spawning::random_platform(&self.obs_table, &mut self.rng);
 
         self.opponents.push(AIController::new(x, y));
         self.turns_to_giveup.push(self.giveup_turns);
     }
 
     pub fn properties_from_file(&mut self) {
+        let mut width = self.obs_table.width();
+        let mut height = self.obs_table.height();
         // Retrieve the raw data as an array of u8 (8-bit unsigned chars)
         let raw_data = rltk::embedding::EMBED
             .lock()
@@ -209,7 +214,19 @@ impl Game {
                     self.giveup_turns = num;
                 }
             }
+            else if words[0] == "game_width" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    width = num;
+                }
+            }
+            else if words[0] == "game_height" {
+                if let Ok(num) = words[1].parse::<u32>() {
+                    height = num;
+                }
+            }
         }
+
+        self.obs_table.resize(width, height);
     }
 
     pub fn handle_input(&mut self, ctx: &mut rltk::Rltk) -> bool {
@@ -374,8 +391,6 @@ impl Game {
     }
 
     fn process_delivered(&mut self) -> bool {
-        let mut rng = RandomNumberGenerator::new();
-
         let pos = self
             .goal_table
             .index_map
@@ -394,16 +409,16 @@ impl Game {
         self.player.n_delivered += 1;
 
         // spawn a new package
-        let mut aiidx = rng.range(0, self.opponents.len());
+        let mut aiidx = self.rng.range(0, self.opponents.len());
         while aiidx == self.recipient_idx as usize {
-            aiidx = rng.range(0, self.opponents.len());
+            aiidx = self.rng.range(0, self.opponents.len());
         }
         self.recipient_idx = aiidx as i32;
 
-        let coloridx = rng.range(0, self.shirt_colors.len());
+        let coloridx = self.rng.range(0, self.shirt_colors.len());
 
         self.goal_table.add_goal(
-            spawning::random_platform(&mut self.obs_table),
+            spawning::random_platform(&mut self.obs_table, &mut self.rng),
             (aiidx, self.shirt_colors[coloridx]),
         );
 
@@ -592,7 +607,7 @@ impl Game {
         }
 
         if self.opponents[index]
-            .reached_goal(1.0)
+            .reached_goal(4.0)
             || self.turns_to_giveup[index] <= 0
         {
             self.opponents[index].choose_goal(&self.obs_table, self.ai_sight_radius);
@@ -684,15 +699,13 @@ impl Game {
     }
 
     fn reset_game(&mut self) {
-        let mut rng = RandomNumberGenerator::new();
-
         self.lookmode_string = ("Find the package".to_string(), RGB::named(rltk::WHITE));
 
         self.obs_table.revealed = vec![false; self.obs_table.width() as usize * self.obs_table.height() as usize];
         self.obs_table.regen_table();
 
         map_gen::voronoi_mapgen(&mut self.obs_table);
-        map_gen::tunnel_pockets(&mut self.obs_table);
+        map_gen::tunnel_pockets(&mut self.obs_table, &mut self.rng);
 
         self.opponents.clear();
         self.turns_to_giveup.clear();
@@ -701,19 +714,19 @@ impl Game {
         }
 
         self.goal_table.clear();
-        let mut aiidx = rng.range(0, self.opponents.len()) as i32;
+        let mut aiidx = self.rng.range(0, self.opponents.len()) as i32;
         while aiidx == self.recipient_idx {
-            aiidx = rng.range(0, self.opponents.len() as i32);
+            aiidx = self.rng.range(0, self.opponents.len() as i32);
         }
         self.recipient_idx = aiidx;
 
-        let coloridx = rng.range(0, self.shirt_colors.len());
+        let coloridx = self.rng.range(0, self.shirt_colors.len());
         self.goal_table.add_goal(
-            spawning::random_platform(&self.obs_table),
+            spawning::random_platform(&self.obs_table, &mut self.rng),
             (aiidx as usize, self.shirt_colors[coloridx]),
         );
 
-        let (x, y) = spawning::tunnel_spawn(&mut self.obs_table);
+        let (x, y) = spawning::tunnel_spawn(&mut self.obs_table, &mut self.rng);
 
         self.obs_table.update_platforms();
         self.obs_table.compute_unions();
@@ -729,7 +742,7 @@ impl Game {
     }
 
     fn reset_player_continue(&mut self) {
-        let spawn_at = spawning::random_platform(&self.obs_table);
+        let spawn_at = spawning::random_platform(&self.obs_table, &mut self.rng);
         self.player = PlayerController::reset_player_continue(
             &self.obs_table,
             &self.player,

@@ -11,8 +11,7 @@ use crate::{
 };
 
 // will loop infinitely if the platform density of table is too low
-pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
-    let mut rng = RandomNumberGenerator::new();
+pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32), rng: &mut RandomNumberGenerator) {
     let mut directions = Vec::new();
     directions.push((0, -1));
     directions.push((0, 1));
@@ -130,13 +129,13 @@ pub fn tunnel_position(table: &mut ObstacleTable, (x, y): (i32, i32)) {
 }
 
 // tunnels into the nearest open space
-pub fn tunnel_goals(table: &mut ObstacleTable, goals: &GoalTable) {
+pub fn tunnel_goals(table: &mut ObstacleTable, goals: &GoalTable, rng: &mut RandomNumberGenerator) {
     for goal in goals.goals.keys() {
-        tunnel_position(table, *goal);
+        tunnel_position(table, *goal, rng);
     }
 }
 
-pub fn tunnel_pockets(table: &mut ObstacleTable) {
+pub fn tunnel_pockets(table: &mut ObstacleTable, rng: &mut RandomNumberGenerator) {
     let mut pockets = Vec::new();
     for pos in table.platforms.iter() {
         let leader = table.ufind.find(table.xy_flat(pos.0, pos.1) as u32);
@@ -159,7 +158,7 @@ pub fn tunnel_pockets(table: &mut ObstacleTable) {
     }
 
     for p in pockets.iter() {
-        tunnel_position(table, *p);
+        tunnel_position(table, *p, rng);
     }
 
     table.update_platforms();

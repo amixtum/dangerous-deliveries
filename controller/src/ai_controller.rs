@@ -90,25 +90,38 @@ impl AIController {
     ) -> Player {
         let clone = Player::clone(&self.player);
         let mut moves = self.get_moves(&clone, obs_table, player_control);
-        self.path_idx += 1;
-        if self.path_idx >= self.path.steps.len() {
-            self.path_idx = 1;
-        }
+
         if moves.len() == 0 {
             return self.player;
         }
+
+
         if moves.len() == 1 {
+            self.path_idx += 1;
+            if self.path_idx >= self.path.steps.len() {
+                self.path_idx = 1;
+            }
             return moves[0].0;
         }
+
         moves.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-        if moves[0].0.x() == self.player.x() && moves[0].0.y() == self.player.y() {
-            for index in (0..moves.len()).rev() {
-                if moves[index].0.x() != self.player.x() || moves[index].0.y() != self.player.y() {
+        
+        for index in 0..moves.len() {
+            if moves[index].0.x() != self.player.x() || moves[index].0.y() != self.player.y() {
+                self.path_idx += 1;
+                if self.path_idx >= self.path.steps.len() {
+                    self.path_idx = 1;
+                }
+                return moves[index].0;
+            }
+            else {
+                if self.rng.roll_dice(1, 6) == 1 {
                     return moves[index].0;
                 }
             }
         }
+
         return moves[0].0;
     }
 

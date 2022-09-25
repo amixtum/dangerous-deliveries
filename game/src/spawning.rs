@@ -1,8 +1,7 @@
 use model::{map_gen, obstacle::Obstacle, obstacle_table::ObstacleTable};
 use rltk::RandomNumberGenerator;
 
-pub fn tunnel_spawn(obs_table: &mut ObstacleTable) -> (i32, i32) {
-    let mut rng = RandomNumberGenerator::new();
+pub fn tunnel_spawn(obs_table: &mut ObstacleTable, rng: &mut RandomNumberGenerator) -> (i32, i32) {
     let x = (obs_table.width() as i32 / 2)
         + rng.range(
             -(obs_table.width() as i32) / 2 + 1,
@@ -16,14 +15,13 @@ pub fn tunnel_spawn(obs_table: &mut ObstacleTable) -> (i32, i32) {
         );
 
     obs_table.set_obstacle((x, y), Obstacle::Platform);
-    map_gen::tunnel_position(obs_table, (x, y));
+    map_gen::tunnel_position(obs_table, (x, y), rng);
 
     (x, y)
 }
 
-pub fn random_platform(obs_table: &ObstacleTable) -> (i32, i32) {
+pub fn random_platform(obs_table: &ObstacleTable, rng: &mut RandomNumberGenerator) -> (i32, i32) {
     let mut tries = 0;
-    let mut rng = RandomNumberGenerator::new();
     if let Some(pos) = rng.random_slice_entry(&obs_table.platforms) {
         let mut pos = *pos;
         while obs_table.blocked.contains_key(&pos) && tries < obs_table.width() {

@@ -5,7 +5,7 @@ game_width 80
 game_height 40
 
 # number of opponents
-opponents 24
+opponents 12
 
 # opponents use this to determine where to go next 
 ai_sight_radius 8
